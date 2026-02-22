@@ -1,0 +1,2198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>MarketReady Tours</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBoPhoNQ5C84nS79QDV36R93APg4Pizo_E&libraries=places"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#FAF8F3}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#C9A84C;border-radius:3px}
+textarea,input,select{font-family:inherit}
+.btn-hover:hover{opacity:.88;transform:translateY(-1px);transition:all .15s}
+.card-hover:hover{box-shadow:0 8px 28px rgba(0,0,0,.13)!important;transform:translateY(-2px);transition:all .2s}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn .3s ease}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>window.MRT_LOGO_DATA="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAyAAAAFTCAMAAAD2h5gcAAAAflBMVEUAAADV2t1KnZQuetL5+flucnOnqKkiaWyprLCjp6tgnp0yaaceKm+ZnaE3gtZdcXMtXJFVjoovbKkvWmrLz9IA//8xX5Ndi4lcXaSvr/C9wcV9ff+5vcFOd3es5ORFgn0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADFpf5HAAAAIHRSTlMA/fr9BAsODeKfCeUQYf5fqZgNWqkBXWkHBd8C45gI22fIE4YAACWySURBVHja7Z2JeuoqG4VxF8hQ09SqNVr13P9dnkAGZhI1cWjX+5z/33u3aiJh8Q18ACEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHA3qgRtAECIHzQBACFq6/H9Lf8AANgsCfl8J59QCABefSzfP97ePt6XaAsAbHlQsn5/E3y8w80CwORLuFdvDR9vtZtVoU0A0MLzzzcFqd0sOFoAtPTuVcfH+xqtAkBnPr47fby/dwr5lH4XAH8+PNfcq/daKh/t3z/RNAAIDE0se2erDkQwsw7+vHu17vQhvKrlUve3kO8FcK/ePlRcvtQnROBmgT/OVzN53uijd6jqn36+OT8F4K+ZD6rcK2Erlppd+X7X8r1ws8DfDD+UDKxoQ7lZH0SXDgB/Kvzo9EFsEWjOl5hWx4wI+IPhRx+KexRQmeE7RYuB14LlVUOuUXU/rPJo4JDkKlUl3KuvgAf2oabVEYiAP2Q+VO1um931+GBfgRgegOe3H3Xn/XyP8JmEe7SWx32LBRhCRx99EQoCEfA65OSdCOcnCAl26KU+ef4dtQy2pYGbBV5GIP3YHuAzIBBt8ny400sxvWmVKGh58EsEErAglahN/OinyceEK+9j3DEAfoNAvlTt7sgZQMvNQr4X/F4XK6n68OPj7Xtk2G3U98LNAi8lkM9vl0YCn/7Jv/er1tRqi0SQzQIvQSOQ79BvPlyBWFW6F/RzoywFbhZ4GYF8fC+TpUH1tfz2CiT5MT2li/b1ER/VT6tjGRV4HYE4ffWLeAViT2lcil4aDzcLvEgMMl4gpnuVX35FY3EVFAJ+k0CCS6MuCtT1QOQb2SzwGgJZDgvka5qNGJaqvhf5XvAKMchHWCBamlcM/f3k+U3O0Ze5KRDcLPD8QfqgQLTJcxF+3LQrdaVvMrcmFNks8OICSag2eX67X5RQVC+CX+RiWVN8E3ToL5KofC/cLPDSAvnR9bGc5tCPyppWhxEBr+pi/ZibJE7UlRO1SOQDbhZ46RhEy+5OF1EvNTeLYNIQvKZAjIzTxEegi2VXBAoBLx2DJLp7NfGZg4m16zXyveAZLchbRCDznmJgV69AIeC1BPKuTej9zBFHL81p9RyPBLxSDKL13ZlG98parQ4jAl5OIBcvjbowEJkjjQzAvQQy9+q/CtWL4EVjkLZ2t5r3LrBaHTwl+RiBfM6uD6N68eP9G1Mi4GUEcq/piYp89eX0n3gy4JkEEolB3FOj5ruXPhDBanXwIhbk/Y43U2FaHTxnkB6yILNmdz2h+rSrsgCYRiCBWiwy1+R53M36uGrXRgDuLJDPR4zg9mp1PCDwnAIRx7M9QiGJddYOAhHwpAJ5XOc0CuyhEPA48qhAHsSP7mYlCEQABOIGIjj0EzyNQN6eTCBk+WMuo6rwpMAjBfL2/WxzDl9mvhc2BMDFMo2IWd/7A4kAuFg6Mt+rTatDIQAulm1GVH3vEoUnAAJxjMhnH4gg3wvgYnkU0p+1syaEbhuonx+HPP/Jk55lCN8r0DlALZBm789nFYjYndQoPLknWw8DmhylREjwpXhqC0KMU9nf3gf4tCDk+7v+z2GtI3X4IMORbBtBaT/6IabmKvU3n/SU7UNXnoGqC4OfVyDNkYZqA6IPizft//Ufj+L9ZnQ1EhJVotAiTMdLoc4KfGKBiDtL3t+eBaU9pcOP5l9zKFFTH/FqrzchTWPRfVUxSSIbDp38pgi4G5o/vp86iaq7Wa/Bh/b/prxGQsT/FP/cRvFIqf3NqaY8SfksxaIFcO3ArCoCk+duyC+tvvfWfmsN+x++fjyaW3yyMJqJ+AoQSs2hX0/vXsnNDJdPr+YumzVFvDCij+q+Tct6sLPaMfQjmqpLuKGL3wR9vXV7S6szPk+fvGhgitJ8pSqKpwkQ/M8Xfsy+7+50Gbd5+6bRQwf6qMRvQ2LiRR9+ofBDc69eRdWD/TE6R4e+CS4IPz5w2gAAAfeqX60nwg+UAAJguVfa/p6wHwDooa6xlBUAoEEJQfgBQCD8UJuF4JQaAHzhxxvCDwB8fOn6gDwAcMIPbcvb6d2rnJ7PzTK7M+Vo7zEwbW3iHs3x0PBDq21/leISAK4bd4hcEfMjdnker4/PuQ8izzYK8oiTPSj7qVvFWrNa/7z+6VMW81eEaE22yS9eciC+7yh+fqCaofBDd6/mCT/ShWLzbEff0DOnz1YBzshOa7IFJ3BMJ3L2ec/IN2i1u4RsZ8ruPlogPEw7NHP2uwSS81z8VyO+ZN71iyrcAn8j1tZ6YjauUfXDBGbrubMLZKs5DZ52oYsw6SbLREtR+lQCIbcIhBotPgD/M6fZmQJZcJqP0Mfc4ccTWJB9VCCSY5Y/lUQYKW8TyHh9LOhfFUhKzgNvWPbbd85cXDK/QJa3CURY3LoP8l8jkON4gZz/qkAWxUCzfvXVV3PXts8sEOFRpB21b1ldIxDhlD5NV7lZIAdYkGGBHJdxp6HbnloUl9AlYfRVBWJewAm+xgrkidzxmwWCGGSEQAZMyBdJ+tr2L+lesL8ukMXuSY50u1EghJTFrhDsdrv2B1njd5f1Twr1q7IkfzWLJWCxb181DtbHp5ws5IRlbK7GehmB1GNK9SsE4pFM50b+XVyBZJHOWBuND3VCExWJdwKBLPhT5LJuFgh3psybiZWMUfsXf1kgi32wZZdUGJC2tr0OPwqR9oJAFkfC6S8QiPuBu8Eh8y8KZEH2QQPy2Wws+iVlkS0gkHG5PwjkVwkk9LgTKrYXrcPzSrxvuVkEBUIp43x/3nPOwt6HVputflblXR1DXCDGsTOBG5CEr3+JQDbyhyJMJcSX7QkVX3T3wYadMEpFTcd+5KvlO5j4elS8PiSQeCsFH0MnEAKB+ASyCDwgVhuQdmPRs3Cv/AKhTurXPzvvXoKex1oQNtBxjFdTx/9hosDIFAizqowsgRTm+4uNbXR9Ywrbx2/DuCPrl3TIabNeUP9rBgtSjhJIHaHwMz3znMUHQxIfKmNvqC+RO2NQM0CcuwHijgLxl2RVtTLE7Eci6iuKhVcg7dKmipdZQ0lZ897okxDLSaSKeHnKskJ+ZEQg9t0Z/2ZSZpyv5PXFZI1oykELQqIWhOxrpID2zXPj9pjiBK7yphhtGqLcM9U6ztc/t29objlbNX0/tkxMdgkmvmPt6Wa5eOXeI5DlHQRi9E46RzDmbQhLFHSuKJD6PQaf3Bl5ryWSy0efLXwCke/ixcb8xA0p3U5NSXbo5rEPwqmr38qzo/ZAwgKhdfdMdfS8/F4O8FrVxHFTMFMirCoFhkDKDtZcilsCMe9fjNe2W3p25FFl6UEL5LPKa/vkk+aZ2Wj1q3MSnqSn4ktmegNl9X1XjkBWx76NjkfO3I62Z4V6ySEzb2+MQHgzrDWDkRzjz57BiOWsCue+ElE3nJu/beqIe1eD81K0CDMvy5vxYdV8sXlSiX6B+B5N3VykDT+0slFdIPVtLgtvQc+hsD/RnLct6n+XxEw0BwVyNkdK4wHKmUv3+hutZooRFqup2DQ9PS4Q8U8eSY6LvxeeZnWaQT5VlnnvxPNq9SUzzzNzLQhbDGY60nDwOSwQ8fJic9DvmbkGXn7O4RBwTFh7Dwdjdj7tWl02ZWrdBxUOh1FDKEdBvr2XQJwBsfma8oChutk3C49AtlQzLL5PpDQiEL1UOy4Q6urD6Jj+yxPWfUQtkOPtAhGfFux9uVceshfszIYVwt2Eq+pzX5fioXYubYFQ84XunC41ZJ46kd6AQLzNLVqaeT+HeNOj9WuPbn3XoW3Us9aU3X3U7yg8Y5xMStxLIAd/hCdnB41nr1uQYqisj4UFkjn2KyCQmP2gsVso+uZlaVQg+1ECYda1jB4cuYLhZlFjsBk3UDkDhOJkCYTTIj4FbCrIzl4OCISFmrsgfksUFEjqCuTYPXbu3D8PmVyri80qEG+qlzUO88InEEbZUK2b4SWaAtml7oP0C4Ta4XH9q23/wLK4QvkogXBfkO4bMKwKHd7roxg5UAy80tupRrxHuVhWha6nd8YsTFwgLGitF8Q8gk8J5HyhQMxRqLkPpwfMW0QZEsiC+TI/rnXXBLIYftic+gWSLkYKhJrLSuUEBe29+WxQoZMKJPVmVQd7cNoPFHzojj3pgbH6aAVivLqwwnRu9T9+QRYrNzzVg8y1qByDobXrBUJcC0gpNy+bao8hZfRuAvFFVLQeGhZ+gRA64mEb3lA60JF9ArFDY9HZ1HCcDV+fzy4QNtyDU80eDi9SKnx9baRArGEri2ZK+CUC0SM5Usj0VVLtNh6Dep1Amhgk19c4N0tv1PxVe1lCKpZlXWE1v5eL5Zto4oR5Hnb7/MaYEM1xu0oglOytqzPtA7Nx1x8M0m8SCB/Tg8loayP7mtbVKF9cIhC7Vbjl+uwiIXpUIFQ9v8z4yMxjQ66JQaRAsrSzfMQJMzel2TcL+RWmr/gJC2ThTl0Ui7BARvXQw00C4XZ91CHu+Kepz0cdSPMe/ROFvqY3dFaSZhcHzxiSHoODz5hlfIWexU4vEwiPmZB4iB4VCCcbFZHT2rHZki2VFQz8YAw0NwlEy1LSM9/nms3ddJdtynmaZHkxQ11gRCBmi1HqjcmUQBhXHS8ltUEss2xzCH3mFQLh5Gy9sFINQq1ef8y4qN7m2cF28hhhi2GB8MuDdObz8zYFryNWXmT+wUfX9WaTncoycxuG0egQ5RGgEqF1Q7EQnY63IOq2uZnTrW91mdrdR30Ov0IgtQLP1MlLM+uzxFars1ThWwIxmrrSmozps+f+NG/3+I6Z5hMUgSgkJhB/kE4dfXBVwWJ3TG1uxLyDgoosofi58Ya0rYzJNsWYmXQ31ti0CQDubOrgv43282jXFTbaSznxjyoe8yTnxwirskNQIIX99VU5QBGPOYMCUe507mkXZqd5bhJIYSiw+zo+r+8upSanwHy6nr7KyoBAKvm1iqY0ph6/+b5+f5JaThELC2RTPz/O22doCcTN7mlBkt11SlHxIMrdhP9u2BbN047WYo2YKMxM57FxAoklU8pl2Z340hvn5aSr+szaRst5U7VYWGo/+w2IHghnATeOGZ7g0ZhxPRgG5Ge0QPrvzr2TAcwaDK8RyNGfV+gGwoJxf+J5boGUxJvqNSa0DKugTxSKByh6mlZdSc+WQ8PDAskYCVfznh19aK65PU6W+oyLlVoQN1B3Wm7O22R7vj8LuhF2KAahTicWbjCpHH9Om10PRiGFWWxH7YCq/ab2zlVZ9zbp/Gd+gVi2VXd8dgNJy7CL1Y45/h7f3z3pp2YvF0jqn23oBXK3BTjUrsY5eFrNcNszo8V1gWxrW+/omNu5bB4QCG/Crr7M2RAIjerD+jTrQdBAtj+6HiRqQUQt594XEhtNszHd872hkEwJZE8GZrj7+IYvgvpzZ0k7C8Iqv1dgxpTcX33nFUj/SL1zZUrIRd99RgnEmDtJF4FLZ209C32UQAp3vDFTl4ytAgLxl1Sauf5NPxqmTn6JRiwID0+pOJOrS+u5Gb5EGih3HxKI9b0KpwKJ2kO87X+YXVj/QKffWDUi53YKOYtUlDLbvnSX57bYiDvoaZOXoyxIGh3Gu7tPL7MgPoHYmYNOm6lYdfEYgRjNeWyyR6XlrYcFIv+eG7X51HhyIYG4jWcIhMX0Yc8I11ekJoUvkXOJQMwFU2XmnYLMSW62nQ03OmqljynMWGFgVdPTViCHWDGQ7Zf1AjHjsy5M54an7O3rYYFEDYi6+9YsjRRI6QpkYyeG+6EwkzHv/QUiGs56CuZzFaNCzIL4TJ/lknkFwpz1YoZAovqo/7ExI/RYyVH/HC4RiLH8xDeZx5jdRQtPax/0Tq+uWNH4LGTW9BPmT/7ano0b5WTegOYYzfGGBdIFL+GNAvbt89i1ZUhXCyTz5EZSNVDXXZPdXSBna+6VutNJYYE0g2FBMrlC53h0e1T3eksgnrRdOrLs0Q1BsvrymYlvsLxEIKPm8kxnxr4F6zbUN25WB9b3085nHGS7OfbJmqN3J77PgTSAnen1BDTBrut7OOf+xzwokMwQ9tUCcSOjXKt+L9s+N6tKHBeLcWvulZj+CefBIL1Z6JYO1CF5BVK4yyrTUTVdzWctL9h3mUwvkLRLGJGL3xNa/rTwCKSIJ56tF3CtasENXcxhj18ikC66D2eSujsht7pYZ98cfqY3TCcSdkeB2O1s/ItFBEIHn3RQIDs3iZ2OqukiQwXQgXn6SQXSziFwsrlCp94lkB6BWJUMBcmDU3RWp/eE6WaQcwws+AjtauJJy1qdiupW7hYL4k7OcKvWNM2aUq2ZFqVbAtk1K+8Mh8UauoMCGVV5FxCIZ1uFqCVikSTW2JLiyQSi8kUXC4SRMY3mE4h3f1y/QBitbGttpskCtmBAIDwiEK4HnCNrsTwC8e1ry3wLKuVMK7+PBXFrys2IJBSDjFupEBQIuUggC32fnAcLRHP2LxBIU8w3qgZ5tEBoIMtsxpUHWbdzDA03I7JYnUDCnYp1D5tOLhA5qBx9I84s1SYeCxJeWSEXgAYEQset5JlKIBl5EoEQvaL4UoHwUfq41YLYWePCCdH9PWtQIPRSgZxHC+QYFojM0HQ74ATnjme0IMGlHcdmhxqvQCrTjM8uEL20mRL2MIEURsHaBQI5il46cnmgvLvzcAwS3DiO2lP8xr+rwLZl07tY0wik2/Un2xyjyZvZBBJ6cIWnIK/r8E4G5yhON2+Sm4c5BKL5BdZ32MSZNEg3Ntyy7EH8NsQuUp7qXOLJCPuzWE7eb0+LkECs95rhfNB5D2axstFBuiGQTWBte3K8VCAymSr/KLKN0VDsLgLxr+Npe1buEwgP13kTb1B/u0AWKm9hDt3FyK8+hUC43k0p8c7YB7EdLOPpOndXERYfLZ3Vgzw0U1RYs+jsQoEQ5XBH07wbM4sVEkhb+niRQOT+sW1Iw4vDQLphcoF4TUh7jrrXglC7ZlQ/Z3wigRBnbcnZ70Gw81luEio5d3uG8r34iVbRcZFADunxUHM8mlb9YJZU6RWMByb2lbbYt0hhcXvJldZozL07e6bcmvy27ZEhEHvd1MEuI7sgBomsybCeR/uEhgTCF9cIpBUJNxZHHObe1aQIb8HQtUfuF8jRfCln/mdzvUA2Tnqv0ObazK7DvF/0BgsSXoClr8mgbDGQPGXG9nLWvAWNWhCnZMT6SnureUwLwsxbG5xFj1iQ3kGLCMSoZuzeML1A2pj9rKr9JzchviwW8cbp3YgVEIjR/jw4eB2vFcim9rHdJVNdXZGxKOrgzqr4Nt1LvdYoVM0bujH9GVpROvPtsq0vVOFBB8svkCJ4ZXcxozU7Hs6XhTth+PiDeGfs511UmNj0lSVhEUfzWoEYkX42s0AKtQVDEciheQXCwinIaQSyIdxZR6SXa2SWscnN+muyGygX7pcCh44/aM8nS+yNRUg4Fk6dPa0IN7aN0y+R8rC71Ny7M2gx49L2DkK2QPjQjP5ogVCaRX2s7mlo5WKLcN6rN/9j50EC1xyqoJxYIHVPOfqdba9AfkwLYqR22OJ2gWya5HfIybJnQjayhq11U8U7C8clodZoL16uzT66AvEnHYxfMSu5kYpt5Vtnk5+5vI2Ntm0cNRsmWFbVitvZNoPLtc1ilTJxN/vitjo3Q+nysQJRC6YCtSPMahkVk0RW6F4wk+5leWeBcHMPw0KbDht0sbRRidvnsF8lkM5pcp5y2Vd5mH3n0Czyblcn7lLXabcE0oUpvB3lIgKxd3tjEUfGuA1+NG7DGtRVwb+z/j7riiHdZZX+yMgrEG/q/hBZmxdZk37Qhq1QiK6+aTeFc/QIRDXZWAsS2jzxzgIxY0KtjQIxyMGao2hGNmcf5+sE0jWKu2VPu5DBnUw/FNxOAhZmyinzVPNk9Q3uBwTCjXVR/X7wLc5GR+0b84JYbcmdvG2b9XKO51HrlO26xkN2Fvs8ZLEKGG+YPiYvGoxB+koun5PV9xutoF/ZFHcDIb5YXOpi+RZ3UXYXgehVtTTX+2GuBHIaTPNu1I7vxylm0jdq1A3sI+QNQsWE3MHoDXoxkOOUN6/ttssJr0nPw06Wd5wWt+G9Z+Y3B/ZeSZpALqip4c6Kw+yiED22orB/eoVz1IEKXo11EEe/U6YPEqMEUnc0cVaQZ2F3l3vezyqQkzFSZr5ZKa9AnB1pMzEaFtlEpSZqXNiHw5ARmw5qIxgNbWqYDQrE2V5EK/bbj6mu6vfxtzfAOvPc12hZIBlxkUC8G+ZFkz6RXU36fEGt6r2W6ObK2dODG7otumolvSxdHNR1vEggzQAkzlcwVknV100GQ6qpXSyxUZ1vUsoSyLLr8OPWLCmBZFcJhNDlxpvLsRZ6DVdwnQOFUIdhgbhng+i624xRCI9llsLdmI4v9+Lu1E56kYcV3Zu3b4GN/CYqV0ACQ8pBJRaIPMt3z6kZOo0RSPs5TfMpVI6C07vFIForGK5j5RXI2Lq7mwVC3DDkAv8j1bsyC00M5J5NG7g3NekOxIyM2G53492zaoRAGCHH6wVSuM0R2z4ntru7Fg5lvu3rrBXBnO5UhZD6aRfNjxWI+gqkMCxIMcYiTu1iSavcnGup34xfICNXNkwgkH0oDBk418B51Dx4QBIdEogjrlwNXHR45e2mTWsNbDTv0181unLZtzt/eokBiZ8PYmzzlRUiU6fVDWbE2XqpsF6uXMliNVYgxsKWTSY34uQ06+8kTSYv540KRG2kGxZIvx4kHASk2aQWhIbCEE4GumZoisrR8JBAHHEdEn15ysBYkWmZ3uBhCVkgUmCRU9vSbEAghT8HeI1AoguA/B0t6PZmYwUiNpKMLSEoZz8fxE6hMSY22SUjBBLuF6k+zX6dQAyNUupOGqvTHceF6FGPXjyWfVwgMSdLenvH2G2o+wgeiJOR0IezoP42jEQF4gSKAw7JwBmFtboPwW/IgiW+nqcyWiD+GZ9eH2z+4w9GLOwNCSTUPTcJ2UwqEHfc7af5WWT0ztx5X1p5Xy2mb84DAvHUfRhGLvgcxaL/rZHnJP5eE+zINKA/a0s/j0B4tJrrglosErPYmX+PFL/J2eR9JDYyzRt8whlx1pBNL5DVpQI56LuaeLY1kSek6+P08mYXyzsbwvVChIO3XxLvrC+377g5m/s8vLt7YcvKeo6+DZAyThxnze03m/oWYttW7T0fvpHVwHGBMHOKcyiiHRKI3LGocHs8CZbP28c3y6PgvQI5BBUsZmV9qXBG5tr7J9M2DRxxyJuIhTWcFtN6/kFMT+9Z/TR7MtW/Uv2nzLmKfluFk83Qf5tm+sbwe/luY7M6OUtOt4EBQn9xqrag4KlxA77h2LgH62E2e5boqynb23C+KTXD57TI7cuX7t7yntvm5h35zUM6rgyrfQZV6MsbA4H80EP4GxptUhTtaZ8H+dAp6xuSuZ2SBS8qrnpsL3tstsc6kxegzRqWu6Ioyi6nc2+4dhO7khlVuqHKnrIsSLmMlfqMrprrldp8UFKKtihJ+DZ4m9KqX9ckL89s9Hcsd7sy/gW1+6yYWWA/wZyBuwFq9N6tK17bOzwz6fNtHWfssczGNYqG80ttqqarqPW/PvYp1q9p/Lfu4WH6fNHQ19JebGxjOXB/9j3EP1m+OrhHZk61W6Bs1OW9t+19D/dnFrLhMTf27Y0boe2Lxyhb7eXNjA7luXLkooy3r5Cf9IBh+CYSuXbi0das5YIXP/I2xImK1aW3ID95G+/jwvuSr6PO1g1Tfs0HPWQCwC3uJslUFeQutmQXgL9HbZSaovjaXPBsYKYdgL+GyqanB285GAB/2YCEK7dgQAAI10tl0AeAPliw9J5R5H8ADEhxhYO1ZUleQ5J4/hiA17cgFztYiXm6cg47A34teUggWajstT2UlqwEp7V8VY6GBL/VgvDC71/5pwiFR5Wc/umsSoLZavCbKTzLJvz+Ve1csdU/hx3aEPxaxOBfbPRaehZeE5eQf1528LPAr0WqoRIl90VRyk3iacB8BOQhHC00I/jFVsRYrsxC7tXqX4SSJGjIX9xFmpMLeuQPc4OpKlup9pmkv+Cji/+pOK+s2dktpA9NDf+t1oLVylAIeCm2WpfvOvuLfYVOQuzhE3JbstSkoNmKtdIIgQ15HhLV+buuf/EIL4ftSr6bJ+uGsoHsXAg5ten/1b//av6NR7z8v1Xnp5sfKi7XXpzlLM/r77Uc1AxL7q0PYqR1SS4fgIzMVeBeIt17b6+ncT3YZQJIWn+p7/KqS55OdRe/qG8/iFpQtRqlhKR+6mGALX3e2n3EkvTxx46YhkJIYt3ddQKFzOH6G37/mP7/k5Ck6/xtz69H55fo+DfrRoimVkxib9ZXj+nJbErJSdnewNqdFNzWJq3PZSHZO7fnlPNzzvm5RvgeJznkC4SNn1gA//1bTcLDhPkfkWpJdK2whM0wjCVKH9EAHmHIxHpYszUrO4QaBPLPYHeUv5d0rntuUVkZqYc8My05xfp0GGtu+KR0LwX273btC8tS9tqg06ok7xysMmghOgUlKO+dPNbuaXr2XftzPgF0OkVJLSVSQo2ALhfKbrdOWpFMF4AkQ7OB/Ut2MCF3g8vg3EL4EImWvpJRzHYUd8z5hBDb6Ii4Wks8D+aepW6E7SGNaMbI5LRbMzJZ9UdvQBJtMBA6MCrdV52TBWbpT1T+d+ee/GRt0KuoF1AoUKvNjJRLRCR9N54AZ648t/4kW7rEhDp4XDDDxJ/EdegSYVxOAalMU2WbdCks46c78o/s1nq6t0QiCzyJYppQzTQwCRFKsSSSTBKJrKzwQmV9V0RF5Uk3F4I4HTyRWoRWNGcsyY0KqUn2Rmw+qt+HlPX60OP2LlJZY7IQPKVUtASgmpiYpPqj1VrSfXhihDrM9MTwJMAzI9LlWre+Pe2atJUkKy1AN7y4LkwnDEEIeHYzkjdJwJJMtkqjE0ifEmPEuw5ECQQ7XoNnlEZ3PtZ6R7QQ4WYPq3Od1q0QmOFhGTbqP/hY4OmC9CRXR8etdzuzZiW5fVbCFcg6JJC2QAxpLPAMwkjE0hGipOEuGD9N0VdV8N1cLNmSgEBYJxAAHqUL1ghDTT7Uyjj5t1EoySRjOetjkD5IX5lGirVCShCkgwd6UjnRFt4ma7KLbjKSkOlKz82Onxs+Vr+QTWW7IBBwv9A7t4RR+nwpy3TkzVsnK4qylgsyXZmaNVth7wZwV2Fo/xae1PCakdVp1/o7k24pfWqDDeY6WX0WYNsltxhidDC3MnJdGGTMYqrVqewsRi2OSQtqVbFif1uUlKs2C8CsV/2HShMwnzRyzZM6jVpluCKnvA82kmSewwi8WzIkRpjDeg8L5e5gapQ0RsQYnTJWYu2VLq8Zh24t8m/vWPyV5pqZYSjmBTOJo+lioXytI4wT0ZwoqYx5vZq+ut00Dszc/Wc11dQ9AJo65B/lcJyxElFGri3Yly7ZfXoj7d2n4J4N2z5Eh4cFJos6mj8HlpnXwtD3+mz39L3rjW69JsQwIF2dCSoVwWSeCyG7VXTXK93pf4AwnDA9FIH3EQgmQcB0+kgC6vjvtFMmo91Q69H3Gjch/QItRCBgIvR1q9p2Pf0+CPQZhKEpIGZCegOC5bZgsjF55Wxl1f8qz/Pk2W63VcjSNwnZb20NfYCpRmTdfpBdv1/Isxb6dcsIfRWQ/ZdBCgtMRNUbkHapN3vyw32SLQudcLDNyT9nIhGA29DkkefsFXrWKWBC+gidUQgETOWx9BakqzFhz62SvlrXjtP7NeoEEQiYTiBErzfsaxRz9rSdrE/1Lk2F5F0VAPQB5orSRbn6Wq22SNgz6iTvy61y3xdBGS+Y1oaU7iE4ZK3nd4U9Yc9TG5uwxD1Gp447EKGDmXrcKljHrteYiIUX7BkiFDXdoY6o6CP0BBE6mNplIckuut5jbae3miPdHtUTexOinCymirCgDzAxW3nK+OAeDB6liEmT7hCEu0p67aihmUHEMhAwy5jcjMTrMYsI/1uJpVIsdyxI3luW2dWSkJ1bsSs8xYSizB3ME6wntBXJBSd2ysN+12KC0Vs72NiWZBaFnNbu2YcnTIGAe4iErB1bQggZFktQLbJ+pdPLVILJHdEAcAeRmHv9XHleeqOWkHHJm+CllgxNrj0ttds9LiH98Ws57Ae4T0xidOrRm2INWRehl0Duq7UxCWEXnZbNYD3AA2WSaEu7WS2UckfIvwmQgjnViolIRhmavFeNRx/r04qU2EURPFYo5j476zW51aa4mTElmTwyx0L19Y397AfWoIMnsSjmAM6EUYlohUykmsQrGn17d+zlDp4pkE9ITh2tCLtymtKwhETTHJnLWGIc0gOFgOc0KpZWGrE0lmUetZxkUJ6T08SnvAEwo1Zk7suZyGZ5rRZhW3arQbmM9chyYUG2W/8ptwC8iFg8Pg9TeiHXO2NSIJFDPAF4IbZNuYkvRGCskoIR/thqvEPGGoGUEAj4hdZFzq0HNk9JWC6SyCdSh+L/BQUjLUgSPicdgN8lmKBiktonE5MjjWROrWRkFmtLzRgEuymCP+GQbZt6+VDStlZMuxw4N30s7OcO/qZgtqGa+cQ45RYGBIBGMd3fiFIIVoIA4GiFtF7WKsE8OgD+oESG97AfAPjjEO0PAEAwJgEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPBb+R+Bg05sO/cWNAAAAABJRU5ErkJggg==";</script>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* ── FIREBASE (background sync only — app works without it) ── */
+let _fb = null;
+try {
+  firebase.initializeApp({
+    apiKey: "AIzaSyChm7UYPWXg_nhD8JqUW3WRfyzsTC491V8",
+    authDomain: "marketready-tours.firebaseapp.com",
+    databaseURL: "https://marketready-tours-default-rtdb.firebaseio.com",
+    projectId: "marketready-tours",
+    storageBucket: "marketready-tours.firebasestorage.app",
+    messagingSenderId: "191980265978",
+    appId: "1:191980265978:web:f65000f9fd6387fa9dc443"
+  });
+  _fb = firebase.database();
+} catch(e) { /* Firebase unavailable — app still works via localStorage */ }
+
+function fbToArr(d) {
+  if (d === null || d === undefined || typeof d !== "object") return d;
+  const k = Object.keys(d);
+  if (k.length > 0 && k.every((v,i) => String(i) === v)) return k.map(i => fbToArr(d[i]));
+  const o = {}; for (const key of k) o[key] = fbToArr(d[key]); return o;
+}
+const B = {
+primary:"#1B3A6B", gold:"#C9A84C", lightGold:"#F0D98A",
+cream:"#FAF8F3", dark:"#111827", gray:"#6B7280", lightGray:"#F3F4F6",
+green:"#059669", red:"#DC2626",
+};
+const SUPER_ADMIN = { email:"braydondennis@gmail.com", username:"braydondennis", password:"Jane8095$", name:"B. Dennis", role:"super" };
+const INITIAL_SUBADMINS = [
+{ id:"sub-1", email:"jsmith@marketreadytours.com", username:"jsmith", password:"Tour2025!", name:"Jane Smith", role:"sub" },
+{ id:"sub-2", email:"mjones@marketreadytours.com", username:"mjones", password:"Tour2025!", name:"Mike Jones", role:"sub" },
+];
+function checkLogin(emailOrUser, password, subAdmins) {
+const val = emailOrUser.trim().toLowerCase();
+// Super admin — match by email or username
+if((val===SUPER_ADMIN.email.toLowerCase() || val===SUPER_ADMIN.username) && password===SUPER_ADMIN.password)
+return {...SUPER_ADMIN};
+// Sub-admins — match by email
+const found = subAdmins.find(u=>u.email?.toLowerCase()===val && u.password===password);
+return found ? {...found} : null;
+}
+const FORMSPREE_URL = "https://formspree.io/f/xykdngrr";
+const LISTING_REQUEST_FORMSPREE = "https://formspree.io/f/xwvnrbqr"; // listing requests form
+async function sendWelcomeEmail(name, email, password) {
+try {
+await fetch(FORMSPREE_URL, {
+method: "POST",
+headers: { "Content-Type": "application/json", "Accept": "application/json" },
+body: JSON.stringify({
+_replyto: email,
+email: email,
+_subject: "Welcome to MarketReady Tours 🏡",
+message:
+`Hi ${name},\n\n` +
+`You've been added to the MarketReady Tours app!\n\n` +
+`Here are your login credentials:\n` +
+`  Email: ${email}\n` +
+`  Password: ${password}\n\n` +
+`Open the app and sign in with your email address.\n\n` +
+`— MarketReady Tours`,
+}),
+});
+} catch(e) { console.warn("Welcome email failed:", e); }
+}
+/* ── API KEYS ── */
+const GOOGLE_KEY = "AIzaSyBoPhoNQ5C84nS79QDV36R93APg4Pizo_E";
+const TODAY = new Date().toISOString().split("T")[0];
+const INITIAL_TOURS = [
+{
+id:"tour-1", name:"Morning Tour", time:"9:00 AM", date:TODAY, color:"#1B3A6B", emoji:"🌅",
+agentName:"", agentPhone:"", agentEmail:"", agentPhoto:"", brokerageName:"", brokerageLogo:"",
+ratings:{}, favorites:{}, notes:{},
+listings:[
+{ id:101, address:"18530 E Purple Sage Drive", city:"Queen Creek, AZ 85142", beds:4, baths:2.5, sqft:2592, dom:12, price:709999, agent:"Erin Greene", order:1,
+photos:["https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop","https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&auto=format&fit=crop","https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=800&auto=format&fit=crop"] },
+{ id:102, address:"4821 W Sonoran Blvd", city:"Phoenix, AZ 85083", beds:3, baths:2, sqft:1980, dom:5, price:524900, agent:"Marcus Hill", order:2,
+photos:["https://images.unsplash.com/photo-1598228723793-52759bba239c?w=800&auto=format&fit=crop","https://images.unsplash.com/photo-1615874959474-d609969a20ed?w=800&auto=format&fit=crop"] },
+{ id:103, address:"9103 N Desert Willow Way", city:"Scottsdale, AZ 85262", beds:5, baths:3.5, sqft:3811, dom:21, price:1175000, agent:"Sandra Kohl", order:3,
+photos:["https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&auto=format&fit=crop","https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&auto=format&fit=crop"] },
+],
+},
+{
+id:"tour-2", name:"Afternoon Tour", time:"2:00 PM", date:TODAY, color:"#7C3AED", emoji:"☀️",
+agentName:"", agentPhone:"", agentEmail:"", agentPhoto:"", brokerageName:"", brokerageLogo:"",
+ratings:{}, favorites:{}, notes:{},
+listings:[
+{ id:201, address:"2247 S Cactus Wren Court", city:"Gilbert, AZ 85296", beds:4, baths:3, sqft:2874, dom:8, price:635000, agent:"Tamara Voss", order:1,
+photos:["https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&auto=format&fit=crop","https://images.unsplash.com/photo-1600566753151-384129cf4e3e?w=800&auto=format&fit=crop"] },
+{ id:202, address:"7741 E Palo Verde Drive", city:"Chandler, AZ 85249", beds:3, baths:2, sqft:1750, dom:3, price:479900, agent:"Brian Holtz", order:2,
+photos:["https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800&auto=format&fit=crop","https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800&auto=format&fit=crop"] },
+],
+},
+];
+const RATING_CATS = [
+{key:"curbAppeal",label:"Curb Appeal"},{key:"landscape",label:"Landscape"},
+{key:"cleanliness",label:"Cleanliness"},{key:"flooring",label:"Flooring"},
+{key:"paint",label:"Paint"},{key:"showability",label:"Showability"},{key:"price",label:"Price"},
+];
+const TOUR_COLORS = ["#1B3A6B","#7C3AED","#059669","#DC2626","#D97706","#0891B2","#BE185D","#475569"];
+const TOUR_EMOJIS = ["🌅","☀️","🌇","🌆","🏡","🗺️","🔑","⭐","🏘️","🎯"];
+/* ── helpers ── */
+const avgRating = (ratingObj) => {
+if(!ratingObj) return 0;
+const vals = Object.values(ratingObj).filter(v=>v>0);
+if(!vals.length) return 0;
+return (vals.reduce((a,b)=>a+b,0)/vals.length);
+};
+const starBar = (avg, color) => {
+const pct = (avg/5)*100;
+return (
+<div style={{display:"flex",alignItems:"center",gap:8}}>
+<div style={{flex:1,height:6,background:"#E5E7EB",borderRadius:3,overflow:"hidden"}}>
+<div style={{width:`${pct}%`,height:"100%",background:color||B.gold,borderRadius:3,transition:"width .4s"}}/>
+</div>
+<span style={{fontSize:12,fontWeight:700,color:color||B.gold,minWidth:28}}>{avg.toFixed(1)}</span>
+</div>
+);
+};
+/* ── STARS ── */
+function Stars({value,onChange}) {
+const [hover,setHover]=useState(0);
+return (
+<div style={{display:"flex",gap:2}}>
+{[1,2,3,4,5].map(s=>(
+<span key={s} onClick={()=>onChange&&onChange(s)}
+onMouseEnter={()=>onChange&&setHover(s)} onMouseLeave={()=>setHover(0)}
+style={{fontSize:onChange?28:18,cursor:onChange?"pointer":"default",lineHeight:1,
+color:s<=(hover||value)?B.gold:"#D1D5DB",transition:"color .1s"}}>★</span>
+))}
+</div>
+);
+}
+/* ── GALLERY ── */
+function Gallery({photos,onClose}) {
+const [cur,setCur]=useState(0);
+return (
+<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.94)",zIndex:9999,
+display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20}}>
+<div onClick={e=>e.stopPropagation()} style={{textAlign:"center",width:"100%",maxWidth:700}}>
+<div style={{position:"relative",display:"inline-block",width:"100%"}}>
+<img src={photos[cur]} alt="" style={{width:"100%",maxHeight:"62vh",objectFit:"cover",borderRadius:14,display:"block"}}/>
+{photos.length>1&&<>
+<button onClick={()=>setCur(c=>Math.max(0,c-1))} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",
+background:"rgba(0,0,0,.5)",border:"none",color:"#fff",borderRadius:"50%",width:40,height:40,fontSize:20,cursor:"pointer",
+display:cur===0?"none":"flex",alignItems:"center",justifyContent:"center"}}>‹</button>
+<button onClick={()=>setCur(c=>Math.min(photos.length-1,c+1))} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",
+background:"rgba(0,0,0,.5)",border:"none",color:"#fff",borderRadius:"50%",width:40,height:40,fontSize:20,cursor:"pointer",
+display:cur===photos.length-1?"none":"flex",alignItems:"center",justifyContent:"center"}}>›</button>
+</>}
+<div style={{position:"absolute",bottom:12,right:14,background:"rgba(0,0,0,.55)",color:"#fff",borderRadius:6,padding:"3px 10px",fontSize:12}}>{cur+1}/{photos.length}</div>
+</div>
+{photos.length>1&&(
+<div style={{display:"flex",gap:8,justifyContent:"center",marginTop:12,flexWrap:"wrap"}}>
+{photos.map((p,i)=>(
+<img key={i} src={p} alt="" onClick={()=>setCur(i)} style={{width:60,height:44,objectFit:"cover",borderRadius:6,cursor:"pointer",
+border:i===cur?`3px solid ${B.gold}`:"3px solid transparent"}}/>
+))}
+</div>
+)}
+<button onClick={onClose} style={{marginTop:18,background:B.gold,color:"#fff",border:"none",borderRadius:8,padding:"10px 32px",fontWeight:700,cursor:"pointer"}}>✕ Close</button>
+</div>
+</div>
+);
+}
+/* ── QR CODE MODAL ── */
+function QRModal({tour, onClose}) {
+const ref = useRef(null);
+useEffect(()=>{
+if(ref.current && window.QRCode) {
+ref.current.innerHTML = "";
+new window.QRCode(ref.current, {
+text: window.location.href,
+width: 220, height: 220,
+colorDark: tour.color, colorLight: "#ffffff",
+correctLevel: window.QRCode.CorrectLevel.H
+});
+}
+},[]);
+return (
+<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:9000,
+display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+<div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:24,padding:"32px 28px",
+width:"100%",maxWidth:340,textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,.4)"}}>
+<div style={{fontSize:36,marginBottom:8}}>{tour.emoji}</div>
+<h3 style={{color:B.primary,fontFamily:"Georgia,serif",fontSize:20,marginBottom:4}}>{tour.name}</h3>
+<p style={{color:B.gray,fontSize:13,marginBottom:20}}>{tour.date} · {tour.time}</p>
+<div style={{display:"flex",justifyContent:"center",marginBottom:16}}>
+<div ref={ref} style={{padding:12,background:"#fff",borderRadius:12,border:`3px solid ${tour.color}`}}/>
+</div>
+<p style={{color:B.gray,fontSize:12,marginBottom:20}}>Scan to join this tour on your phone</p>
+<button onClick={onClose} style={{background:tour.color,color:"#fff",border:"none",borderRadius:10,
+padding:"12px 36px",fontWeight:700,cursor:"pointer"}}>Close</button>
+</div>
+</div>
+);
+}
+/* ── LOGIN ── */
+function LoginPage({onLogin,onClose,subAdmins}) {
+const [user,setUser]=useState(""); const [pass,setPass]=useState("");
+const [showPass,setShowPass]=useState(false); const [error,setError]=useState(""); const [loading,setLoading]=useState(false);
+const submit=()=>{
+if(!user||!pass){setError("Please enter your email and password.");return;}
+setLoading(true);setError("");
+setTimeout(()=>{
+const matched=checkLogin(user,pass,subAdmins||[]);
+if(matched){sessionStorage.setItem("gat_session",JSON.stringify({email:matched.email||matched.username,username:matched.username,role:matched.role,name:matched.name}));onLogin(matched);}
+else{setError("Incorrect email or password.");setLoading(false);}
+},700);
+};
+return (
+<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+<div style={{background:"#fff",borderRadius:20,padding:"32px 28px",width:"100%",maxWidth:400,boxShadow:"0 20px 60px rgba(0,0,0,.4)"}}>
+<div style={{textAlign:"center",marginBottom:24}}>
+<div style={{fontSize:40}}>🔐</div>
+<h2 style={{color:B.primary,fontFamily:"Georgia,serif",fontSize:22,marginTop:8}}>Team Login</h2>
+<img src={window.MRT_LOGO_DATA} alt="MarketReady Tours" style={{height:100,objectFit:"contain",marginBottom:8,borderRadius:12}}/>
+</div>
+<div style={{display:"flex",flexDirection:"column",gap:14}}>
+<input type="email" value={user} onChange={e=>{setUser(e.target.value);setError("");}}
+onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="Email address" autoComplete="email"
+style={{border:`1.5px solid ${error?"#EF4444":"#E5E7EB"}`,borderRadius:10,padding:"12px 14px",fontSize:15,outline:"none",background:B.cream}}/>
+<div style={{position:"relative"}}>
+<input type={showPass?"text":"password"} value={pass} onChange={e=>{setPass(e.target.value);setError("");}}
+onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="Password" autoComplete="current-password"
+style={{width:"100%",border:`1.5px solid ${error?"#EF4444":"#E5E7EB"}`,borderRadius:10,padding:"12px 44px 12px 14px",fontSize:15,outline:"none",background:B.cream}}/>
+<button onClick={()=>setShowPass(s=>!s)} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:18,color:B.gray}}>{showPass?"🙈":"👁️"}</button>
+</div>
+{error&&<div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:8,padding:"10px 14px",color:"#DC2626",fontSize:13}}>⚠️ {error}</div>}
+<button onClick={submit} disabled={loading} className="btn-hover"
+style={{background:loading?"#9CA3AF":B.primary,color:"#fff",border:"none",borderRadius:12,padding:"14px 0",fontWeight:700,fontSize:16,cursor:loading?"default":"pointer"}}>
+{loading?"Signing in...":"Sign In →"}
+</button>
+{onClose&&<button onClick={onClose} style={{background:"none",border:"none",color:B.gray,cursor:"pointer",fontSize:14,textDecoration:"underline",textAlign:"center"}}>Cancel</button>}
+</div>
+</div>
+</div>
+);
+}
+/* ── NEIGHBORHOOD INFO ── */
+function NeighborhoodPanel({address,city}) {
+const [open,setOpen]=useState(false);
+const zip = (city||"").match(/\d{5}/)?.[0]||"";
+const walkUrl = `https://www.walkscore.com/score/loc/zip=${zip}`;
+const schoolUrl = `https://www.greatschools.org/search/search.page?zip=${zip}`;
+const mapUrl = `https://www.google.com/maps/search/${encodeURIComponent(address+", "+city)}`;
+if(!open) return (
+<button onClick={()=>setOpen(true)} style={{width:"100%",background:"#fff",border:"1.5px dashed #D1D5DB",
+borderRadius:12,padding:"12px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,
+color:B.gray,fontSize:13,fontWeight:600}}>
+<span style={{fontSize:20}}>🏘️</span> View Neighborhood Info
+</button>
+);
+return (
+<div className="fade-in" style={{background:"#fff",borderRadius:12,overflow:"hidden",boxShadow:"0 1px 6px rgba(0,0,0,.07)"}}>
+<div style={{background:B.primary,padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+<span style={{color:"#fff",fontWeight:700,fontSize:14}}>🏘️ Neighborhood Info</span>
+<button onClick={()=>setOpen(false)} style={{background:"none",border:"none",color:"rgba(255,255,255,.7)",cursor:"pointer",fontSize:18}}>✕</button>
+</div>
+<div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:10}}>
+{[
+{icon:"🗺️",label:"Google Maps",desc:"View property location",url:mapUrl},
+{icon:"🚶",label:"Walk Score",desc:"Walkability & transit score",url:walkUrl},
+{icon:"🎓",label:"School Ratings",desc:"Nearby schools via GreatSchools",url:schoolUrl},
+{icon:"🏪",label:"Nearby Places",desc:"Restaurants, shops & more",url:`https://www.google.com/maps/search/restaurants+near+${encodeURIComponent(address+", "+city)}`},
+{icon:"📊",label:"Market Data",desc:"Zillow area stats",url:`https://www.zillow.com/homes/${encodeURIComponent(zip)}`},
+].map(item=>(
+<a key={item.label} href={item.url} target="_blank" rel="noreferrer"
+style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px",borderRadius:10,
+background:B.lightGray,textDecoration:"none",transition:"background .15s"}}
+onMouseEnter={e=>e.currentTarget.style.background="#E5E7EB"}
+onMouseLeave={e=>e.currentTarget.style.background=B.lightGray}>
+<span style={{fontSize:22}}>{item.icon}</span>
+<div>
+<div style={{fontWeight:700,fontSize:14,color:B.primary}}>{item.label}</div>
+<div style={{fontSize:11,color:B.gray}}>{item.desc}</div>
+</div>
+<span style={{marginLeft:"auto",color:B.gray,fontSize:16}}>↗</span>
+</a>
+))}
+</div>
+</div>
+);
+}
+/* ── RATING PAGE ── */
+function RatingPage({listing,tour,onBack,onRatingSubmit}) {
+const [ratings,setRatings]=useState({});
+const [suggestions,setSuggestions]=useState("");
+const [comments,setComments]=useState("");
+const [sugPrice,setSugPrice]=useState("");
+const [pricedRight,setPricedRight]=useState(false);
+const [photos,setPhotos]=useState([]);
+const [showGallery,setShowGallery]=useState(false);
+const [galleryPhotos,setGalleryPhotos]=useState(listing.photos);
+const [submitting,setSubmitting]=useState(false);
+const [done,setDone]=useState(false);
+const [submitError,setSubmitError]=useState("");
+const fileRef=useRef(null);
+const handlePhotoUpload=(e)=>{
+const files=Array.from(e.target.files);
+files.forEach(file=>{
+const reader=new FileReader();
+reader.onload=ev=>{
+setPhotos(prev=>[...prev,{url:ev.target.result,name:file.name}]);
+};
+reader.readAsDataURL(file);
+});
+};
+const starLabel=(n)=>n===0?"Not rated":"★".repeat(n)+"☆".repeat(5-n)+` (${n}/5)`;
+const handleSubmit=async()=>{
+setSubmitting(true);setSubmitError("");
+try {
+const payload={
+_subject:`🏡 Home Tour Rating — ${listing.address}`,
+"Property Address":listing.address,"City":listing.city,
+"Listing Agent":listing.agent,"List Price":`$${listing.price.toLocaleString()}`,
+"Beds / Baths":`${listing.beds} bd / ${listing.baths} ba`,
+"Square Feet":`${listing.sqft.toLocaleString()} sqft`,"Days on Market":`${listing.dom} days`,
+"Tour Name":`${tour.emoji} ${tour.name}`,"Tour Date":tour.date,"Tour Time":tour.time,"Stop Number":`#${listing.order}`,
+"── RATINGS ──":"─────────────────",
+"Curb Appeal":starLabel(ratings.curbAppeal||0),"Landscape":starLabel(ratings.landscape||0),
+"Cleanliness":starLabel(ratings.cleanliness||0),"Flooring":starLabel(ratings.flooring||0),
+"Paint":starLabel(ratings.paint||0),"Showability":starLabel(ratings.showability||0),"Price Rating":starLabel(ratings.price||0),
+"── FEEDBACK ──":"─────────────────",
+"Suggestions":suggestions||"None","Comments":comments||"None",
+"Suggested Price":pricedRight?"Priced Correctly ✓":(sugPrice||"Not provided"),
+"Photos Attached":`${photos.length} photo(s) uploaded`,
+"Submitted Via":"MarketReady Tours",
+"Submitted At":new Date().toLocaleString("en-US",{dateStyle:"full",timeStyle:"short"}),
+};
+const res=await fetch("https://formspree.io/f/xdallqwa",{
+method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
+body:JSON.stringify(payload),
+});
+if(res.ok){
+onRatingSubmit(listing.id, ratings);
+setDone(true);setTimeout(onBack,2800);
+} else {
+const data=await res.json();
+setSubmitError(data?.errors?.[0]?.message||"Submission failed. Please try again.");
+setSubmitting(false);
+}
+} catch(e){setSubmitError("Network error — please check your connection.");setSubmitting(false);}
+};
+if(done) return (
+<div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",
+justifyContent:"center",gap:16,background:B.cream,padding:32,textAlign:"center"}}>
+<div style={{fontSize:72}}>✅</div>
+<h2 style={{color:B.primary,fontFamily:"Georgia,serif",fontSize:24}}>Rating Submitted!</h2>
+<p style={{color:B.gray,fontSize:14,lineHeight:1.6}}>
+Feedback emailed to<br/><strong style={{color:B.primary}}>{listing.agent}</strong>.<br/>Returning to tour...
+</p>
+</div>
+);
+const allPhotos=[...listing.photos,...photos.map(p=>p.url)];
+return (
+<div style={{background:B.cream,minHeight:"100vh",paddingBottom:40}}>
+{showGallery&&<Gallery photos={galleryPhotos} onClose={()=>setShowGallery(false)}/>}
+<div style={{background:tour.color,padding:"14px 18px",display:"flex",alignItems:"center",
+gap:12,position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 8px rgba(0,0,0,.2)"}}>
+<button onClick={onBack} style={{background:"none",border:"none",color:"#fff",cursor:"pointer",fontSize:22}}>←</button>
+<div>
+<div style={{color:"rgba(255,255,255,.7)",fontSize:11,textTransform:"uppercase",letterSpacing:1}}>
+{tour.emoji} {tour.name} · Stop #{listing.order}
+</div>
+<div style={{color:"#fff",fontFamily:"Georgia,serif",fontSize:15,fontWeight:700}}>Rate This Home</div>
+</div>
+<img src={window.MRT_LOGO_DATA} alt="MarketReady Tours" style={{height:40,objectFit:"contain",borderRadius:6,marginLeft:"auto"}}/>
+</div>
+<div style={{position:"relative",cursor:"pointer"}} onClick={()=>{setGalleryPhotos(allPhotos);setShowGallery(true);}}>
+<img src={listing.photos[0]} alt={listing.address} style={{width:"100%",height:220,objectFit:"cover",display:"block"}}/>
+<div style={{position:"absolute",inset:0,background:"linear-gradient(to top,rgba(0,0,0,.4) 0%,transparent 50%)"}}/>
+<div style={{position:"absolute",bottom:12,left:16,color:"#fff"}}>
+<div style={{fontFamily:"Georgia,serif",fontSize:17,fontWeight:700,textShadow:"0 1px 4px rgba(0,0,0,.6)"}}>{listing.address}</div>
+<div style={{fontSize:12,opacity:.9}}>{listing.city}</div>
+</div>
+<div style={{position:"absolute",bottom:12,right:14,background:"rgba(0,0,0,.55)",color:"#fff",borderRadius:6,padding:"4px 10px",fontSize:12}}>📷 {allPhotos.length} — tap to view</div>
+</div>
+<div style={{background:"#fff",padding:"14px 18px",borderBottom:`3px solid ${B.gold}`}}>
+<div style={{display:"flex",gap:8,fontSize:12,flexWrap:"wrap",marginBottom:10}}>
+{[`🛏 ${listing.beds} beds`,`🚿 ${listing.baths} baths`,`📐 ${listing.sqft.toLocaleString()} sqft`,`📅 ${listing.dom} DOM`].map((t,i)=>(
+<span key={i} style={{background:B.lightGray,borderRadius:6,padding:"4px 10px",color:B.dark,fontWeight:500}}>{t}</span>
+))}
+</div>
+<div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+<div>
+<div style={{fontSize:22,fontWeight:700,color:B.primary,fontFamily:"Georgia,serif"}}>${listing.price.toLocaleString()}</div>
+<div style={{fontSize:12,color:B.gray,marginTop:2}}>Listed by {listing.agent}</div>
+</div>
+<div style={{display:"flex",gap:8}}>
+<a href="https://www.marketreadytours.com" target="_blank" style={{background:B.primary,color:"#fff",textDecoration:"none",borderRadius:8,padding:"9px 13px",fontWeight:700,fontSize:12}}>Buyer Est.</a>
+<a href="https://www.marketreadytours.com" target="_blank" style={{background:B.gold,color:"#fff",textDecoration:"none",borderRadius:8,padding:"9px 13px",fontWeight:700,fontSize:12}}>Seller Est.</a>
+</div>
+</div>
+</div>
+<div style={{margin:"14px 14px 0",display:"flex",flexDirection:"column",gap:14}}>
+{/* Ratings */}
+<div style={{background:"#fff",borderRadius:14,padding:18,boxShadow:"0 1px 6px rgba(0,0,0,.07)"}}>
+<h3 style={{color:B.primary,fontSize:13,fontWeight:700,marginBottom:16,textTransform:"uppercase",letterSpacing:.5}}>Rate This Property</h3>
+{RATING_CATS.map(cat=>(
+<div key={cat.key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",
+marginBottom:14,paddingBottom:14,borderBottom:"1px solid #F3F4F6"}}>
+<span style={{fontSize:15,color:B.dark,fontWeight:500,minWidth:110}}>{cat.label}</span>
+<Stars value={ratings[cat.key]||0} onChange={v=>setRatings(r=>({...r,[cat.key]:v}))}/>
+</div>
+))}
+</div>
+{/* Neighborhood */}
+<NeighborhoodPanel address={listing.address} city={listing.city}/>
+{/* Suggestions */}
+{[["Suggestions","e.g. Update master bath, repaint exterior..."],["Comments","Additional notes about this property..."]].map(([label,ph],idx)=>(
+<div key={label} style={{background:"#fff",borderRadius:12,padding:"14px 16px",boxShadow:"0 1px 6px rgba(0,0,0,.07)"}}>
+<label style={{display:"block",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,color:B.gray,marginBottom:8}}>{label}</label>
+<textarea placeholder={ph} rows={3}
+value={idx===0?suggestions:comments}
+onChange={e=>idx===0?setSuggestions(e.target.value):setComments(e.target.value)}
+style={{width:"100%",border:"1.5px solid #E5E7EB",borderRadius:8,padding:"10px 12px",fontSize:14,resize:"vertical",outline:"none",background:B.cream,lineHeight:1.5}}/>
+</div>
+))}
+{/* Suggested Price */}
+<div style={{background:"#fff",borderRadius:12,padding:"14px 16px",boxShadow:"0 1px 6px rgba(0,0,0,.07)"}}>
+<label style={{display:"block",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,color:B.gray,marginBottom:8}}>Suggested Price</label>
+<input type="text" value={pricedRight?"Priced Correctly ✓":sugPrice}
+onChange={e=>setSugPrice(e.target.value)} disabled={pricedRight} placeholder="$000,000"
+style={{width:"100%",border:"1.5px solid #E5E7EB",borderRadius:8,padding:"10px 12px",
+fontSize:15,fontWeight:600,outline:"none",
+background:pricedRight?"#F0FDF4":B.cream,color:pricedRight?"#16A34A":B.dark}}/>
+<label style={{display:"flex",alignItems:"center",gap:10,marginTop:10,cursor:"pointer"}}>
+<input type="checkbox" checked={pricedRight}
+onChange={e=>{setPricedRight(e.target.checked);if(e.target.checked)setSugPrice("");}}
+style={{width:18,height:18,accentColor:B.primary}}/>
+<span style={{fontSize:14,color:B.dark,fontWeight:500}}>Priced Correctly</span>
+</label>
+</div>
+{/* Photo Upload */}
+<div style={{background:"#fff",borderRadius:12,padding:"14px 16px",boxShadow:"0 1px 6px rgba(0,0,0,.07)"}}>
+<label style={{display:"block",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,color:B.gray,marginBottom:10}}>📷 Attach Photos</label>
+<input type="file" accept="image/*" multiple ref={fileRef} onChange={handlePhotoUpload} style={{display:"none"}}/>
+<button onClick={()=>fileRef.current.click()}
+style={{width:"100%",border:"2px dashed #D1D5DB",borderRadius:10,padding:"14px",
+cursor:"pointer",background:B.lightGray,color:B.gray,fontSize:13,fontWeight:600}}>
++ Upload Photos from Device
+</button>
+{photos.length>0&&(
+<div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}>
+{photos.map((p,i)=>(
+<div key={i} style={{position:"relative"}}>
+<img src={p.url} alt="" style={{width:72,height:56,objectFit:"cover",borderRadius:8,display:"block"}}/>
+<button onClick={()=>setPhotos(prev=>prev.filter((_,j)=>j!==i))}
+style={{position:"absolute",top:-6,right:-6,background:B.red,color:"#fff",border:"none",
+borderRadius:"50%",width:20,height:20,fontSize:12,cursor:"pointer",display:"flex",
+alignItems:"center",justifyContent:"center",fontWeight:700}}>✕</button>
+</div>
+))}
+</div>
+)}
+</div>
+{submitError&&(
+<div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:10,
+padding:"12px 16px",color:"#DC2626",fontSize:13}}>⚠️ {submitError}</div>
+)}
+<button onClick={handleSubmit} disabled={submitting} className="btn-hover"
+style={{background:submitting?"#9CA3AF":tour.color,color:"#fff",border:"none",borderRadius:12,
+padding:"16px 0",fontWeight:700,fontSize:16,cursor:submitting?"default":"pointer",
+boxShadow:"0 4px 14px rgba(27,58,107,.3)",display:"flex",alignItems:"center",
+justifyContent:"center",gap:10}}>
+{submitting?(
+<><span style={{display:"inline-block",width:18,height:18,border:"3px solid rgba(255,255,255,.4)",
+borderTopColor:"#fff",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
+Sending to {listing.agent}...</>
+):"Submit & Email Agent ★"}
+</button>
+<p style={{textAlign:"center",fontSize:11,color:B.gray,marginTop:-6}}>
+Rating will be emailed to <strong>{listing.agent}</strong> via MarketReady Tours
+</p>
+</div>
+</div>
+);
+}
+/* ── RANKING PAGE ── */
+function RankingPage({tour, onBack}) {
+const sorted = [...tour.listings]
+.map(l=>({...l, avg: avgRating(tour.ratings?.[l.id])}))
+.sort((a,b)=>b.avg-a.avg);
+const medals = ["🥇","🥈","🥉"];
+return (
+<div style={{background:B.cream,minHeight:"100vh",paddingBottom:40}}>
+<div style={{background:tour.color,padding:"14px 18px",display:"flex",alignItems:"center",
+gap:12,position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 8px rgba(0,0,0,.2)"}}>
+<button onClick={onBack} style={{background:"none",border:"none",color:"#fff",cursor:"pointer",fontSize:22}}>←</button>
+<div>
+<div style={{color:"rgba(255,255,255,.7)",fontSize:11,textTransform:"uppercase",letterSpacing:1}}>{tour.emoji} {tour.name}</div>
+<div style={{color:"#fff",fontFamily:"Georgia,serif",fontSize:15,fontWeight:700}}>Home Rankings</div>
+</div>
+<img src={window.MRT_LOGO_DATA} alt="MarketReady Tours" style={{height:40,objectFit:"contain",borderRadius:6,marginLeft:"auto"}}/>
+</div>
+<div style={{padding:"20px 14px",display:"flex",flexDirection:"column",gap:12}}>
+<p style={{color:B.gray,fontSize:13,marginBottom:4}}>
+{sorted.some(l=>l.avg>0) ? "Rankings based on submitted ratings across all 7 categories." : "No ratings submitted yet for this tour."}
+</p>
+{sorted.map((listing,i)=>(
+<div key={listing.id} className="fade-in" style={{background:"#fff",borderRadius:16,overflow:"hidden",
+boxShadow:"0 2px 10px rgba(0,0,0,.08)",border:i===0&&listing.avg>0?"2px solid "+B.gold:"1px solid rgba(0,0,0,.05)"}}>
+<div style={{display:"flex",gap:0}}>
+<div style={{width:90,flexShrink:0,position:"relative"}}>
+<img src={listing.photos[0]} alt="" style={{width:"100%",height:"100%",minHeight:90,objectFit:"cover",display:"block"}}/>
+<div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.25)"}}/>
+<div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",fontSize:32}}>{listing.avg>0?(medals[i]||`#${i+1}`):"—"}</div>
+</div>
+<div style={{flex:1,padding:"14px 16px"}}>
+<div style={{fontFamily:"Georgia,serif",fontSize:14,fontWeight:700,color:B.primary,marginBottom:2}}>{listing.address}</div>
+<div style={{fontSize:11,color:B.gray,marginBottom:8}}>{listing.city}</div>
+{listing.avg>0?(
+<>
+{starBar(listing.avg, tour.color)}
+<div style={{display:"flex",gap:8,marginTop:8,flexWrap:"wrap"}}>
+{RATING_CATS.map(cat=>{
+const v=(tour.ratings?.[listing.id])?.[cat.key]||0;
+return v>0?(
+<span key={cat.key} style={{fontSize:10,background:B.lightGray,borderRadius:4,padding:"2px 7px",color:B.dark}}>
+{cat.label}: {v}★
+</span>
+):null;
+})}
+</div>
+</>
+):(
+<span style={{fontSize:12,color:B.gray,fontStyle:"italic"}}>No ratings yet</span>
+)}
+</div>
+</div>
+</div>
+))}
+</div>
+</div>
+);
+}
+/* ── RATING SUMMARY DASHBOARD ── */
+function SummaryDashboard({tour, onBack}) {
+const listings = tour.listings;
+const hasAny = listings.some(l=>tour.ratings?.[l.id]&&Object.values(tour.ratings[l.id]).some(v=>v>0));
+return (
+<div style={{background:B.cream,minHeight:"100vh",paddingBottom:40}}>
+<div style={{background:tour.color,padding:"14px 18px",display:"flex",alignItems:"center",
+gap:12,position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 8px rgba(0,0,0,.2)"}}>
+<button onClick={onBack} style={{background:"none",border:"none",color:"#fff",cursor:"pointer",fontSize:22}}>←</button>
+<div>
+<div style={{color:"rgba(255,255,255,.7)",fontSize:11,textTransform:"uppercase",letterSpacing:1}}>{tour.emoji} {tour.name}</div>
+<div style={{color:"#fff",fontFamily:"Georgia,serif",fontSize:15,fontWeight:700}}>Rating Summary</div>
+</div>
+<img src={window.MRT_LOGO_DATA} alt="MarketReady Tours" style={{height:40,objectFit:"contain",borderRadius:6,marginLeft:"auto"}}/>
+</div>
+<div style={{padding:"20px 14px",display:"flex",flexDirection:"column",gap:16}}>
+{!hasAny&&(
+<div style={{textAlign:"center",padding:"60px 20px",color:B.gray}}>
+<div style={{fontSize:48,marginBottom:12}}>📊</div>
+<p>No ratings submitted yet.<br/>Ratings will appear here as attendees submit them.</p>
+</div>
+)}
+{hasAny&&listings.map(listing=>{
+const r=tour.ratings?.[listing.id]||{};
+const avg=avgRating(r);
+if(!avg) return null;
+return (
+<div key={listing.id} style={{background:"#fff",borderRadius:16,overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,.08)"}}>
+<div style={{background:tour.color,padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+<div style={{color:"#fff",fontFamily:"Georgia,serif",fontSize:13,fontWeight:700}}>{listing.address}</div>
+<div style={{background:"rgba(255,255,255,.2)",borderRadius:8,padding:"3px 10px",color:"#fff",fontWeight:800,fontSize:14}}>{avg.toFixed(1)}★</div>
+</div>
+<div style={{padding:"14px 16px"}}>
+{RATING_CATS.map(cat=>{
+const v=r[cat.key]||0;
+return (
+<div key={cat.key} style={{marginBottom:10}}>
+<div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+<span style={{fontSize:12,color:B.dark,fontWeight:500}}>{cat.label}</span>
+<span style={{fontSize:12,color:B.gray}}>{v>0?`${v}/5`:"—"}</span>
+</div>
+{starBar(v, tour.color)}
+</div>
+);
+})}
+</div>
+</div>
+);
+})}
+</div>
+</div>
+);
+}
+/* ── AGENT BRANDING MODAL ── */
+function AgentBrandingModal({tour, onSave, onClose}) {
+const [draft,setDraft]=useState({
+agentName:tour.agentName||"", agentPhone:tour.agentPhone||"",
+agentEmail:tour.agentEmail||"", agentPhoto:tour.agentPhoto||"",
+brokerageName:tour.brokerageName||"", brokerageLogo:tour.brokerageLogo||"",
+});
+const handlePhoto=(key,e)=>{
+const file=e.target.files[0]; if(!file) return;
+const reader=new FileReader();
+reader.onload=ev=>setDraft(d=>({...d,[key]:ev.target.result}));
+reader.readAsDataURL(file);
+};
+return (
+<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:700,
+display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+<div style={{background:"#fff",borderRadius:20,padding:"28px 24px",width:"100%",maxWidth:420,
+boxShadow:"0 20px 60px rgba(0,0,0,.3)",maxHeight:"90vh",overflowY:"auto"}}>
+<h3 style={{color:B.primary,fontFamily:"Georgia,serif",fontSize:20,marginBottom:20}}>🏢 Agent Branding</h3>
+<div style={{display:"flex",flexDirection:"column",gap:12}}>
+{/* Agent photo */}
+<div style={{display:"flex",alignItems:"center",gap:14,marginBottom:4}}>
+<div style={{width:64,height:64,borderRadius:"50%",background:B.lightGray,
+border:"2px solid #E5E7EB",overflow:"hidden",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+{draft.agentPhoto?<img src={draft.agentPhoto} style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:28}}>👤</span>}
+</div>
+<div>
+<label style={{display:"block",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,color:B.gray,marginBottom:6}}>Agent Headshot</label>
+<label style={{background:B.lightGray,border:"none",borderRadius:8,padding:"7px 14px",
+cursor:"pointer",fontSize:12,fontWeight:600,color:B.primary}}>
+Upload Photo
+<input type="file" accept="image/*" onChange={e=>handlePhoto("agentPhoto",e)} style={{display:"none"}}/>
+</label>
+</div>
+</div>
+{[["agentName","Agent Full Name"],["agentPhone","Phone Number"],["agentEmail","Email Address"],["brokerageName","Brokerage Name"]].map(([f,label])=>(
+<div key={f}>
+<label style={{display:"block",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,color:B.gray,marginBottom:6}}>{label}</label>
+<input value={draft[f]} onChange={e=>setDraft(d=>({...d,[f]:e.target.value}))} placeholder={label}
+style={{width:"100%",border:"1.5px solid #E5E7EB",borderRadius:10,padding:"10px 12px",fontSize:14,outline:"none",background:B.cream}}/>
+</div>
+))}
+{/* Brokerage logo */}
+<div>
+<label style={{display:"block",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,color:B.gray,marginBottom:6}}>Brokerage Logo</label>
+{draft.brokerageLogo&&<img src={draft.brokerageLogo} alt="" style={{maxHeight:48,maxWidth:"100%",objectFit:"contain",marginBottom:8,display:"block"}}/>}
+<label style={{display:"block",background:B.lightGray,borderRadius:8,padding:"9px 14px",cursor:"pointer",fontSize:12,fontWeight:600,color:B.primary,textAlign:"center"}}>
+{draft.brokerageLogo?"Replace Logo":"Upload Brokerage Logo"}
+<input type="file" accept="image/*" onChange={e=>handlePhoto("brokerageLogo",e)} style={{display:"none"}}/>
+</label>
+</div>
+<div style={{display:"flex",gap:10,marginTop:8}}>
+<button onClick={onClose} style={{flex:1,background:B.lightGray,border:"none",borderRadius:10,padding:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+<button onClick={()=>onSave(draft)} className="btn-hover"
+style={{flex:2,background:B.primary,color:"#fff",border:"none",borderRadius:10,padding:13,fontWeight:700,cursor:"pointer"}}>Save Branding</button>
+</div>
+</div>
+</div>
+</div>
+);
+}
+/* ── ADD LISTING FORM with Google Places Autocomplete ── */
+function AddListingForm({ tourColor, onAdd, onCancel }) {
+const [query, setQuery]       = useState("");
+const [suggestions, setSugg]  = useState([]);
+const [selected, setSelected] = useState(null);
+const [fields, setFields]     = useState({ address:"", city:"", beds:"", baths:"", sqft:"", dom:"", price:"", agent:"", photos:[] });
+const [loading, setLoading]   = useState(false);
+const [status, setStatus]     = useState("");
+const [sessionToken, setToken]= useState(null);
+const inputRef = useRef(null);
+useEffect(()=>{
+if(window.google?.maps?.places) {
+setToken(new window.google.maps.places.AutocompleteSessionToken());
+}
+},[]);
+useEffect(()=>{
+if(!query || query.length < 3 || !window.google?.maps?.places || selected) {
+setSugg([]); return;
+}
+const svc = new window.google.maps.places.AutocompleteService();
+svc.getPlacePredictions({
+input: query,
+sessionToken,
+types: ["address"],
+componentRestrictions: { country: "us" },
+}, (predictions, status) => {
+if(status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
+setSugg(predictions);
+} else {
+setSugg([]);
+}
+});
+}, [query]);
+const handleSelect = (prediction) => {
+setSugg([]);
+setLoading(true);
+setStatus("📍 Confirming address...");
+const map = new window.google.maps.Map(document.createElement("div"));
+const svc = new window.google.maps.places.PlacesService(map);
+svc.getDetails({
+placeId: prediction.place_id,
+fields: ["address_components", "formatted_address", "geometry"],
+sessionToken,
+}, (place, st) => {
+if(st !== window.google.maps.places.PlacesServiceStatus.OK || !place) {
+setStatus("❌ Could not get address details. Please try again.");
+setLoading(false); return;
+}
+const get = (type) => {
+const comp = place.address_components.find(c => c.types.includes(type));
+return comp ? comp.long_name : "";
+};
+const getShort = (type) => {
+const comp = place.address_components.find(c => c.types.includes(type));
+return comp ? comp.short_name : "";
+};
+const streetNum  = get("street_number");
+const streetName = get("route");
+const city       = get("locality") || get("sublocality");
+const state      = getShort("administrative_area_level_1");
+const zip        = get("postal_code");
+const address    = `${streetNum} ${streetName}`.trim();
+const cityStr    = `${city}, ${state} ${zip}`.trim();
+setQuery(address);
+setSelected(prediction.place_id);
+setToken(new window.google.maps.places.AutocompleteSessionToken());
+setFields(f => ({ ...f, address, city: cityStr }));
+setStatus("✅ Address confirmed! Fill in listing details below.");
+setLoading(false);
+});
+};
+const handleAdd = () => {
+if(!fields.address || !selected) {
+setStatus("⚠️ Please select a valid address from the suggestions.");
+return;
+}
+onAdd({
+...fields,
+beds:  Number(fields.beds)  || 0,
+baths: Number(fields.baths) || 0,
+sqft:  Number(String(fields.sqft).replace(/[^0-9]/g,""))  || 0,
+dom:   Number(fields.dom)   || 0,
+price: Number(String(fields.price).replace(/[^0-9]/g,"")) || 0,
+photos: fields.photos?.length
+? fields.photos
+: ["https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop"],
+});
+};
+const clearSelection = () => {
+setSelected(null); setQuery("");
+setFields({ address:"", city:"", beds:"", baths:"", sqft:"", dom:"", price:"", agent:"", photos:[] });
+setStatus(""); setSugg([]);
+setTimeout(() => inputRef.current?.focus(), 100);
+};
+const fieldLabels = [["beds","Beds"],["baths","Baths"],["sqft","Sq Ft"],["dom","Days on Market"],["price","List Price ($)"],["agent","Listing Agent"]];
+return (
+<div style={{background:"#fff", borderRadius:14, padding:16, border:`2px solid ${tourColor}40`}}>
+<div style={{display:"flex", alignItems:"center", gap:8, marginBottom:14}}>
+<span style={{fontSize:20}}>🔍</span>
+<h4 style={{color:B.primary, fontSize:14, fontWeight:700, margin:0}}>Add New Listing</h4>
+</div>
+{/* Address search */}
+<div style={{position:"relative", marginBottom:10}}>
+<label style={{display:"block", fontSize:11, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, color:B.gray, marginBottom:6}}>
+Property Address *
+</label>
+<div style={{position:"relative"}}>
+<input
+ref={inputRef}
+type="text"
+placeholder="Start typing an address..."
+value={query}
+onChange={e=>{ setQuery(e.target.value); setSelected(null); }}
+style={{width:"100%", border:`1.5px solid ${selected ? "#059669" : "#E5E7EB"}`,
+borderRadius:9, padding:"11px 40px 11px 12px", fontSize:14,
+outline:"none", background: selected ? "#F0FDF4" : "#fff"}}
+/>
+{selected && (
+<button onClick={clearSelection}
+style={{position:"absolute", right:10, top:"50%", transform:"translateY(-50%)",
+background:"#DC2626", color:"#fff", border:"none", borderRadius:"50%",
+width:22, height:22, cursor:"pointer", fontSize:12, fontWeight:700,
+display:"flex", alignItems:"center", justifyContent:"center"}}>✕</button>
+)}
+{loading && (
+<div style={{position:"absolute", right:10, top:"50%", transform:"translateY(-50%)"}}>
+<div style={{width:18, height:18, border:"2px solid #E5E7EB", borderTopColor:tourColor,
+borderRadius:"50%", animation:"spin .8s linear infinite"}}/>
+</div>
+)}
+</div>
+{suggestions.length > 0 && !selected && (
+<div style={{position:"absolute", top:"100%", left:0, right:0, background:"#fff",
+border:"1.5px solid #E5E7EB", borderRadius:10, boxShadow:"0 8px 24px rgba(0,0,0,.15)",
+zIndex:9999, overflow:"hidden", marginTop:4}}>
+{suggestions.map((s, i) => (
+<button key={s.place_id} onClick={()=>handleSelect(s)}
+style={{width:"100%", background:"none", border:"none", borderBottom:i<suggestions.length-1?"1px solid #F3F4F6":"none",
+padding:"12px 14px", cursor:"pointer", textAlign:"left", display:"flex", alignItems:"flex-start", gap:10,
+transition:"background .1s"}}
+onMouseEnter={e=>e.currentTarget.style.background="#F9FAFB"}
+onMouseLeave={e=>e.currentTarget.style.background="none"}>
+<span style={{fontSize:16, flexShrink:0, marginTop:1}}>📍</span>
+<div>
+<div style={{fontWeight:600, fontSize:13, color:B.dark}}>{s.structured_formatting?.main_text}</div>
+<div style={{fontSize:11, color:B.gray}}>{s.structured_formatting?.secondary_text}</div>
+</div>
+</button>
+))}
+</div>
+)}
+</div>
+{status && (
+<div style={{background: status.startsWith("✅") ? "#F0FDF4" : status.startsWith("❌") ? "#FEF2F2" : "#FFFBEB",
+border: `1px solid ${status.startsWith("✅") ? "#BBF7D0" : status.startsWith("❌") ? "#FECACA" : "#FDE68A"}`,
+borderRadius:8, padding:"10px 12px", fontSize:12,
+color: status.startsWith("✅") ? "#065F46" : status.startsWith("❌") ? "#DC2626" : "#92400E",
+marginBottom:10}}>
+{status}
+</div>
+)}
+{/* Manual fields — shown after address confirmed */}
+{selected && (
+<div style={{display:"flex", flexDirection:"column", gap:8, marginBottom:12}}>
+<div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:8}}>
+{fieldLabels.map(([f, label])=>(
+<div key={f}>
+<label style={{display:"block", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, color:B.gray, marginBottom:4}}>{label}</label>
+<input value={fields[f]||""} onChange={e=>setFields(fi=>({...fi,[f]:e.target.value}))}
+placeholder={label}
+style={{width:"100%", border:"1.5px solid #E5E7EB", borderRadius:8, padding:"9px 10px", fontSize:14, outline:"none", background:B.cream}}/>
+</div>
+))}
+</div>
+<div>
+<label style={{display:"block", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, color:B.gray, marginBottom:4}}>City, State ZIP</label>
+<input value={fields.city||""} onChange={e=>setFields(fi=>({...fi,city:e.target.value}))}
+style={{width:"100%", border:"1.5px solid #E5E7EB", borderRadius:8, padding:"9px 10px", fontSize:14, outline:"none", background:B.cream}}/>
+</div>
+</div>
+)}
+{/* Photo upload */}
+<div style={{marginBottom:12}}>
+<label style={{display:"block", fontSize:11, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, color:B.gray, marginBottom:6}}>
+📸 Listing Photos
+</label>
+<label style={{display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+border:"2px dashed #D1D5DB", borderRadius:10, padding:"14px 12px",
+cursor:"pointer", background:"#FAFAFA", transition:"all .15s"}}
+onMouseEnter={e=>{e.currentTarget.style.borderColor=tourColor;e.currentTarget.style.background=tourColor+"10";}}
+onMouseLeave={e=>{e.currentTarget.style.borderColor="#D1D5DB";e.currentTarget.style.background="#FAFAFA";}}>
+<span style={{fontSize:22}}>📁</span>
+<div>
+<div style={{fontWeight:600, fontSize:13, color:B.dark}}>Click to upload photos</div>
+<div style={{fontSize:11, color:B.gray}}>JPG, PNG, HEIC — multiple files OK</div>
+</div>
+<input type="file" accept="image/*" multiple style={{display:"none"}}
+onChange={e=>{
+const files = Array.from(e.target.files);
+if(!files.length) return;
+Promise.all(files.map(f => new Promise((res,rej)=>{
+const reader = new FileReader();
+reader.onload = ev => res(ev.target.result);
+reader.onerror = rej;
+reader.readAsDataURL(f);
+}))).then(urls => {
+setFields(fi => ({ ...fi, photos: [...(fi.photos||[]), ...urls] }));
+});
+}}
+/>
+</label>
+{/* Photo preview grid */}
+{fields.photos?.length > 0 && (
+<div style={{marginTop:8, display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:6}}>
+{fields.photos.map((p,i)=>(
+<div key={i} style={{position:"relative", borderRadius:8, overflow:"hidden", aspectRatio:"4/3"}}>
+<img src={p} alt="" style={{width:"100%", height:"100%", objectFit:"cover"}}/>
+<button onClick={()=>setFields(fi=>({...fi,photos:fi.photos.filter((_,j)=>j!==i)}))}
+style={{position:"absolute", top:4, right:4, background:"rgba(0,0,0,.6)",
+color:"#fff", border:"none", borderRadius:"50%", width:20, height:20,
+cursor:"pointer", fontSize:11, fontWeight:700, display:"flex",
+alignItems:"center", justifyContent:"center", lineHeight:1}}>✕</button>
+{i===0 && <div style={{position:"absolute", bottom:4, left:4, background:tourColor,
+color:"#fff", fontSize:9, fontWeight:700, borderRadius:4, padding:"2px 5px"}}>COVER</div>}
+</div>
+))}
+</div>
+)}
+</div>
+<div style={{display:"flex", gap:10}}>
+<button onClick={onCancel}
+style={{flex:1, background:B.lightGray, border:"none", borderRadius:9, padding:"11px 0", fontWeight:600, cursor:"pointer"}}>
+Cancel
+</button>
+<button onClick={handleAdd} disabled={!selected || loading}
+className="btn-hover"
+style={{flex:2, background: !selected||loading ? "#9CA3AF" : tourColor,
+color:"#fff", border:"none", borderRadius:9, padding:"11px 0",
+fontWeight:700, cursor: !selected||loading ? "default":"pointer"}}>
+{loading ? "Loading..." : "✓ Add Listing"}
+</button>
+</div>
+</div>
+);
+}
+/* ── TOUR DETAIL PAGE ── */
+function TourDetailPage({tour,onBack,onUpdateTour,isAdmin,sponsors}) {
+const [subpage,setSubpage]=useState("list");
+const [selected,setSelected]=useState(null);
+const [showInvite,setShowInvite]=useState(false);
+const [inviteEmails,setInviteEmails]=useState("");
+const [inviteSent,setInviteSent]=useState(false);
+const [showAdmin,setShowAdmin]=useState(false);
+const [showBranding,setShowBranding]=useState(false);
+const [showQR,setShowQR]=useState(false);
+const [adminListings,setAdminListings]=useState([...tour.listings].sort((a,b)=>a.order-b.order));
+const [showAddForm,setShowAddForm]=useState(false);
+const [adminNotes,setAdminNotes]=useState(tour.notes||{});
+useEffect(()=>{setAdminListings([...tour.listings].sort((a,b)=>a.order-b.order));},[tour]);
+const toggleFavorite=(listingId)=>{
+const fav={...tour.favorites,[listingId]:!tour.favorites?.[listingId]};
+onUpdateTour({...tour,favorites:fav});
+};
+const handleRatingSubmit=(listingId,ratings)=>{
+const newRatings={...tour.ratings,[listingId]:ratings};
+onUpdateTour({...tour,ratings:newRatings});
+};
+const saveNote=(listingId,note)=>{
+const notes={...adminNotes,[listingId]:note};
+setAdminNotes(notes);
+onUpdateTour({...tour,notes});
+};
+const moveStop=(idx,dir)=>{
+const arr=[...adminListings];const si=idx+dir;
+if(si<0||si>=arr.length)return;
+[arr[idx].order,arr[si].order]=[arr[si].order,arr[idx].order];
+setAdminListings([...arr].sort((a,b)=>a.order-b.order));
+};
+const addListing=(listingData)=>{
+const item={...listingData, id:Date.now(), order:adminListings.length+1};
+setAdminListings(prev=>[...prev,item]);
+setShowAddForm(false);
+};
+const deleteStop=(id)=>setAdminListings(prev=>prev.filter(l=>l.id!==id).map((l,i)=>({...l,order:i+1})));
+const saveAdmin=()=>{onUpdateTour({...tour,listings:adminListings});setShowAdmin(false);};
+if(subpage==="gallery"&&selected) return (
+<Gallery photos={selected.photos} onClose={()=>setSubpage("list")}/>
+);
+if(subpage==="rating"&&selected) return <RatingPage listing={selected} tour={tour} onBack={()=>setSubpage("list")} onRatingSubmit={handleRatingSubmit}/>;
+if(subpage==="ranking") return <RankingPage tour={tour} onBack={()=>setSubpage("list")}/>;
+if(subpage==="summary") return <SummaryDashboard tour={tour} onBack={()=>setSubpage("list")}/>;
+const sorted=[...tour.listings].sort((a,b)=>a.order-b.order);
+const favCount=Object.values(tour.favorites||{}).filter(Boolean).length;
+const ratedCount=Object.keys(tour.ratings||{}).length;
+return (
+<div style={{background:B.cream,minHeight:"100vh",paddingBottom:90}}>
+{showQR&&<QRModal tour={tour} onClose={()=>setShowQR(false)}/>}
+{showBranding&&<AgentBrandingModal tour={tour} onSave={d=>{onUpdateTour({...tour,...d});setShowBranding(false);}} onClose={()=>setShowBranding(false)}/>}
+{/* Invite Modal */}
+{showInvite&&(
+<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+<div style={{background:"#fff",borderRadius:18,padding:28,width:"100%",maxWidth:420}}>
+{inviteSent?(
+<div style={{textAlign:"center",padding:"20px 0"}}>
+<div style={{fontSize:60}}>✉️</div>
+<h3 style={{color:B.primary,fontFamily:"Georgia,serif",margin:"12px 0 6px",fontSize:22}}>Invites Sent!</h3>
+<p style={{color:B.gray,marginBottom:20}}>Attendees will receive the tour link.</p>
+<button onClick={()=>{setShowInvite(false);setInviteSent(false);setInviteEmails("");}}
+style={{background:B.primary,color:"#fff",border:"none",borderRadius:10,padding:"12px 36px",fontWeight:700,cursor:"pointer"}}>Done</button>
+</div>
+):(
+<>
+<h3 style={{color:B.primary,fontFamily:"Georgia,serif",marginBottom:6,fontSize:20}}>Invite to {tour.emoji} {tour.name}</h3>
+<p style={{color:B.gray,fontSize:13,marginBottom:14}}>Enter emails separated by commas or one per line.</p>
+<textarea value={inviteEmails} onChange={e=>setInviteEmails(e.target.value)}
+placeholder={"agent@example.com\nbuyer@email.com"} rows={5}
+style={{width:"100%",border:"1.5px solid #E5E7EB",borderRadius:10,padding:"12px 14px",fontSize:14,resize:"vertical",outline:"none",background:B.cream}}/>
+<div style={{display:"flex",gap:10,marginTop:14}}>
+<button onClick={()=>setShowInvite(false)} style={{flex:1,background:B.lightGray,border:"none",borderRadius:10,padding:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+<button onClick={()=>setInviteSent(true)} style={{flex:2,background:tour.color,color:"#fff",border:"none",borderRadius:10,padding:13,fontWeight:700,cursor:"pointer"}}>Send Invites ✉️</button>
+</div>
+</>
+)}
+</div>
+</div>
+)}
+{/* Admin Panel */}
+{showAdmin&&(
+<div style={{position:"fixed",inset:0,background:"#fff",zIndex:400,overflowY:"auto"}}>
+<div style={{background:tour.color,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,position:"sticky",top:0,boxShadow:"0 2px 8px rgba(0,0,0,.2)"}}>
+<button onClick={()=>setShowAdmin(false)} style={{background:"none",border:"none",color:"#fff",cursor:"pointer",fontSize:22}}>←</button>
+<div style={{color:"#fff",fontFamily:"Georgia,serif",fontSize:15,fontWeight:700}}>Manage: {tour.emoji} {tour.name}</div>
+</div>
+<div style={{padding:"20px 16px"}}>
+<h3 style={{color:B.primary,marginBottom:14,fontSize:13,textTransform:"uppercase",letterSpacing:.5}}>Reorder / Remove Stops</h3>
+{adminListings.map((l,i)=>(
+<div key={l.id} style={{background:B.lightGray,borderRadius:12,padding:"12px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
+<div style={{background:tour.color,color:"#fff",borderRadius:"50%",width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:12,flexShrink:0}}>{i+1}</div>
+<div style={{flex:1}}>
+<div style={{fontWeight:600,fontSize:13,color:B.dark}}>{l.address}</div>
+<div style={{fontSize:11,color:B.gray}}>${Number(l.price).toLocaleString()} · {l.agent}</div>
+{/* Admin note */}
+<textarea placeholder="Private admin note..." rows={2}
+value={adminNotes[l.id]||""}
+onChange={e=>saveNote(l.id,e.target.value)}
+style={{width:"100%",marginTop:8,border:"1.5px solid #E5E7EB",borderRadius:8,
+padding:"6px 10px",fontSize:12,resize:"vertical",outline:"none",background:"#fff"}}/>
+</div>
+<div style={{display:"flex",flexDirection:"column",gap:4}}>
+<button onClick={()=>moveStop(i,-1)} disabled={i===0} style={{background:"#fff",border:"none",borderRadius:6,padding:"4px 8px",cursor:i===0?"default":"pointer",opacity:i===0?.35:1}}>▲</button>
+<button onClick={()=>moveStop(i,1)} disabled={i===adminListings.length-1} style={{background:"#fff",border:"none",borderRadius:6,padding:"4px 8px",cursor:i===adminListings.length-1?"default":"pointer",opacity:i===adminListings.length-1?.35:1}}>▼</button>
+<button onClick={()=>deleteStop(l.id)} style={{background:"#FEE2E2",border:"none",borderRadius:6,padding:"4px 8px",cursor:"pointer",color:"#DC2626",fontWeight:700}}>✕</button>
+</div>
+</div>
+))}
+<div style={{marginTop:24}}>
+{showAddForm ? (
+<AddListingForm tourColor={tour.color} onAdd={addListing} onCancel={()=>setShowAddForm(false)}/>
+) : (
+<button onClick={()=>setShowAddForm(true)}
+style={{width:"100%",background:tour.color,color:"#fff",border:"none",borderRadius:12,
+padding:"14px 0",fontWeight:700,fontSize:15,cursor:"pointer",
+display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+<span style={{fontSize:20}}>+</span> Add New Listing
+</button>
+)}
+</div>
+<button onClick={saveAdmin} className="btn-hover"
+style={{width:"100%",background:tour.color,color:"#fff",border:"none",borderRadius:12,padding:"14px 0",fontWeight:700,fontSize:16,cursor:"pointer",marginTop:24}}>Save Changes</button>
+</div>
+</div>
+)}
+{/* Header */}
+<div style={{background:tour.color,padding:"16px 18px",position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 12px rgba(0,0,0,.2)"}}>
+{/* Agent branding strip */}
+{(tour.agentName||tour.brokerageName)&&(
+<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12,background:"rgba(255,255,255,.12)",borderRadius:10,padding:"8px 12px"}}>
+{tour.agentPhoto&&<img src={tour.agentPhoto} alt="" style={{width:36,height:36,borderRadius:"50%",objectFit:"cover",border:"2px solid rgba(255,255,255,.5)"}}/>}
+<div style={{flex:1}}>
+{tour.agentName&&<div style={{color:"#fff",fontWeight:700,fontSize:13}}>{tour.agentName}</div>}
+{tour.brokerageName&&<div style={{color:"rgba(255,255,255,.75)",fontSize:11}}>{tour.brokerageName}</div>}
+</div>
+{tour.brokerageLogo&&<img src={tour.brokerageLogo} alt="" style={{height:28,maxWidth:70,objectFit:"contain"}}/>}
+</div>
+)}
+<div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+<div style={{display:"flex",alignItems:"center",gap:12}}>
+<button onClick={onBack} style={{background:"none",border:"none",color:"#fff",cursor:"pointer",fontSize:22}}>←</button>
+<div>
+<img src={window.MRT_LOGO_DATA} alt="MarketReady Tours" style={{height:136,objectFit:"contain",borderRadius:8}}/>
+<div style={{color:"#fff",fontFamily:"Georgia,serif",fontSize:17,fontWeight:700}}>{tour.emoji} {tour.name}</div>
+</div>
+</div>
+{isAdmin&&(
+<div style={{display:"flex",gap:6}}>
+<button onClick={()=>setShowQR(true)} title="QR Code" style={{background:"rgba(255,255,255,.15)",border:"1px solid rgba(255,255,255,.25)",color:"#fff",borderRadius:8,padding:"6px 10px",cursor:"pointer",fontSize:14}}>⬜</button>
+<button onClick={()=>setShowBranding(true)} title="Agent Branding" style={{background:"rgba(255,255,255,.15)",border:"1px solid rgba(255,255,255,.25)",color:"#fff",borderRadius:8,padding:"6px 10px",cursor:"pointer",fontSize:14}}>🏢</button>
+<button onClick={()=>setShowInvite(true)} style={{background:"rgba(255,255,255,.15)",border:"1px solid rgba(255,255,255,.25)",color:"#fff",borderRadius:8,padding:"6px 10px",cursor:"pointer",fontSize:13}}>✉️</button>
+<button onClick={()=>{setAdminListings([...tour.listings].sort((a,b)=>a.order-b.order));setShowAdmin(true);}} style={{background:B.gold,border:"none",color:"#fff",borderRadius:8,padding:"6px 10px",cursor:"pointer",fontSize:13,fontWeight:700}}>⚙️</button>
+</div>
+)}
+</div>
+<div style={{marginTop:10,background:"rgba(255,255,255,.1)",borderRadius:8,padding:"7px 12px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+<span style={{color:"rgba(255,255,255,.85)",fontSize:12}}>📍 {sorted.length} stops · {tour.time}</span>
+<div style={{display:"flex",gap:10}}>
+<span style={{color:"rgba(255,255,255,.7)",fontSize:12}}>⭐ {favCount} fav · ✅ {ratedCount} rated</span>
+</div>
+</div>
+{/* Quick action tabs */}
+<div style={{display:"flex",gap:8,marginTop:10}}>
+<button onClick={()=>setSubpage("ranking")} style={{flex:1,background:"rgba(255,255,255,.15)",border:"1px solid rgba(255,255,255,.2)",color:"#fff",borderRadius:8,padding:"7px 0",cursor:"pointer",fontSize:12,fontWeight:600}}>🏆 Rankings</button>
+{isAdmin&&<button onClick={()=>setSubpage("summary")} style={{flex:1,background:"rgba(255,255,255,.15)",border:"1px solid rgba(255,255,255,.2)",color:"#fff",borderRadius:8,padding:"7px 0",cursor:"pointer",fontSize:12,fontWeight:600}}>📊 Summary</button>}
+</div>
+</div>
+{/* Sponsor Strip */}
+{sponsors&&sponsors.some(s=>s.logo)&&(
+<div style={{background:"#fff",borderBottom:"1px solid #F0EDE6",padding:"10px 14px",display:"flex",alignItems:"center",gap:4}}>
+<span style={{fontSize:9,color:B.gray,textTransform:"uppercase",letterSpacing:1.2,fontWeight:700,whiteSpace:"nowrap",marginRight:8,opacity:.7}}>Sponsors</span>
+<div style={{display:"flex",alignItems:"center",gap:14,overflowX:"auto",flex:1}}>
+{sponsors.filter(s=>s.logo).map(sp=>(
+sp.url?(
+<a key={sp.id} href={sp.url} target="_blank" rel="noreferrer" title={sp.name}
+style={{flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",height:36,width:60,background:"#fff",borderRadius:6,padding:2}}>
+<img src={sp.logo} alt={sp.name} style={{maxHeight:32,maxWidth:56,objectFit:"contain",display:"block"}} onError={e=>{e.target.parentElement.style.display="none";}}/>
+</a>
+):(
+<div key={sp.id} title={sp.name} style={{flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",height:36,width:60,background:"#fff",borderRadius:6,padding:2}}>
+<img src={sp.logo} alt={sp.name} style={{maxHeight:32,maxWidth:56,objectFit:"contain",display:"block"}} onError={e=>{e.target.parentElement.style.display="none";}}/>
+</div>
+)
+))}
+</div>
+</div>
+)}
+{/* Listing Cards */}
+<div style={{padding:"16px 14px",display:"flex",flexDirection:"column",gap:16}}>
+{sorted.length===0&&(
+<div style={{textAlign:"center",padding:"60px 20px",color:B.gray}}>
+<div style={{fontSize:48,marginBottom:12}}>🏡</div>
+<p>No listings yet.{isAdmin?" Tap ⚙️ to add some.":""}</p>
+</div>
+)}
+{sorted.map(listing=>{
+const isFav=tour.favorites?.[listing.id]||false;
+const isRated=tour.ratings?.[listing.id]&&Object.values(tour.ratings[listing.id]).some(v=>v>0);
+const avg=avgRating(tour.ratings?.[listing.id]);
+const note=tour.notes?.[listing.id]||"";
+return (
+<div key={listing.id} className="card-hover" style={{background:"#fff",borderRadius:16,overflow:"hidden",
+boxShadow:"0 2px 10px rgba(0,0,0,.08)",border:`1px solid ${isFav?B.gold:"rgba(0,0,0,.05)"}`}}>
+<div style={{position:"relative"}}>
+<img src={listing.photos[0]} alt={listing.address} style={{width:"100%",height:180,objectFit:"cover",display:"block"}}/>
+<div style={{position:"absolute",inset:0,background:"linear-gradient(to top,rgba(0,0,0,.35) 0%,transparent 50%)"}}/>
+<div style={{position:"absolute",top:12,left:12,background:tour.color,color:"#fff",borderRadius:8,padding:"4px 11px",fontSize:12,fontWeight:800}}>Stop #{listing.order}</div>
+{/* Favorite button */}
+<button onClick={()=>toggleFavorite(listing.id)}
+style={{position:"absolute",top:10,right:10,background:"rgba(0,0,0,.4)",border:"none",
+borderRadius:"50%",width:36,height:36,cursor:"pointer",fontSize:18,
+display:"flex",alignItems:"center",justifyContent:"center",
+color:isFav?"#FF6B6B":"rgba(255,255,255,.8)"}}>
+{isFav?"❤️":"🤍"}
+</button>
+{isRated&&<div style={{position:"absolute",bottom:listing.photos.length>1?50:12,left:14,background:"rgba(0,0,0,.6)",color:B.gold,borderRadius:6,padding:"3px 9px",fontSize:12,fontWeight:700}}>{avg.toFixed(1)}★</div>}
+<div style={{position:"absolute",bottom:10,right:12,background:"rgba(0,0,0,.55)",
+borderRadius:10,padding:"5px 10px",backdropFilter:"blur(6px)",WebkitBackdropFilter:"blur(6px)"}}>
+<div style={{fontSize:15,fontWeight:800,fontFamily:"Georgia,serif",color:"#fff"}}>${listing.price.toLocaleString()}</div>
+</div>
+{/* Photo Carousel Thumbnails */}
+{listing.photos.length>1&&(
+<div style={{position:"absolute",bottom:10,left:12,
+display:"flex",alignItems:"center",gap:6,background:"rgba(0,0,0,.55)",
+borderRadius:10,padding:"4px 6px",backdropFilter:"blur(6px)",WebkitBackdropFilter:"blur(6px)"}}>
+{listing.photos.slice(0,3).map((photo,pi)=>(
+<div key={pi} onClick={(e)=>{e.stopPropagation();setSelected(listing);setSubpage("gallery");}}
+style={{width:40,height:30,borderRadius:6,overflow:"hidden",cursor:"pointer",
+border:pi===0?"2px solid "+B.gold:"2px solid rgba(255,255,255,.35)",
+flexShrink:0,transition:"border .15s"}}>
+<img src={photo} alt="" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
+</div>
+))}
+{listing.photos.length>1&&(
+<button onClick={(e)=>{e.stopPropagation();setSelected(listing);setSubpage("gallery");}}
+style={{background:B.gold,color:"#fff",border:"none",borderRadius:6,
+padding:"3px 8px",fontSize:10,fontWeight:700,cursor:"pointer",
+whiteSpace:"nowrap",lineHeight:1.3}}>
+{listing.photos.length>3?`+${listing.photos.length-3} More`:"All Photos"}
+</button>
+)}
+</div>
+)}
+</div>
+<div style={{padding:"14px 16px"}}>
+<div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:2}}>
+<h3 style={{margin:0,fontSize:16,color:B.primary,fontFamily:"Georgia,serif",flex:1}}>{listing.address}</h3>
+{isFav&&<span style={{fontSize:11,background:"#FFF0F0",color:"#DC2626",borderRadius:6,padding:"2px 8px",fontWeight:700,flexShrink:0,marginLeft:8}}>❤️ Fav</span>}
+</div>
+<div style={{color:B.gray,fontSize:12,marginBottom:10}}>{listing.city}</div>
+<div style={{display:"flex",gap:8,fontSize:12,marginBottom:12,flexWrap:"wrap"}}>
+{[`🛏 ${listing.beds} bd`,`🚿 ${listing.baths} ba`,`📐 ${listing.sqft.toLocaleString()} sqft`,`📅 ${listing.dom} DOM`].map((t,i)=>(
+<span key={i} style={{background:B.lightGray,borderRadius:6,padding:"4px 9px",color:B.dark,fontWeight:500}}>{t}</span>
+))}
+</div>
+{/* Admin note display */}
+{note&&(
+<div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:12,color:"#92400E"}}>
+📝 <strong>Agent Note:</strong> {note}
+</div>
+)}
+{isRated&&(
+<div style={{marginBottom:12}}>
+{starBar(avg,tour.color)}
+</div>
+)}
+<div style={{fontSize:12,color:B.gray,marginBottom:10}}><span style={{color:B.dark,fontWeight:600}}>{listing.agent}</span> · Listing Agent</div>
+<div style={{display:"flex",gap:8}}>
+<a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(listing.address+' '+listing.city)}`}
+target="_blank" rel="noreferrer"
+style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+background:"#F0FDF4",color:"#059669",border:"1.5px solid #BBF7D0",borderRadius:10,
+padding:"10px 0",fontWeight:700,fontSize:13,textDecoration:"none"}}>
+🧭 Directions
+</a>
+<button className="btn-hover" onClick={()=>{setSelected(listing);setSubpage("rating");}}
+style={{flex:1,background:isRated?"#059669":tour.color,color:"#fff",border:"none",borderRadius:10,padding:"10px 0",
+fontWeight:700,cursor:"pointer",fontSize:13,boxShadow:"0 3px 10px rgba(27,58,107,.25)"}}>
+{isRated?"✓ Re-Rate":"Rate Home ★"}
+</button>
+</div>
+</div>
+</div>
+);
+})}
+</div>
+</div>
+);
+}
+/* ── SPONSORS PAGE ── */
+const INITIAL_SPONSORS = [
+{ id:"sp-1", name:"MarketReady Tours", url:"https://www.marketreadytours.com", logo:window.MRT_LOGO_DATA, tagline:"Tour. Rate. Decide." },
+{ id:"sp-2", name:"Nike", url:"https://www.nike.com", logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Logo_NIKE.svg/1200px-Logo_NIKE.svg.png", tagline:"Just Do It" },
+{ id:"sp-3", name:"Coca-Cola", url:"https://www.coca-cola.com", logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Coca-Cola_logo.svg/1200px-Coca-Cola_logo.svg.png", tagline:"Open Happiness" },
+{ id:"sp-4", name:"Starbucks", url:"https://www.starbucks.com", logo:"https://upload.wikimedia.org/wikipedia/en/thumb/d/d3/Starbucks_Corporation_Logo_2011.svg/1200px-Starbucks_Corporation_Logo_2011.svg.png", tagline:"It starts with you" },
+];
+function SponsorsPage({sponsors,setSponsors,isAdmin}) {
+const [editing,setEditing]=useState(null);
+const [draft,setDraft]=useState({});
+const [logoPreview,setLogoPreview]=useState("");
+const [saved,setSaved]=useState(false);
+const openEdit=(sp)=>{setEditing(sp.id);setDraft({name:sp.name,url:sp.url,logo:sp.logo,tagline:sp.tagline});setLogoPreview(sp.logo);setSaved(false);};
+const handleLogoFile=(e)=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=ev=>{setLogoPreview(ev.target.result);setDraft(d=>({...d,logo:ev.target.result}));};reader.readAsDataURL(file);};
+const saveSponsor=()=>{setSponsors(prev=>prev.map(sp=>sp.id===editing?{...sp,...draft}:sp));setSaved(true);setTimeout(()=>{setEditing(null);setSaved(false);},900);};
+return (
+<div style={{background:B.cream,minHeight:"100vh",paddingBottom:90}}>
+{editing&&(
+<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+<div style={{background:"#fff",borderRadius:20,padding:"28px 24px",width:"100%",maxWidth:420,boxShadow:"0 20px 60px rgba(0,0,0,.3)",maxHeight:"92vh",overflowY:"auto"}}>
+<h3 style={{color:B.primary,fontFamily:"Georgia,serif",fontSize:20,marginBottom:20}}>✏️ Edit Sponsor</h3>
+<div style={{display:"flex",flexDirection:"column",gap:14}}>
+<div>
+<label style={{display:"block",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,color:B.gray,marginBottom:8}}>Logo</label>
+{logoPreview?(
+<div style={{position:"relative",display:"inline-block"}}>
+<img src={logoPreview} alt="" style={{maxWidth:"100%",maxHeight:120,objectFit:"contain",borderRadius:10,border:"1.5px solid #E5E7EB",padding:10,background:"#fff",display:"block"}} onError={()=>setLogoPreview("")}/>
+<button onClick={()=>{setLogoPreview("");setDraft(d=>({...d,logo:""}));}} style={{position:"absolute",top:-8,right:-8,background:"#DC2626",color:"#fff",border:"none",borderRadius:"50%",width:24,height:24,cursor:"pointer",fontSize:14,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+</div>
+):(
+<div style={{border:"2px dashed #D1D5DB",borderRadius:12,padding:"24px 16px",textAlign:"center",background:B.lightGray}}>
+<div style={{fontSize:32,marginBottom:8}}>🖼️</div>
+<p style={{color:B.gray,fontSize:13,marginBottom:12}}>Upload a logo or paste a URL</p>
+<label style={{background:B.primary,color:"#fff",borderRadius:8,padding:"8px 18px",cursor:"pointer",fontWeight:700,fontSize:13,display:"inline-block"}}>
+Upload File<input type="file" accept="image/*" onChange={handleLogoFile} style={{display:"none"}}/>
+</label>
+</div>
+)}
+<input type="text" placeholder="Or paste image URL" value={draft.logo&&!draft.logo.startsWith("data:")?draft.logo:""}
+onChange={e=>{setLogoPreview(e.target.value);setDraft(d=>({...d,logo:e.target.value}));}}
+style={{width:"100%",marginTop:10,border:"1.5px solid #E5E7EB",borderRadius:8,padding:"9px 12px",fontSize:13,outline:"none",background:B.cream}}/>
+</div>
+{[["name","Company Name"],["tagline","Tagline"],["url","Website URL"]].map(([f,label])=>(
+<div key={f}>
+<label style={{display:"block",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,color:B.gray,marginBottom:6}}>{label}</label>
+<input value={draft[f]||""} onChange={e=>setDraft(d=>({...d,[f]:e.target.value}))} placeholder={label}
+style={{width:"100%",border:"1.5px solid #E5E7EB",borderRadius:10,padding:"12px 14px",fontSize:14,outline:"none",background:B.cream}}/>
+</div>
+))}
+<div style={{display:"flex",gap:10,marginTop:4}}>
+<button onClick={()=>setEditing(null)} style={{flex:1,background:B.lightGray,border:"none",borderRadius:10,padding:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+<button onClick={saveSponsor} className="btn-hover" style={{flex:2,background:saved?"#16A34A":B.primary,color:"#fff",border:"none",borderRadius:10,padding:13,fontWeight:700,cursor:"pointer",transition:"background .3s"}}>{saved?"✓ Saved!":"Save Sponsor"}</button>
+</div>
+</div>
+</div>
+</div>
+)}
+<div style={{background:B.primary,padding:"18px 18px 16px",position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 12px rgba(0,0,0,.2)"}}>
+<img src={window.MRT_LOGO_DATA} alt="MarketReady Tours" style={{height:136,objectFit:"contain",borderRadius:8}}/>
+<div style={{color:"#fff",fontFamily:"Georgia,serif",fontSize:20,fontWeight:700,marginTop:2}}>Tour Sponsors</div>
+{isAdmin&&<div style={{marginTop:8,background:"rgba(255,255,255,.1)",borderRadius:8,padding:"7px 12px",fontSize:12,color:"rgba(255,255,255,.8)"}}>🔑 Tap any card to edit sponsor info &amp; logo</div>}
+</div>
+<div style={{padding:"20px 14px"}}>
+<p style={{color:B.gray,fontSize:13,marginBottom:20,lineHeight:1.5}}>Thank you to our tour sponsors for making today's home tour possible.</p>
+<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+{sponsors.map((sp,idx)=>(
+<div key={sp.id} onClick={()=>isAdmin&&openEdit(sp)}
+style={{background:"#fff",borderRadius:16,overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,.08)",border:"1px solid rgba(0,0,0,.06)",cursor:isAdmin?"pointer":"default",position:"relative"}}>
+{isAdmin&&<div style={{position:"absolute",top:8,right:8,background:B.gold,color:"#fff",borderRadius:6,padding:"2px 7px",fontSize:10,fontWeight:700,zIndex:1}}>Edit</div>}
+<div style={{height:100,background:sp.logo?"#fff":B.lightGray,display:"flex",alignItems:"center",justifyContent:"center",borderBottom:"1px solid #F3F4F6",padding:12}}>
+{sp.logo?<img src={sp.logo} alt={sp.name} style={{maxWidth:"100%",maxHeight:76,objectFit:"contain"}} onError={e=>{e.target.style.display="none";}}/>:(
+<div style={{textAlign:"center"}}><div style={{fontSize:28,marginBottom:4}}>🏢</div><div style={{fontSize:10,color:B.gray}}>{isAdmin?"Tap to add logo":"Logo coming soon"}</div></div>
+)}
+</div>
+<div style={{padding:"12px 12px 14px"}}>
+<div style={{fontWeight:700,fontSize:13,color:B.primary,fontFamily:"Georgia,serif",marginBottom:3,lineHeight:1.3}}>{sp.name}</div>
+{sp.tagline&&sp.tagline!=="Your tagline here"&&<div style={{fontSize:11,color:B.gray,lineHeight:1.4}}>{sp.tagline}</div>}
+{sp.url&&<a href={sp.url} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{display:"inline-block",marginTop:8,fontSize:11,color:B.gold,fontWeight:700,textDecoration:"none"}}>Visit Website →</a>}
+</div>
+</div>
+))}
+</div>
+<div style={{marginTop:28,background:"#fff",borderRadius:14,padding:"16px 18px",textAlign:"center",boxShadow:"0 1px 6px rgba(0,0,0,.06)"}}>
+<div style={{fontSize:22,marginBottom:8}}>🤝</div>
+<p style={{color:B.gray,fontSize:12,lineHeight:1.6}}>Interested in sponsoring a MarketReady Tour?<br/><a href="mailto:braydondennis@gmail.com" style={{color:B.gold,fontWeight:700,textDecoration:"none"}}>braydondennis@gmail.com</a></p>
+</div>
+</div>
+</div>
+);
+}
+/* ── TOURS DASHBOARD ── */
+function ToursDashboard({tours,setTours,isAdmin,isSuperAdmin,currentUser,onAdminLogin,onLogout,onTeamPage,onRequestsPage,listingRequests,sponsors}) {
+const [filterDate,setFilterDate]=useState("upcoming");
+const [showCreate,setShowCreate]=useState(false);
+const [newTour,setNewTour]=useState({name:"",time:"09:00",date:TODAY,color:"#1B3A6B",emoji:"🏡"});
+const [confirmDelete,setConfirmDelete]=useState(null);
+const [activeTourId,setActiveTourId]=useState(null);
+const pastDates=[...new Set(tours.map(t=>t.date).filter(d=>d<TODAY))].sort();
+const allDateTabs=["upcoming",...pastDates];
+const filtered=(filterDate==="upcoming"?tours.filter(t=>t.date>=TODAY):tours.filter(t=>t.date===filterDate)).sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
+const fmt12=t24=>{const[h,m]=t24.split(":");const hr=parseInt(h);const ampm=hr>=12?"PM":"AM";const hr12=hr%12||12;return `${hr12}:${m} ${ampm}`;};
+const createTour=()=>{
+if(!newTour.name)return;
+setTours(prev=>[...prev,{...newTour,id:"tour-"+Date.now(),time:fmt12(newTour.time),listings:[],ratings:{},favorites:{},notes:{},agentName:"",agentPhone:"",agentEmail:"",agentPhoto:"",brokerageName:"",brokerageLogo:""}]);
+setShowCreate(false);setNewTour({name:"",time:"09:00",date:filterDate==="upcoming"?TODAY:filterDate,color:"#1B3A6B",emoji:"🏡"});
+};
+const activeTour=tours.find(t=>t.id===activeTourId);
+if(activeTour) return <TourDetailPage tour={activeTour} onBack={()=>setActiveTourId(null)} onUpdateTour={updated=>setTours(prev=>prev.map(t=>t.id===updated.id?updated:t))} isAdmin={isAdmin} sponsors={sponsors}/>;
+return (
+<div style={{background:B.cream,minHeight:"100vh",paddingBottom:90}}>
+{showCreate&&(
+<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+<div style={{background:"#fff",borderRadius:20,padding:"28px 24px",width:"100%",maxWidth:420,boxShadow:"0 20px 60px rgba(0,0,0,.3)",maxHeight:"92vh",overflowY:"auto"}}>
+<h3 style={{color:B.primary,fontFamily:"Georgia,serif",fontSize:20,marginBottom:20}}>➕ Create New Tour</h3>
+<div style={{display:"flex",flexDirection:"column",gap:14}}>
+<div>
+<label style={{display:"block",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,color:B.gray,marginBottom:6}}>Tour Name *</label>
+<input value={newTour.name} onChange={e=>setNewTour(n=>({...n,name:e.target.value}))} placeholder="e.g. Morning Tour, VIP Buyers..."
+style={{width:"100%",border:"1.5px solid #E5E7EB",borderRadius:10,padding:"12px 14px",fontSize:15,outline:"none",background:B.cream}}/>
+</div>
+<div style={{display:"flex",gap:12}}>
+<div style={{flex:1}}>
+<label style={{display:"block",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,color:B.gray,marginBottom:6}}>Date</label>
+<input type="date" value={newTour.date} onChange={e=>setNewTour(n=>({...n,date:e.target.value}))}
+style={{width:"100%",border:"1.5px solid #E5E7EB",borderRadius:10,padding:"11px 10px",fontSize:14,outline:"none",background:B.cream}}/>
+</div>
+<div style={{flex:1}}>
+<label style={{display:"block",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,color:B.gray,marginBottom:6}}>Start Time</label>
+<input type="time" value={newTour.time} onChange={e=>setNewTour(n=>({...n,time:e.target.value}))}
+style={{width:"100%",border:"1.5px solid #E5E7EB",borderRadius:10,padding:"11px 10px",fontSize:14,outline:"none",background:B.cream}}/>
+</div>
+</div>
+<div>
+<label style={{display:"block",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,color:B.gray,marginBottom:8}}>Icon</label>
+<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+{["🌅","☀️","🌇","🌆","🏡","🗺️","🔑","⭐","🏘️","🎯"].map(e=>(
+<button key={e} onClick={()=>setNewTour(n=>({...n,emoji:e}))} style={{width:42,height:42,borderRadius:10,fontSize:22,cursor:"pointer",border:newTour.emoji===e?`2px solid ${B.primary}`:"2px solid #E5E7EB",background:newTour.emoji===e?"#EFF6FF":"#fff"}}>{e}</button>
+))}
+</div>
+</div>
+<div>
+<label style={{display:"block",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,color:B.gray,marginBottom:8}}>Color</label>
+<div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+{["#1B3A6B","#7C3AED","#059669","#DC2626","#D97706","#0891B2","#BE185D","#475569"].map(c=>(
+<button key={c} onClick={()=>setNewTour(n=>({...n,color:c}))} style={{width:36,height:36,borderRadius:"50%",background:c,border:"none",cursor:"pointer",outline:newTour.color===c?`3px solid ${c}`:"none",outlineOffset:3}}/>
+))}
+</div>
+</div>
+<div style={{background:newTour.color,borderRadius:12,padding:"12px 16px",display:"flex",alignItems:"center",gap:12}}>
+<span style={{fontSize:26}}>{newTour.emoji}</span>
+<div>
+<div style={{color:"#fff",fontFamily:"Georgia,serif",fontWeight:700,fontSize:16}}>{newTour.name||"Tour Name"}</div>
+<div style={{color:"rgba(255,255,255,.7)",fontSize:12}}>{fmt12(newTour.time)} · {new Date(newTour.date+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})}</div>
+</div>
+</div>
+<div style={{display:"flex",gap:10,marginTop:4}}>
+<button onClick={()=>setShowCreate(false)} style={{flex:1,background:B.lightGray,border:"none",borderRadius:10,padding:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+<button onClick={createTour} className="btn-hover" style={{flex:2,background:newTour.color,color:"#fff",border:"none",borderRadius:10,padding:13,fontWeight:700,cursor:"pointer"}}>Create Tour</button>
+</div>
+</div>
+</div>
+</div>
+)}
+{confirmDelete&&(
+<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+<div style={{background:"#fff",borderRadius:16,padding:"28px 24px",width:"100%",maxWidth:360,textAlign:"center"}}>
+<div style={{fontSize:48,marginBottom:12}}>🗑️</div>
+<h3 style={{color:B.dark,fontSize:18,marginBottom:8}}>Delete this tour?</h3>
+<p style={{color:B.gray,fontSize:14,marginBottom:24}}>This will permanently remove the tour and all its listings.</p>
+<div style={{display:"flex",gap:10}}>
+<button onClick={()=>setConfirmDelete(null)} style={{flex:1,background:B.lightGray,border:"none",borderRadius:10,padding:12,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+<button onClick={()=>{setTours(prev=>prev.filter(t=>t.id!==confirmDelete));setConfirmDelete(null);}} style={{flex:1,background:"#DC2626",color:"#fff",border:"none",borderRadius:10,padding:12,fontWeight:700,cursor:"pointer"}}>Delete</button>
+</div>
+</div>
+</div>
+)}
+<div style={{background:B.primary,padding:"9px 18px 0",position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 12px rgba(0,0,0,.2)"}}>
+<div style={{paddingBottom:14}}>
+<div style={{display:"flex",justifyContent:"flex-start"}}>
+<img src={window.MRT_LOGO_DATA} alt="MarketReady Tours" style={{height:136,objectFit:"contain",borderRadius:8}}/>
+</div>
+<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:2}}>
+<div style={{color:"rgba(255,255,255,.7)",fontFamily:"Georgia,serif",fontSize:15,fontWeight:400,letterSpacing:1.5,textTransform:"uppercase",lineHeight:1.4}}><span style={{fontSize:20,fontWeight:700}}>#1</span> Real Estate<br/>Home Tours App</div>
+<div style={{display:"flex",gap:8}}>
+{isAdmin?(
+<>
+{isSuperAdmin&&<button onClick={onTeamPage} style={{background:"rgba(255,255,255,.15)",border:"1px solid rgba(255,255,255,.25)",color:"#fff",borderRadius:8,padding:"8px 11px",cursor:"pointer",fontSize:13,fontWeight:600}}>👥</button>}
+{isAdmin&&<button onClick={onRequestsPage} style={{position:"relative",background:"rgba(255,255,255,.15)",border:"1px solid rgba(255,255,255,.25)",color:"#fff",borderRadius:8,padding:"8px 11px",cursor:"pointer",fontSize:13,fontWeight:600}}>
+📋{listingRequests?.filter(r=>r.status==="pending").length>0&&<span style={{position:"absolute",top:-4,right:-4,background:"#DC2626",color:"#fff",borderRadius:"50%",fontSize:9,fontWeight:800,width:16,height:16,display:"flex",alignItems:"center",justifyContent:"center"}}>{listingRequests.filter(r=>r.status==="pending").length}</span>}
+</button>}
+<button onClick={()=>setShowCreate(true)} style={{background:B.gold,border:"none",color:"#fff",borderRadius:8,padding:"8px 13px",cursor:"pointer",fontSize:13,fontWeight:700}}>+ New Tour</button>
+<button onClick={onLogout} title={`Sign out (${currentUser?.name||""})`} style={{background:"rgba(255,255,255,.12)",border:"1px solid rgba(255,255,255,.2)",color:"#fff",borderRadius:8,padding:"8px 11px",cursor:"pointer",fontSize:15}}>↩</button>
+</>
+):(
+<button onClick={onAdminLogin} style={{background:"rgba(255,255,255,.12)",border:"1px solid rgba(255,255,255,.25)",color:"#fff",borderRadius:8,padding:"8px 13px",cursor:"pointer",fontSize:12,fontWeight:600}}>🔐 Login</button>
+)}
+</div>
+</div>
+</div>
+<div style={{display:"flex",overflowX:"auto",paddingBottom:0}}>
+{allDateTabs.map(date=>(
+<button key={date} onClick={()=>setFilterDate(date)}
+style={{background:"none",border:"none",borderBottom:filterDate===date?`3px solid ${B.gold}`:"3px solid transparent",
+color:filterDate===date?"#fff":"rgba(255,255,255,.55)",fontWeight:filterDate===date?700:500,
+fontSize:12,padding:"8px 16px 10px",cursor:"pointer",whiteSpace:"nowrap"}}>
+{date==="upcoming"?`Upcoming (${tours.filter(t=>t.date>=TODAY).length})`:new Date(date+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})}
+</button>
+))}
+</div>
+</div>
+<div style={{padding:"20px 14px",display:"flex",flexDirection:"column",gap:16}}>
+<div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+<span style={{color:B.gray,fontSize:13}}>{filtered.length} {filtered.length===1?"tour":"tours"} {filterDate==="upcoming"?"upcoming":"scheduled"}{isAdmin&&<span style={{color:B.gold,marginLeft:6}}>· {isSuperAdmin?"👑 Super Admin":`👤 ${currentUser?.name||"Sub-Admin"}`}</span>}</span>
+<span style={{color:B.primary,fontWeight:600,fontSize:13}}>{filterDate==="upcoming"?"Today & Future":new Date(filterDate+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}</span>
+</div>
+{filtered.length===0&&(
+<div style={{textAlign:"center",padding:"60px 20px",color:B.gray}}>
+<div style={{fontSize:56,marginBottom:16}}>📅</div>
+<h3 style={{color:B.primary,fontFamily:"Georgia,serif",marginBottom:8}}>No tours scheduled</h3>
+<p style={{fontSize:14}}>{isAdmin?'Tap "+ New Tour" to create one.':"Check with your admin for the schedule."}</p>
+</div>
+)}
+{filtered.map(tour=>{
+const ratedCount=Object.keys(tour.ratings||{}).length;
+const favCount=Object.values(tour.favorites||{}).filter(Boolean).length;
+return (
+<div key={tour.id} className="card-hover" style={{background:"#fff",borderRadius:18,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,.08)",border:"1px solid rgba(0,0,0,.05)"}}>
+<div style={{background:tour.color,padding:"16px 18px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+<div style={{display:"flex",alignItems:"center",gap:14}}>
+<div style={{fontSize:30}}>{tour.emoji}</div>
+<div>
+<div style={{color:"#fff",fontFamily:"Georgia,serif",fontSize:18,fontWeight:700}}>{tour.name}</div>
+<div style={{color:"rgba(255,255,255,.75)",fontSize:12}}>🕐 {tour.time} · {filterDate==="upcoming"&&tour.date!==TODAY?new Date(tour.date+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})+" · ":tour.date===TODAY&&filterDate==="upcoming"?"Today · ":""}{tour.listings.length} stops · {ratedCount} rated · ❤️ {favCount}</div>
+</div>
+</div>
+{isAdmin&&<button onClick={e=>{e.stopPropagation();setConfirmDelete(tour.id);}} style={{background:"rgba(255,255,255,.15)",border:"none",color:"#fff",borderRadius:8,padding:"6px 10px",cursor:"pointer",fontSize:18}}>🗑️</button>}
+</div>
+{tour.listings.length>0&&(
+<div style={{display:"flex",overflowX:"auto",padding:"12px 14px",background:B.lightGray}}>
+{[...tour.listings].sort((a,b)=>a.order-b.order).map((l,i)=>(
+<div key={l.id} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:72,marginRight:10}}>
+<div style={{position:"relative"}}>
+<img src={l.photos[0]} alt="" style={{width:64,height:50,objectFit:"cover",borderRadius:8,display:"block"}}/>
+<div style={{position:"absolute",top:3,left:3,background:tour.color,color:"#fff",borderRadius:4,padding:"1px 5px",fontSize:9,fontWeight:800}}>#{i+1}</div>
+{tour.favorites?.[l.id]&&<div style={{position:"absolute",top:2,right:2,fontSize:10}}>❤️</div>}
+</div>
+<div style={{fontSize:9,color:B.gray,textAlign:"center",maxWidth:68,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l.address.split(" ").slice(0,3).join(" ")}</div>
+</div>
+))}
+</div>
+)}
+<div style={{padding:"14px 18px"}}>
+<button className="btn-hover" onClick={()=>setActiveTourId(tour.id)}
+style={{width:"100%",background:tour.color,color:"#fff",border:"none",borderRadius:12,padding:"13px 0",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:`0 4px 14px ${tour.color}66`}}>
+Open Tour →
+</button>
+</div>
+</div>
+);
+})}
+</div>
+</div>
+);
+}
+/* ── TEAM PAGE ── */
+function TeamPage({subAdmins,setSubAdmins,onBack}) {
+const [showAdd,setShowAdd]=useState(false);
+const [newUser,setNewUser]=useState({name:"",email:"",password:""});
+const [confirmDel,setConfirmDel]=useState(null);
+const [addError,setAddError]=useState("");
+const [editId,setEditId]=useState(null);
+const [editDraft,setEditDraft]=useState({});
+const [showPasses,setShowPasses]=useState({});
+const addUser=()=>{
+if(!newUser.name||!newUser.email||!newUser.password){setAddError("All fields required.");return;}
+if(newUser.email.toLowerCase()===SUPER_ADMIN.email.toLowerCase()||subAdmins.find(u=>u.email?.toLowerCase()===newUser.email.toLowerCase())){setAddError("Username already taken.");return;}
+const nu = {...newUser, id:"sub-"+Date.now(), role:"sub", username: newUser.email.split("@")[0]};
+setSubAdmins(prev=>[...prev, nu]);
+setNewUser({name:"",email:"",password:""});
+setShowAdd(false); setAddError("");
+sendWelcomeEmail(nu.name, nu.email, nu.password);
+};
+const saveEdit=(id)=>{
+if(!editDraft.name||!editDraft.username||!editDraft.password)return;
+setSubAdmins(prev=>prev.map(u=>u.id===id?{...u,...editDraft}:u));setEditId(null);
+};
+return (
+<div style={{background:B.cream,minHeight:"100vh",paddingBottom:90}}>
+{confirmDel&&(
+<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+<div style={{background:"#fff",borderRadius:16,padding:"28px 24px",width:"100%",maxWidth:360,textAlign:"center"}}>
+<div style={{fontSize:44,marginBottom:12}}>⚠️</div>
+<h3 style={{color:B.dark,fontSize:18,marginBottom:8}}>Remove this team member?</h3>
+<p style={{color:B.gray,fontSize:14,marginBottom:24}}>They will immediately lose access.</p>
+<div style={{display:"flex",gap:10}}>
+<button onClick={()=>setConfirmDel(null)} style={{flex:1,background:B.lightGray,border:"none",borderRadius:10,padding:12,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+<button onClick={()=>{setSubAdmins(prev=>prev.filter(u=>u.id!==confirmDel));setConfirmDel(null);}} style={{flex:1,background:"#DC2626",color:"#fff",border:"none",borderRadius:10,padding:12,fontWeight:700,cursor:"pointer"}}>Remove</button>
+</div>
+</div>
+</div>
+)}
+<div style={{background:B.primary,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 8px rgba(0,0,0,.2)"}}>
+<button onClick={onBack} style={{background:"none",border:"none",color:"#fff",cursor:"pointer",fontSize:22}}>←</button>
+<div><div style={{color:B.gold,fontSize:10,textTransform:"uppercase",letterSpacing:1.5,fontWeight:700}}>Super Admin</div><div style={{color:"#fff",fontFamily:"Georgia,serif",fontSize:15,fontWeight:700}}>Team Management</div></div>
+<img src={window.MRT_LOGO_DATA} alt="MarketReady Tours" style={{height:40,objectFit:"contain",borderRadius:6,marginLeft:"auto"}}/>
+</div>
+<div style={{padding:"20px 16px"}}>
+<div style={{background:"linear-gradient(135deg,#1B3A6B,#0f2347)",borderRadius:14,padding:"16px 18px",marginBottom:20,display:"flex",alignItems:"center",gap:14}}>
+<div style={{background:B.gold,borderRadius:"50%",width:44,height:44,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>👑</div>
+<div><div style={{color:"#fff",fontWeight:700,fontSize:15}}>{SUPER_ADMIN.name}</div><div style={{color:B.lightGold,fontSize:12}}>@{SUPER_ADMIN.username} · Super Admin</div><div style={{color:"rgba(255,255,255,.5)",fontSize:11,marginTop:2}}>Full access · Cannot be removed</div></div>
+</div>
+<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+<div><h3 style={{color:B.primary,fontSize:15,fontWeight:700}}>Team Members</h3><p style={{color:B.gray,fontSize:12,marginTop:2}}>{subAdmins.length} sub-admin{subAdmins.length!==1?"s":""}</p></div>
+<button onClick={()=>{setShowAdd(true);setAddError("");}} style={{background:B.gold,color:"#fff",border:"none",borderRadius:9,padding:"9px 16px",fontWeight:700,cursor:"pointer",fontSize:13}}>+ Add Member</button>
+</div>
+{showAdd&&(
+<div style={{background:"#fff",borderRadius:14,padding:"18px 16px",marginBottom:16,boxShadow:"0 2px 10px rgba(0,0,0,.1)",border:`2px solid ${B.gold}`}}>
+<h4 style={{color:B.primary,fontSize:14,fontWeight:700,marginBottom:14}}>New Team Member</h4>
+<div style={{display:"flex",flexDirection:"column",gap:10}}>
+{[["name","Full Name","text"],["email","Email Address","email"],["password","Password","password"]].map(([f,ph,t])=>(
+<div key={f} style={{position:"relative"}}>
+<input type={t==="password"&&showPasses["new"]?"text":t} placeholder={ph} value={newUser[f]}
+onChange={e=>{setNewUser(n=>({...n,[f]:e.target.value}));setAddError("");}}
+style={{width:"100%",border:"1.5px solid #E5E7EB",borderRadius:9,padding:t==="password"?"10px 40px 10px 12px":"10px 12px",fontSize:14,outline:"none",background:B.cream}}/>
+{t==="password"&&<button onClick={()=>setShowPasses(p=>({...p,new:!p.new}))} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:16,color:B.gray}}>{showPasses["new"]?"🙈":"👁️"}</button>}
+</div>
+))}
+{addError&&<div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:8,padding:"8px 12px",color:"#DC2626",fontSize:13}}>⚠️ {addError}</div>}
+<div style={{display:"flex",gap:10,marginTop:4}}>
+<button onClick={()=>{setShowAdd(false);setNewUser({name:"",username:"",password:""});setAddError("");}} style={{flex:1,background:B.lightGray,border:"none",borderRadius:9,padding:11,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+<button onClick={addUser} className="btn-hover" style={{flex:2,background:B.primary,color:"#fff",border:"none",borderRadius:9,padding:11,fontWeight:700,cursor:"pointer"}}>Add Member</button>
+</div>
+</div>
+</div>
+)}
+{subAdmins.length===0&&!showAdd&&<div style={{textAlign:"center",padding:"40px 20px",color:B.gray}}><div style={{fontSize:44,marginBottom:12}}>👥</div><p>No team members yet.</p></div>}
+{subAdmins.map(u=>(
+<div key={u.id} style={{background:"#fff",borderRadius:14,marginBottom:12,boxShadow:"0 1px 6px rgba(0,0,0,.07)",overflow:"hidden"}}>
+{editId===u.id?(
+<div style={{padding:"16px"}}>
+<h4 style={{color:B.primary,fontSize:13,fontWeight:700,marginBottom:12,textTransform:"uppercase",letterSpacing:.4}}>Edit Member</h4>
+<div style={{display:"flex",flexDirection:"column",gap:10}}>
+{[["name","Full Name","text"],["username","Username","text"],["password","Password","password"]].map(([f,ph,t])=>(
+<div key={f} style={{position:"relative"}}>
+<input type={t==="password"&&showPasses[u.id]?"text":t} placeholder={ph} value={editDraft[f]||""}
+onChange={e=>setEditDraft(d=>({...d,[f]:e.target.value}))}
+style={{width:"100%",border:"1.5px solid #E5E7EB",borderRadius:9,padding:t==="password"?"10px 40px 10px 12px":"10px 12px",fontSize:14,outline:"none",background:B.cream}}/>
+{t==="password"&&<button onClick={()=>setShowPasses(p=>({...p,[u.id]:!p[u.id]}))} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:16,color:B.gray}}>{showPasses[u.id]?"🙈":"👁️"}</button>}
+</div>
+))}
+<div style={{display:"flex",gap:10}}>
+<button onClick={()=>setEditId(null)} style={{flex:1,background:B.lightGray,border:"none",borderRadius:9,padding:11,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+<button onClick={()=>saveEdit(u.id)} className="btn-hover" style={{flex:2,background:B.primary,color:"#fff",border:"none",borderRadius:9,padding:11,fontWeight:700,cursor:"pointer"}}>Save</button>
+</div>
+</div>
+</div>
+):(
+<div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:14}}>
+<div style={{background:`${B.primary}18`,borderRadius:"50%",width:42,height:42,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>👤</div>
+<div style={{flex:1}}><div style={{fontWeight:700,fontSize:14,color:B.dark}}>{u.name}</div><div style={{fontSize:12,color:B.gray}}>{u.email} · Sub-Admin</div></div>
+<div style={{display:"flex",gap:8}}>
+<button onClick={()=>{setEditId(u.id);setEditDraft({name:u.name,username:u.username,password:u.password});}} style={{background:B.lightGray,border:"none",borderRadius:8,padding:"7px 12px",cursor:"pointer",fontSize:13,fontWeight:600,color:B.primary}}>Edit</button>
+<button onClick={()=>setConfirmDel(u.id)} style={{background:"#FEE2E2",border:"none",borderRadius:8,padding:"7px 12px",cursor:"pointer",fontSize:13,fontWeight:700,color:"#DC2626"}}>Remove</button>
+</div>
+</div>
+)}
+</div>
+))}
+<div style={{background:"#fff",borderRadius:14,padding:"16px 18px",marginTop:8,border:"1px solid #E5E7EB"}}>
+<h4 style={{color:B.primary,fontSize:13,fontWeight:700,marginBottom:10}}>🔐 Permission Levels</h4>
+{[["👑","Super Admin (You)","Create tours · Manage listings · Edit sponsors · Add/remove team · Full access"],["👤","Sub-Admin (Team)","Create tours · Manage listings · Invite attendees · View rankings & summary"]].map(([icon,label,desc])=>(
+<div key={label} style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:10}}>
+<span style={{fontSize:18,flexShrink:0,marginTop:1}}>{icon}</span>
+<div><div style={{fontWeight:700,fontSize:13,color:B.dark}}>{label}</div><div style={{fontSize:11,color:B.gray,lineHeight:1.5,marginTop:2}}>{desc}</div></div>
+</div>
+))}
+</div>
+</div>
+</div>
+);
+}
+/* ── REQUEST LISTING PAGE ── */
+function RequestListingPage({tours, onBack, onSubmit}) {
+const [fields,setFields]=useState({
+agentName:"",agentEmail:"",agentPhone:"",
+tourId:"",address:"",city:"",beds:"",baths:"",sqft:"",dom:"",price:"",notes:""
+});
+const [photos,setPhotos]=useState([]);
+const [submitting,setSubmitting]=useState(false);
+const [done,setDone]=useState(false);
+const [error,setError]=useState("");
+const [query,setQuery]=useState("");
+const [suggestions,setSugg]=useState([]);
+const [addrConfirmed,setAddrConfirmed]=useState(false);
+const [sessionToken,setToken]=useState(null);
+const inputRef=useRef(null);
+useEffect(()=>{
+if(window.google?.maps?.places) setToken(new window.google.maps.places.AutocompleteSessionToken());
+},[]);
+useEffect(()=>{
+if(!query||query.length<3||!window.google?.maps?.places||addrConfirmed){setSugg([]);return;}
+const svc=new window.google.maps.places.AutocompleteService();
+svc.getPlacePredictions({input:query,sessionToken,types:["address"],componentRestrictions:{country:"us"}},
+(predictions,status)=>{
+if(status===window.google.maps.places.PlacesServiceStatus.OK&&predictions) setSugg(predictions);
+else setSugg([]);
+});
+},[query]);
+const handleAddrSelect=(prediction)=>{
+setSugg([]);
+const map=new window.google.maps.Map(document.createElement("div"));
+const svc=new window.google.maps.places.PlacesService(map);
+svc.getDetails({placeId:prediction.place_id,fields:["address_components"],sessionToken},(place,st)=>{
+if(st!==window.google.maps.places.PlacesServiceStatus.OK||!place) return;
+const get=(type)=>{const c=place.address_components.find(c=>c.types.includes(type));return c?c.long_name:"";};
+const getS=(type)=>{const c=place.address_components.find(c=>c.types.includes(type));return c?c.short_name:"";};
+const address=`${get("street_number")} ${get("route")}`.trim();
+const city=`${get("locality")||get("sublocality")}, ${getS("administrative_area_level_1")} ${get("postal_code")}`.trim();
+setQuery(address);
+setFields(f=>({...f,address,city}));
+setAddrConfirmed(true);
+setToken(new window.google.maps.places.AutocompleteSessionToken());
+});
+};
+const handleSubmit=async()=>{
+if(!fields.agentName||!fields.agentEmail||!fields.tourId||!fields.address){
+setError("Please fill in all required fields.");return;
+}
+setSubmitting(true);setError("");
+const tour=tours.find(t=>t.id===fields.tourId);
+const requestData={
+id:"req-"+Date.now(),
+status:"pending",
+submittedAt:new Date().toISOString(),
+agentName:fields.agentName,
+agentEmail:fields.agentEmail,
+agentPhone:fields.agentPhone,
+tourId:fields.tourId,
+tourName:tour?`${tour.emoji} ${tour.name}`:"",
+address:fields.address,
+city:fields.city,
+beds:Number(fields.beds)||0,
+baths:Number(fields.baths)||0,
+sqft:Number(String(fields.sqft).replace(/[^0-9]/g,""))||0,
+dom:Number(fields.dom)||0,
+price:Number(String(fields.price).replace(/[^0-9]/g,""))||0,
+agent:fields.agentName,
+notes:fields.notes,
+photos:photos.length?photos:["https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop"],
+order:0,
+};
+try {
+await fetch(LISTING_REQUEST_FORMSPREE,{
+method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
+body:JSON.stringify({
+email:"braydondennis@gmail.com",_replyto:fields.agentEmail,
+_subject:`New Listing Request: ${fields.address}`,
+message:`New listing request submitted!\n\nAgent: ${fields.agentName}\nEmail: ${fields.agentEmail}\nPhone: ${fields.agentPhone||"Not provided"}\n\nProperty: ${fields.address}, ${fields.city}\nTour: ${requestData.tourName}\nBeds: ${fields.beds} | Baths: ${fields.baths} | Sqft: ${fields.sqft}\nPrice: $${Number(String(fields.price).replace(/[^0-9]/g,"")).toLocaleString()}\nDOM: ${fields.dom}\nNotes: ${fields.notes||"None"}\n\nLog in to approve or deny this request.`,
+}),
+});
+await fetch(LISTING_REQUEST_FORMSPREE,{
+method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
+body:JSON.stringify({
+email:fields.agentEmail,_replyto:"braydondennis@gmail.com",
+_subject:"We received your listing request — MarketReady Tours",
+message:`Hi ${fields.agentName},\n\nThank you for submitting your listing at ${fields.address}!\n\nWe've received your request for the ${requestData.tourName} tour and will review it shortly. You'll receive an email letting you know whether your listing has been approved or denied.\n\nIf you have any questions, feel free to reply to this email.\n\n— MarketReady Tours\nmarketreadytours.com`,
+}),
+});
+onSubmit(requestData);
+setDone(true);
+} catch(e) { setError("Submission failed. Please try again."); }
+setSubmitting(false);
+};
+if(done) return (
+<div style={{background:B.cream,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+<div style={{textAlign:"center",maxWidth:360}}>
+<div style={{fontSize:64,marginBottom:16}}>✅</div>
+<h2 style={{color:B.primary,fontFamily:"Georgia,serif",fontSize:24,marginBottom:12}}>Request Submitted!</h2>
+<p style={{color:B.gray,fontSize:15,lineHeight:1.6,marginBottom:24}}>
+Thanks {fields.agentName}! We've received your listing request and will be in touch shortly with an approval or denial.
+</p>
+<p style={{color:B.gray,fontSize:13,marginBottom:28}}>A confirmation has been sent to <strong>{fields.agentEmail}</strong>.</p>
+<button onClick={onBack} className="btn-hover"
+style={{background:B.primary,color:"#fff",border:"none",borderRadius:12,padding:"14px 40px",fontWeight:700,fontSize:16,cursor:"pointer"}}>
+Back to Tours
+</button>
+</div>
+</div>
+);
+return (
+<div style={{background:B.cream,minHeight:"100vh",paddingBottom:100}}>
+<div style={{background:B.primary,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 8px rgba(0,0,0,.2)"}}>
+<button onClick={onBack} style={{background:"none",border:"none",color:"#fff",cursor:"pointer",fontSize:22}}>←</button>
+<div style={{flex:1}}>
+<div style={{color:B.gold,fontSize:10,textTransform:"uppercase",letterSpacing:1.5,fontWeight:700}}>MarketReady Tours</div>
+<div style={{color:"#fff",fontFamily:"Georgia,serif",fontSize:15,fontWeight:700}}>Request a Tour Listing</div>
+</div>
+<img src={window.MRT_LOGO_DATA} alt="MarketReady Tours" style={{height:136,objectFit:"contain",borderRadius:8}}/>
+</div>
+<div style={{padding:"20px 16px",maxWidth:600,margin:"0 auto"}}>
+<div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:12,padding:"12px 16px",marginBottom:20,fontSize:13,color:"#1E40AF"}}>
+📋 Fill out the form below to request your listing be featured on one of our upcoming home tours. Our team will review and respond within 24–48 hours.
+</div>
+<div style={{background:"#fff",borderRadius:14,padding:18,marginBottom:14,boxShadow:"0 2px 8px rgba(0,0,0,.06)"}}>
+<h3 style={{color:B.primary,fontSize:13,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:14}}>Your Information</h3>
+<div style={{display:"flex",flexDirection:"column",gap:10}}>
+{[["agentName","Full Name *","text"],["agentEmail","Email Address *","email"],["agentPhone","Phone Number","tel"]].map(([f,ph,t])=>(
+<input key={f} type={t} placeholder={ph} value={fields[f]}
+onChange={e=>setFields(fi=>({...fi,[f]:e.target.value}))}
+style={{border:"1.5px solid #E5E7EB",borderRadius:9,padding:"11px 12px",fontSize:14,outline:"none",background:B.cream}}/>
+))}
+</div>
+</div>
+<div style={{background:"#fff",borderRadius:14,padding:18,marginBottom:14,boxShadow:"0 2px 8px rgba(0,0,0,.06)"}}>
+<h3 style={{color:B.primary,fontSize:13,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:14}}>Select a Tour *</h3>
+<select value={fields.tourId} onChange={e=>setFields(f=>({...f,tourId:e.target.value}))}
+style={{width:"100%",border:"1.5px solid #E5E7EB",borderRadius:9,padding:"11px 12px",fontSize:14,outline:"none",background:B.cream,color:fields.tourId?B.dark:B.gray}}>
+<option value="">— Choose a tour —</option>
+{tours.map(t=>(
+<option key={t.id} value={t.id}>{t.emoji} {t.name} · {t.date} {t.time}</option>
+))}
+</select>
+</div>
+<div style={{background:"#fff",borderRadius:14,padding:18,marginBottom:14,boxShadow:"0 2px 8px rgba(0,0,0,.06)"}}>
+<h3 style={{color:B.primary,fontSize:13,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:14}}>Property Details</h3>
+<div style={{position:"relative",marginBottom:10}}>
+<div style={{position:"relative"}}>
+<input ref={inputRef} type="text" placeholder="Property Address *"
+value={query} onChange={e=>{setQuery(e.target.value);setAddrConfirmed(false);}}
+style={{width:"100%",border:`1.5px solid ${addrConfirmed?"#059669":"#E5E7EB"}`,borderRadius:9,
+padding:"11px 40px 11px 12px",fontSize:14,outline:"none",background:addrConfirmed?"#F0FDF4":"#fff"}}/>
+{addrConfirmed&&<button onClick={()=>{setAddrConfirmed(false);setQuery("");setFields(f=>({...f,address:"",city:""}));}}
+style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",
+background:"#DC2626",color:"#fff",border:"none",borderRadius:"50%",width:22,height:22,
+cursor:"pointer",fontSize:11,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>}
+</div>
+{suggestions.length>0&&!addrConfirmed&&(
+<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#fff",
+border:"1.5px solid #E5E7EB",borderRadius:10,boxShadow:"0 8px 24px rgba(0,0,0,.15)",
+zIndex:9999,overflow:"hidden",marginTop:4}}>
+{suggestions.map((s,i)=>(
+<button key={s.place_id} onClick={()=>handleAddrSelect(s)}
+style={{width:"100%",background:"none",border:"none",
+borderBottom:i<suggestions.length-1?"1px solid #F3F4F6":"none",
+padding:"11px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"flex-start",gap:10}}
+onMouseEnter={e=>e.currentTarget.style.background="#F9FAFB"}
+onMouseLeave={e=>e.currentTarget.style.background="none"}>
+<span style={{fontSize:16,flexShrink:0}}>📍</span>
+<div>
+<div style={{fontWeight:600,fontSize:13,color:B.dark}}>{s.structured_formatting?.main_text}</div>
+<div style={{fontSize:11,color:B.gray}}>{s.structured_formatting?.secondary_text}</div>
+</div>
+</button>
+))}
+</div>
+)}
+</div>
+{addrConfirmed&&(
+<input value={fields.city} onChange={e=>setFields(f=>({...f,city:e.target.value}))} placeholder="City, State ZIP"
+style={{width:"100%",border:"1.5px solid #E5E7EB",borderRadius:9,padding:"11px 12px",fontSize:14,outline:"none",background:B.cream,marginBottom:10}}/>
+)}
+<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+{[["beds","Beds"],["baths","Baths"],["sqft","Sq Ft"],["dom","Days on Market"],["price","List Price ($)"]].map(([f,ph])=>(
+<input key={f} placeholder={ph} value={fields[f]}
+onChange={e=>setFields(fi=>({...fi,[f]:e.target.value}))}
+style={{border:"1.5px solid #E5E7EB",borderRadius:9,padding:"11px 12px",fontSize:14,outline:"none",background:B.cream}}/>
+))}
+</div>
+<textarea placeholder="Additional notes for the tour organizer (optional)" value={fields.notes}
+onChange={e=>setFields(f=>({...f,notes:e.target.value}))} rows={3}
+style={{width:"100%",border:"1.5px solid #E5E7EB",borderRadius:9,padding:"11px 12px",fontSize:14,
+outline:"none",background:B.cream,resize:"vertical"}}/>
+</div>
+<div style={{background:"#fff",borderRadius:14,padding:18,marginBottom:14,boxShadow:"0 2px 8px rgba(0,0,0,.06)"}}>
+<h3 style={{color:B.primary,fontSize:13,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:14}}>📸 Listing Photos</h3>
+<label style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+border:"2px dashed #D1D5DB",borderRadius:10,padding:"14px 12px",cursor:"pointer",background:"#FAFAFA"}}
+onMouseEnter={e=>{e.currentTarget.style.borderColor=B.primary;e.currentTarget.style.background=B.primary+"10";}}
+onMouseLeave={e=>{e.currentTarget.style.borderColor="#D1D5DB";e.currentTarget.style.background="#FAFAFA";}}>
+<span style={{fontSize:22}}>📁</span>
+<div>
+<div style={{fontWeight:600,fontSize:13,color:B.dark}}>Click to upload photos</div>
+<div style={{fontSize:11,color:B.gray}}>JPG, PNG — multiple files OK</div>
+</div>
+<input type="file" accept="image/*" multiple style={{display:"none"}}
+onChange={e=>{
+const files=Array.from(e.target.files);
+if(!files.length)return;
+Promise.all(files.map(f=>new Promise((res,rej)=>{
+const reader=new FileReader();
+reader.onload=ev=>res(ev.target.result);
+reader.onerror=rej;
+reader.readAsDataURL(f);
+}))).then(urls=>setPhotos(prev=>[...prev,...urls]));
+}}/>
+</label>
+{photos.length>0&&(
+<div style={{marginTop:10,display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6}}>
+{photos.map((p,i)=>(
+<div key={i} style={{position:"relative",borderRadius:8,overflow:"hidden",aspectRatio:"4/3"}}>
+<img src={p} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+<button onClick={()=>setPhotos(prev=>prev.filter((_,j)=>j!==i))}
+style={{position:"absolute",top:4,right:4,background:"rgba(0,0,0,.6)",color:"#fff",
+border:"none",borderRadius:"50%",width:20,height:20,cursor:"pointer",
+fontSize:11,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+{i===0&&<div style={{position:"absolute",bottom:4,left:4,background:B.primary,
+color:"#fff",fontSize:9,fontWeight:700,borderRadius:4,padding:"2px 5px"}}>COVER</div>}
+</div>
+))}
+</div>
+)}
+</div>
+{error&&<div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:10,
+padding:"12px 16px",color:"#DC2626",fontSize:13,marginBottom:14}}>⚠️ {error}</div>}
+<button onClick={handleSubmit} disabled={submitting} className="btn-hover"
+style={{width:"100%",background:submitting?"#9CA3AF":B.primary,color:"#fff",border:"none",
+borderRadius:12,padding:"16px 0",fontWeight:700,fontSize:16,cursor:submitting?"default":"pointer",
+boxShadow:"0 4px 14px rgba(27,58,107,.3)"}}>
+{submitting?"Submitting...":"Submit Listing Request →"}
+</button>
+</div>
+</div>
+);
+}
+/* ── LISTING REQUESTS ADMIN PAGE ── */
+function ListingRequestsAdmin({requests, setRequests, tours, setTours, onBack, currentUser}) {
+const [filter,setFilter]=useState("pending");
+const [reviewing,setReviewing]=useState(null);
+const [denialReason,setDenialReason]=useState("");
+const [processing,setProcessing]=useState(false);
+// Filter requests visible to this user
+const visibleRequests = requests.filter(r=>{
+if(currentUser?.role==="super") return true;
+// Sub-admins only see requests for tours they created (we track by tourId)
+return true; // all admins see all for now
+}).filter(r=> filter==="all" ? true : r.status===filter);
+const pending = requests.filter(r=>r.status==="pending").length;
+const handleApprove=async(req)=>{
+setProcessing(true);
+const tour = tours.find(t=>t.id===req.tourId);
+if(tour){
+const newListing={
+id:Date.now(),
+address:req.address, city:req.city,
+beds:req.beds, baths:req.baths, sqft:req.sqft,
+dom:req.dom, price:req.price, agent:req.agentName,
+photos:req.photos, order:tour.listings.length+1,
+};
+setTours(prev=>prev.map(t=>t.id===req.tourId
+? {...t, listings:[...t.listings, newListing]}
+: t
+));
+}
+// Send approval email
+try {
+await fetch(LISTING_REQUEST_FORMSPREE,{
+method:"POST", headers:{"Content-Type":"application/json","Accept":"application/json"},
+body:JSON.stringify({
+email:req.agentEmail, _replyto:"braydondennis@gmail.com",
+_subject:`✅ Your listing has been approved — MarketReady Tours`,
+message:`Hi ${req.agentName},\n\nGreat news! Your listing at ${req.address} has been approved for the ${req.tourName} tour.\n\nYour property will be featured on the tour. We look forward to showcasing your listing!\n\nIf you have any questions, reply to this email.\n\n— MarketReady Tours\nmarketreadytours.com`,
+}),
+});
+} catch(e){ console.warn("Approval email failed",e); }
+setRequests(prev=>prev.map(r=>r.id===req.id ? {...r,status:"approved",reviewedAt:new Date().toISOString()} : r));
+setReviewing(null); setProcessing(false);
+};
+const handleDeny=async(req)=>{
+setProcessing(true);
+try {
+await fetch(LISTING_REQUEST_FORMSPREE,{
+method:"POST", headers:{"Content-Type":"application/json","Accept":"application/json"},
+body:JSON.stringify({
+email:req.agentEmail, _replyto:"braydondennis@gmail.com",
+_subject:`Your listing request — MarketReady Tours`,
+message:`Hi ${req.agentName},\n\nThank you for your interest in featuring ${req.address} on the ${req.tourName} tour.\n\nAfter review, we are unable to include your listing on this particular tour${denialReason?` — ${denialReason}`:""}.\n\nWe encourage you to submit future listings for upcoming tours. Thank you for your understanding.\n\n— MarketReady Tours\nmarketreadytours.com`,
+}),
+});
+} catch(e){ console.warn("Denial email failed",e); }
+setRequests(prev=>prev.map(r=>r.id===req.id ? {...r,status:"denied",reviewedAt:new Date().toISOString(),denialReason} : r));
+setReviewing(null); setDenialReason(""); setProcessing(false);
+};
+return (
+<div style={{background:B.cream,minHeight:"100vh",paddingBottom:40}}>
+{/* Header */}
+<div style={{background:B.primary,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 8px rgba(0,0,0,.2)"}}>
+<button onClick={onBack} style={{background:"none",border:"none",color:"#fff",cursor:"pointer",fontSize:22}}>←</button>
+<div style={{flex:1}}>
+<div style={{color:B.gold,fontSize:10,textTransform:"uppercase",letterSpacing:1.5,fontWeight:700}}>Admin</div>
+<div style={{color:"#fff",fontFamily:"Georgia,serif",fontSize:15,fontWeight:700}}>
+Listing Requests {pending>0&&<span style={{background:B.gold,color:"#fff",borderRadius:"50%",fontSize:11,fontWeight:800,padding:"2px 7px",marginLeft:6}}>{pending}</span>}
+</div>
+</div>
+<img src={window.MRT_LOGO_DATA} alt="MarketReady Tours" style={{height:136,objectFit:"contain",borderRadius:8}}/>
+</div>
+{/* Filter tabs */}
+<div style={{display:"flex",gap:0,background:"#fff",borderBottom:"1px solid #E5E7EB",position:"sticky",top:57,zIndex:99}}>
+{[["pending","⏳ Pending",requests.filter(r=>r.status==="pending").length],
+["approved","✅ Approved",requests.filter(r=>r.status==="approved").length],
+["denied","❌ Denied",requests.filter(r=>r.status==="denied").length],
+["all","All",requests.length]].map(([val,label,count])=>(
+<button key={val} onClick={()=>setFilter(val)}
+style={{flex:1,background:"none",border:"none",borderBottom:`3px solid ${filter===val?B.primary:"transparent"}`,
+padding:"12px 4px",cursor:"pointer",fontSize:11,fontWeight:filter===val?700:500,
+color:filter===val?B.primary:B.gray}}>
+{label} {count>0&&<span style={{background:filter===val?B.primary:"#E5E7EB",color:filter===val?"#fff":B.gray,
+borderRadius:10,fontSize:10,padding:"1px 6px",marginLeft:2}}>{count}</span>}
+</button>
+))}
+</div>
+<div style={{padding:"16px",maxWidth:600,margin:"0 auto"}}>
+{visibleRequests.length===0&&(
+<div style={{textAlign:"center",padding:"60px 20px",color:B.gray}}>
+<div style={{fontSize:40,marginBottom:12}}>📭</div>
+<p style={{fontSize:15,fontWeight:600}}>No {filter==="all"?"":filter} requests</p>
+<p style={{fontSize:13,marginTop:4}}>Listing requests will appear here when agents submit them.</p>
+</div>
+)}
+{visibleRequests.map(req=>(
+<div key={req.id} style={{background:"#fff",borderRadius:14,marginBottom:12,
+boxShadow:"0 2px 10px rgba(0,0,0,.07)",overflow:"hidden",
+border:`2px solid ${req.status==="pending"?"#FDE68A":req.status==="approved"?"#BBF7D0":"#FECACA"}`}}>
+{/* Cover photo */}
+{req.photos?.[0]&&<img src={req.photos[0]} alt="" style={{width:"100%",height:140,objectFit:"cover",display:"block"}}/>}
+<div style={{padding:"14px 16px"}}>
+<div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+<div>
+<div style={{fontWeight:700,fontSize:15,color:B.primary}}>{req.address}</div>
+<div style={{fontSize:12,color:B.gray}}>{req.city}</div>
+</div>
+<span style={{
+background:req.status==="pending"?"#FFFBEB":req.status==="approved"?"#F0FDF4":"#FEF2F2",
+color:req.status==="pending"?"#92400E":req.status==="approved"?"#065F46":"#DC2626",
+border:`1px solid ${req.status==="pending"?"#FDE68A":req.status==="approved"?"#BBF7D0":"#FECACA"}`,
+borderRadius:8,fontSize:11,fontWeight:700,padding:"3px 10px",flexShrink:0,marginLeft:8}}>
+{req.status==="pending"?"⏳ Pending":req.status==="approved"?"✅ Approved":"❌ Denied"}
+</span>
+</div>
+<div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+{[`🛏 ${req.beds}bd`,`🚿 ${req.baths}ba`,`📐 ${req.sqft?.toLocaleString()} sqft`,
+`💰 $${req.price?.toLocaleString()}`,`📅 ${req.dom} DOM`].map((t,i)=>(
+<span key={i} style={{background:B.lightGray,borderRadius:6,padding:"3px 8px",fontSize:11,color:B.dark}}>{t}</span>
+))}
+</div>
+<div style={{background:"#F9FAFB",borderRadius:8,padding:"10px 12px",marginBottom:12,fontSize:12}}>
+<div style={{color:B.dark,fontWeight:600,marginBottom:4}}>👤 Agent</div>
+<div style={{color:B.gray}}>{req.agentName} · {req.agentEmail}</div>
+{req.agentPhone&&<div style={{color:B.gray}}>{req.agentPhone}</div>}
+<div style={{color:B.primary,fontWeight:600,marginTop:6}}>🗓 Tour: {req.tourName}</div>
+<div style={{color:B.gray,marginTop:2}}>Submitted: {new Date(req.submittedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
+{req.notes&&<div style={{color:"#92400E",marginTop:6,background:"#FFFBEB",borderRadius:6,padding:"6px 8px"}}>📝 {req.notes}</div>}
+</div>
+{req.status==="pending"&&(
+<div style={{display:"flex",gap:8}}>
+<button onClick={()=>setReviewing({...req,action:"approve"})} className="btn-hover"
+style={{flex:1,background:"#059669",color:"#fff",border:"none",borderRadius:10,
+padding:"11px 0",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+✅ Approve
+</button>
+<button onClick={()=>setReviewing({...req,action:"deny"})}
+style={{flex:1,background:"#FEF2F2",color:"#DC2626",border:"1.5px solid #FECACA",borderRadius:10,
+padding:"11px 0",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+❌ Deny
+</button>
+</div>
+)}
+{req.status==="denied"&&req.denialReason&&(
+<div style={{background:"#FEF2F2",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#DC2626"}}>
+Reason: {req.denialReason}
+</div>
+)}
+</div>
+</div>
+))}
+</div>
+{/* Approve/Deny confirmation modal */}
+{reviewing&&(
+<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9000,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+<div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 24px",width:"100%",maxWidth:480}}>
+{reviewing.action==="approve"?(
+<>
+<div style={{fontSize:40,textAlign:"center",marginBottom:12}}>✅</div>
+<h3 style={{color:B.primary,fontFamily:"Georgia,serif",fontSize:18,textAlign:"center",marginBottom:8}}>Approve this listing?</h3>
+<p style={{color:B.gray,fontSize:13,textAlign:"center",marginBottom:4}}>
+<strong>{reviewing.address}</strong> will be added to <strong>{reviewing.tourName}</strong>.
+</p>
+<p style={{color:B.gray,fontSize:12,textAlign:"center",marginBottom:20}}>
+{reviewing.agentName} will receive an approval email.
+</p>
+<div style={{display:"flex",gap:10}}>
+<button onClick={()=>setReviewing(null)}
+style={{flex:1,background:B.lightGray,border:"none",borderRadius:10,padding:"13px 0",fontWeight:600,cursor:"pointer"}}>
+Cancel
+</button>
+<button onClick={()=>handleApprove(reviewing)} disabled={processing} className="btn-hover"
+style={{flex:2,background:processing?"#9CA3AF":"#059669",color:"#fff",border:"none",
+borderRadius:10,padding:"13px 0",fontWeight:700,cursor:processing?"default":"pointer",fontSize:14}}>
+{processing?"Processing...":"Confirm Approval"}
+</button>
+</div>
+</>
+):(
+<>
+<div style={{fontSize:40,textAlign:"center",marginBottom:12}}>❌</div>
+<h3 style={{color:"#DC2626",fontFamily:"Georgia,serif",fontSize:18,textAlign:"center",marginBottom:8}}>Deny this listing?</h3>
+<p style={{color:B.gray,fontSize:13,textAlign:"center",marginBottom:16}}>
+<strong>{reviewing.address}</strong> — {reviewing.agentName} will be notified by email.
+</p>
+<textarea placeholder="Reason for denial (optional — included in email to agent)"
+value={denialReason} onChange={e=>setDenialReason(e.target.value)} rows={3}
+style={{width:"100%",border:"1.5px solid #E5E7EB",borderRadius:10,padding:"11px 12px",
+fontSize:13,outline:"none",resize:"none",marginBottom:16}}/>
+<div style={{display:"flex",gap:10}}>
+<button onClick={()=>{setReviewing(null);setDenialReason("");}}
+style={{flex:1,background:B.lightGray,border:"none",borderRadius:10,padding:"13px 0",fontWeight:600,cursor:"pointer"}}>
+Cancel
+</button>
+<button onClick={()=>handleDeny(reviewing)} disabled={processing}
+style={{flex:2,background:processing?"#9CA3AF":"#DC2626",color:"#fff",border:"none",
+borderRadius:10,padding:"13px 0",fontWeight:700,cursor:processing?"default":"pointer",fontSize:14}}>
+{processing?"Processing...":"Confirm Denial"}
+</button>
+</div>
+</>
+)}
+</div>
+</div>
+)}
+</div>
+);
+}
+/* ── CONTACT PAGE ── */
+function ContactPage({onBack}) {
+const [form,setForm]=useState({name:"",email:"",phone:"",message:""});
+const [sent,setSent]=useState(false);
+return (
+<div style={{background:B.cream,minHeight:"100vh",paddingBottom:40}}>
+<div style={{background:B.primary,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 8px rgba(0,0,0,.2)"}}>
+<button onClick={onBack} style={{background:"none",border:"none",color:"#fff",cursor:"pointer",fontSize:22}}>←</button>
+<div><img src={window.MRT_LOGO_DATA} alt="MarketReady Tours" style={{height:136,objectFit:"contain",borderRadius:8}}/><div style={{color:"#fff",fontFamily:"Georgia,serif",fontSize:15,fontWeight:700}}>Contact Us</div></div>
+</div>
+<div style={{padding:"24px 16px"}}>
+<div style={{background:B.primary,borderRadius:16,padding:"22px 20px",marginBottom:24}}>
+<div style={{color:B.gold,fontSize:11,textTransform:"uppercase",letterSpacing:2,fontWeight:700,marginBottom:14}}>Get In Touch</div>
+<div style={{display:"flex",flexDirection:"column",gap:12}}>
+<a href="mailto:braydondennis@gmail.com" style={{color:"#fff",textDecoration:"none",display:"flex",alignItems:"center",gap:12}}>
+<span style={{background:"rgba(255,255,255,.12)",borderRadius:8,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>📧</span>
+<span style={{color:B.lightGold,fontWeight:600}}>braydondennis@gmail.com</span>
+</a>
+<a href="https://www.marketreadytours.com" target="_blank" style={{color:"#fff",textDecoration:"none",display:"flex",alignItems:"center",gap:12}}>
+<span style={{background:"rgba(255,255,255,.12)",borderRadius:8,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>🌐</span>
+<span style={{color:B.lightGold,fontWeight:600}}>marketreadytours.com</span>
+</a>
+</div>
+</div>
+{sent?(
+<div style={{background:"#fff",borderRadius:16,padding:"40px 24px",textAlign:"center"}}>
+<div style={{fontSize:64,marginBottom:12}}>🏡</div>
+<h3 style={{color:B.primary,fontFamily:"Georgia,serif",fontSize:22,marginBottom:8}}>Message Sent!</h3>
+<p style={{color:B.gray,marginBottom:24}}>We'll follow up at {form.email||"your email"}.</p>
+<button onClick={onBack} style={{background:B.primary,color:"#fff",border:"none",borderRadius:10,padding:"13px 36px",fontWeight:700,cursor:"pointer"}}>Back to Tours</button>
+</div>
+):(
+<div style={{background:"#fff",borderRadius:16,padding:"20px 18px",display:"flex",flexDirection:"column",gap:12}}>
+<h3 style={{color:B.primary,fontFamily:"Georgia,serif",fontSize:18,marginBottom:4}}>Send a Message</h3>
+{[["name","Your Name *","text"],["email","Email Address *","email"],["phone","Phone Number","tel"]].map(([f,ph,t])=>(
+<input key={f} type={t} placeholder={ph} value={form[f]} onChange={e=>setForm(v=>({...v,[f]:e.target.value}))}
+style={{border:"1.5px solid #E5E7EB",borderRadius:10,padding:"12px 14px",fontSize:15,outline:"none",background:B.cream}}/>
+))}
+<textarea placeholder="Your message..." value={form.message} onChange={e=>setForm(v=>({...v,message:e.target.value}))} rows={5}
+style={{border:"1.5px solid #E5E7EB",borderRadius:10,padding:"12px 14px",fontSize:15,resize:"vertical",outline:"none",background:B.cream}}/>
+<button onClick={()=>{if(form.name&&form.email&&form.message)setSent(true);}} className="btn-hover"
+style={{background:B.primary,color:"#fff",border:"none",borderRadius:10,padding:"15px 0",fontWeight:700,fontSize:16,cursor:"pointer"}}>Send Message</button>
+</div>
+)}
+</div>
+</div>
+);
+}
+/* ── APP ROOT ── */
+function App() {
+const [tours,setTours]=useState(()=>{
+try { const s=localStorage.getItem("mrt_tours"); return s?JSON.parse(s):INITIAL_TOURS; } catch(e){return INITIAL_TOURS;}
+});
+useEffect(()=>{
+try { localStorage.setItem("mrt_tours",JSON.stringify(tours)); } catch(e){}
+},[tours]);
+const [sponsors,setSponsors]=useState(()=>{
+try { const s=localStorage.getItem("mrt_sponsors"); return s?JSON.parse(s):INITIAL_SPONSORS; } catch(e){return INITIAL_SPONSORS;}
+});
+useEffect(()=>{
+try { localStorage.setItem("mrt_sponsors",JSON.stringify(sponsors)); } catch(e){}
+},[sponsors]);
+const [listingRequests,setListingRequests]=useState(()=>{
+try { const s=localStorage.getItem("mrt_listing_requests"); return s?JSON.parse(s):[]; } catch(e){return [];}
+});
+useEffect(()=>{
+try { localStorage.setItem("mrt_listing_requests",JSON.stringify(listingRequests)); } catch(e){}
+},[listingRequests]);
+const [subAdmins,setSubAdmins]=useState(()=>{
+try {
+const saved = localStorage.getItem("gat_subadmins");
+return saved ? JSON.parse(saved) : INITIAL_SUBADMINS;
+} catch(e) { return INITIAL_SUBADMINS; }
+});
+// Persist subAdmins to localStorage whenever they change
+useEffect(()=>{
+try { localStorage.setItem("gat_subadmins", JSON.stringify(subAdmins)); } catch(e) {}
+}, [subAdmins]);
+const [page,setPage]=useState("dashboard");
+const [currentUser,setCurrentUser]=useState(null);
+const [showLogin,setShowLogin]=useState(false);
+const isSuperAdmin=currentUser?.role==="super";
+const isAnyAdmin=!!currentUser;
+useEffect(()=>{
+try{const s=sessionStorage.getItem("gat_session");if(s){const p=JSON.parse(s);if(p.role==="super"&&p.username===SUPER_ADMIN.username)setCurrentUser(p);else if(INITIAL_SUBADMINS.find(u=>u.username===p.username))setCurrentUser(p);else sessionStorage.removeItem("gat_session");}}catch(e){sessionStorage.removeItem("gat_session");}
+},[]);
+const handleLogout=()=>{sessionStorage.removeItem("gat_session");setCurrentUser(null);setPage("dashboard");};
+
+/* Firebase sync — runs in background, app works fine without it */
+const fbBusy = useRef({});
+useEffect(()=>{
+if(!_fb) return;
+const items = [
+  {path:"mrt_tours", get:()=>tours, set:setTours},
+  {path:"mrt_sponsors", get:()=>sponsors, set:setSponsors},
+  {path:"mrt_listing_requests", get:()=>listingRequests, set:setListingRequests},
+  {path:"mrt_subadmins", get:()=>subAdmins, set:setSubAdmins},
+];
+const offs = [];
+items.forEach(({path, get, set})=>{
+  try {
+    const ref = _fb.ref(path);
+    // Seed Firebase if empty
+    ref.once("value").then(s=>{
+      if(s.val()===null) try{ref.set(get());}catch(e){}
+    }).catch(()=>{});
+    // Listen for updates from other browsers
+    const cb = ref.on("value", snap=>{
+      try {
+        if(fbBusy.current[path]){fbBusy.current[path]=false;return;}
+        const raw = snap.val();
+        if(raw===null||raw===undefined) return;
+        const fixed = fbToArr(raw);
+        set(fixed);
+      } catch(e){}
+    });
+    offs.push(()=>{try{ref.off("value",cb);}catch(e){}});
+  } catch(e){}
+});
+return ()=>offs.forEach(fn=>fn());
+},[]);
+// Push changes to Firebase when state updates
+useEffect(()=>{if(!_fb)return;try{fbBusy.current["mrt_tours"]=true;_fb.ref("mrt_tours").set(tours);}catch(e){}},[tours]);
+useEffect(()=>{if(!_fb)return;try{fbBusy.current["mrt_sponsors"]=true;_fb.ref("mrt_sponsors").set(sponsors);}catch(e){}},[sponsors]);
+useEffect(()=>{if(!_fb)return;try{fbBusy.current["mrt_listing_requests"]=true;_fb.ref("mrt_listing_requests").set(listingRequests);}catch(e){}},[listingRequests]);
+useEffect(()=>{if(!_fb)return;try{fbBusy.current["mrt_subadmins"]=true;_fb.ref("mrt_subadmins").set(subAdmins);}catch(e){}},[subAdmins]);
+return (
+<div style={{maxWidth:480,margin:"0 auto",minHeight:"100vh"}}>
+{showLogin&&!currentUser&&<LoginPage onLogin={u=>{setCurrentUser(u);setShowLogin(false);}} onClose={()=>setShowLogin(false)} subAdmins={subAdmins}/>}
+{page==="dashboard"&&<ToursDashboard tours={tours} setTours={setTours} isAdmin={isAnyAdmin} isSuperAdmin={isSuperAdmin} currentUser={currentUser} onAdminLogin={()=>setShowLogin(true)} onLogout={handleLogout} onTeamPage={()=>setPage("team")} onRequestsPage={()=>setPage("requests-admin")} listingRequests={listingRequests} sponsors={sponsors}/>}
+{page==="sponsors"&&<SponsorsPage sponsors={sponsors} setSponsors={setSponsors} isAdmin={isSuperAdmin}/>}
+{page==="team"&&isSuperAdmin&&<TeamPage subAdmins={subAdmins} setSubAdmins={setSubAdmins} onBack={()=>setPage("dashboard")}/>}
+{page==="contact"&&<ContactPage onBack={()=>setPage("dashboard")}/>}
+{page==="request"&&<RequestListingPage tours={tours} onBack={()=>setPage("dashboard")} onSubmit={(req)=>setListingRequests(prev=>[...prev,req])}/>}
+{page==="requests-admin"&&(currentUser?.role==="super"||currentUser)&&<ListingRequestsAdmin requests={listingRequests} setRequests={setListingRequests} tours={tours} setTours={setTours} onBack={()=>setPage("dashboard")} currentUser={currentUser}/>}
+<div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:"#fff",borderTop:"1px solid #E5E7EB",display:"flex",padding:"10px 0 16px",boxShadow:"0 -4px 16px rgba(0,0,0,.07)",zIndex:200}}>
+<button onClick={()=>setPage("dashboard")} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,color:page==="dashboard"?B.primary:B.gray,fontWeight:page==="dashboard"?700:500,fontSize:11}}><span style={{fontSize:20}}>🗓️</span>Tours</button>
+<a href="https://www.marketreadytours.com" target="_blank" style={{flex:1,textDecoration:"none",display:"flex",flexDirection:"column",alignItems:"center",gap:3,color:B.gray,fontWeight:500,fontSize:11}}><span style={{fontSize:20}}>📊</span>Estimates</a>
+<button onClick={()=>setPage("sponsors")} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,color:page==="sponsors"?B.primary:B.gray,fontWeight:page==="sponsors"?700:500,fontSize:11}}><span style={{fontSize:20}}>⭐</span>Sponsors</button>
+<button onClick={()=>setPage("request")} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,color:page==="request"?B.gold:B.gray,fontWeight:page==="request"?700:500,fontSize:11,position:"relative"}}>
+<span style={{fontSize:20}}>🏠</span>List Home
+</button>
+<button onClick={()=>setPage("contact")} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,color:page==="contact"?B.primary:B.gray,fontWeight:page==="contact"?700:500,fontSize:11}}><span style={{fontSize:20}}>✉️</span>Contact</button>
+</div>
+</div>
+);
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
