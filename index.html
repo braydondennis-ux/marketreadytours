@@ -106,7 +106,7 @@ message:
 /* ── API KEYS ── */
 const GOOGLE_KEY = "AIzaSyBoPhoNQ5C84nS79QDV36R93APg4Pizo_E";
 const TODAY = new Date().toISOString().split("T")[0];
-const APP_VERSION="mrt_2026febS";
+const APP_VERSION="mrt_2026febU";
 try{if(localStorage.getItem("mrt_app_version")!==APP_VERSION){for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&(k.startsWith("mrt_")||k.startsWith("gat_")))localStorage.removeItem(k);}localStorage.setItem("mrt_app_version",APP_VERSION);}}catch(e){}
 const INITIAL_TOURS = [
 {
@@ -593,9 +593,7 @@ gap:12,position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 8px rgba(0,0,0,.2)"}}
 </div>
 <img src={window.MRT_LOGO_DATA} alt="MarketReady Tours" style={{height:40,objectFit:"contain",borderRadius:6,marginLeft:"auto",background:"#fff",padding:3}}/>
 </div>
-{showHowItWorks&&(<div style={{position:"fixed",inset:0,background:"#fff",zIndex:400,overflowY:"auto"}}><div style={{background:B.primary,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,position:"sticky",top:0,zIndex:1,boxShadow:"0 2px 8px rgba(0,0,0,.2)"}}><button onClick={()=>setShowHowItWorks(false)} style={{background:"none",border:"none",color:"#fff",cursor:"pointer",fontSize:22}}>←</button><div style={{color:"#fff",fontFamily:"Georgia,serif",fontSize:17,fontWeight:700}}>How It Works</div></div><div style={{padding:"24px 20px 100px"}}><div style={{textAlign:"center",marginBottom:28}}><div style={{fontSize:48,marginBottom:12}}>🏡</div><h2 style={{fontFamily:"Georgia,serif",color:B.primary,fontSize:22,lineHeight:1.3,marginBottom:10}}>A Smarter Way to Preview Homes</h2><p style={{color:B.gray,fontSize:14,lineHeight:1.6}}>Gain insights, stay competitive, and elevate your real estate game.</p></div>{[{num:"1",emoji:"🔍",title:"Browse Upcoming Tours",desc:"Explore curated home tours organized by zip code, neighborhood, and community area."},{num:"2",emoji:"✋",title:"RSVP & Confirm Attendance",desc:"Reserve your spot directly. Limited to licensed agents and approved sponsors."},{num:"3",emoji:"📧",title:"Receive Morning-Of Details",desc:"Confirmed attendees receive meeting location, tour route, and featured listings."},{num:"4",emoji:"🤝",title:"Preview Homes with Peers",desc:"Tour active listings alongside fellow agents. Gain perspectives on pricing and appeal."},{num:"5",emoji:"⭐",title:"Submit Real-Time Feedback",desc:"Provide structured listing feedback directly within the app as you tour each home."},{num:"6",emoji:"🏆",title:"Stay Informed & Connected",desc:"Walk away with inventory knowledge, market intelligence, and stronger relationships."}].map((step,i)=>(<div key={i} style={{background:"#fff",borderRadius:16,padding:"20px 18px",marginBottom:14,border:"1px solid #E5E7EB",boxShadow:"0 2px 10px rgba(0,0,0,.05)",position:"relative",overflow:"hidden"}}><div style={{position:"absolute",top:0,left:0,width:4,height:"100%",background:B.gold,borderRadius:"0 4px 4px 0"}}/><div style={{display:"flex",alignItems:"flex-start",gap:14}}><div style={{width:44,height:44,borderRadius:12,background:B.primary,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><span style={{fontSize:22}}>{step.emoji}</span></div><div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}><span style={{background:B.gold,color:"#fff",borderRadius:6,padding:"2px 8px",fontSize:11,fontWeight:800}}>STEP {step.num}</span><span style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:B.primary}}>{step.title}</span></div><p style={{color:B.gray,fontSize:13,lineHeight:1.6,margin:0}}>{step.desc}</p></div></div></div>))}<div style={{background:"linear-gradient(135deg, #1B3A6B 0%, #2A5298 100%)",borderRadius:16,padding:"24px 20px",marginTop:8,marginBottom:20}}><h3 style={{color:"#fff",fontFamily:"Georgia,serif",fontSize:18,marginBottom:16,textAlign:"center"}}>Why Agents Love It</h3><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>{["Efficient property access","Focused, relevant tours","Professional collaboration","Real-time feedback","Elevated experience","Competitive edge"].map((item,i)=>(<div key={i} style={{background:"rgba(255,255,255,.12)",borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"center",gap:8}}><span style={{color:B.gold,fontSize:14,fontWeight:800}}>✓</span><span style={{color:"#fff",fontSize:12,fontWeight:600}}>{item}</span></div>))}</div></div><div style={{textAlign:"center",padding:"20px 0"}}><div style={{fontFamily:"Georgia,serif",fontSize:20,fontWeight:700,color:B.primary,lineHeight:1.4}}>Preview Smarter.<br/><span style={{color:B.gold}}>Advise Better.</span><br/>Win More.</div><button onClick={()=>setShowHowItWorks(false)} style={{marginTop:20,background:B.gold,color:"#fff",border:"none",borderRadius:12,padding:"14px 40px",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 4px 14px rgba(201,168,76,.4)"}}>Browse Tours →</button></div></div></div>)}
-{showCalendar&&(<div style={{padding:"16px 14px",paddingBottom:90}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}><button onClick={()=>setCalMonth(p=>{const m=p.month-1;return m<0?{year:p.year-1,month:11}:{year:p.year,month:m};})} style={{background:B.lightGray,border:"none",borderRadius:10,padding:"8px 14px",cursor:"pointer",fontSize:18,fontWeight:700,color:B.primary}}>‹</button><div style={{fontFamily:"Georgia,serif",fontSize:18,fontWeight:700,color:B.primary}}>{new Date(calMonth.year,calMonth.month).toLocaleDateString("en-US",{month:"long",year:"numeric"})}</div><button onClick={()=>setCalMonth(p=>{const m=p.month+1;return m>11?{year:p.year+1,month:0}:{year:p.year,month:m};})} style={{background:B.lightGray,border:"none",borderRadius:10,padding:"8px 14px",cursor:"pointer",fontSize:18,fontWeight:700,color:B.primary}}>›</button></div><div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:4}}>{["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d=>(<div key={d} style={{textAlign:"center",fontSize:11,fontWeight:700,color:B.gray,padding:"6px 0",textTransform:"uppercase"}}>{d}</div>))}</div>{(()=>{const firstDay=new Date(calMonth.year,calMonth.month,1).getDay();const daysInMonth=new Date(calMonth.year,calMonth.month+1,0).getDate();const cells=[];for(let i=0;i<firstDay;i++)cells.push(null);for(let d=1;d<=daysInMonth;d++)cells.push(d);while(cells.length%7!==0)cells.push(null);const rows=[];for(let i=0;i<cells.length;i+=7)rows.push(cells.slice(i,i+7));return rows.map((row,ri)=>(<div key={ri} style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:2}}>{row.map((day,ci)=>{if(!day)return <div key={ci} style={{minHeight:64}}/>;const dateStr=`${calMonth.year}-${String(calMonth.month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;const dayTours=tours.filter(t=>t.date===dateStr);const isToday=dateStr===TODAY;return(<div key={ci} onClick={()=>{if(dayTours.length>0){setShowCalendar(false);setFilterDate(dateStr);}}} style={{minHeight:64,background:isToday?"#EFF6FF":dayTours.length>0?"#fff":"#FAFAFA",border:isToday?`2px solid ${B.primary}`:`1px solid ${dayTours.length>0?"#E5E7EB":"#F3F4F6"}`,borderRadius:10,padding:"4px 4px 2px",cursor:dayTours.length>0?"pointer":"default",overflow:"hidden"}}><div style={{fontSize:12,fontWeight:isToday?800:600,color:isToday?B.primary:dayTours.length>0?B.dark:"#D1D5DB",textAlign:"center",marginBottom:2}}>{day}</div>{dayTours.slice(0,2).map(t=>(<div key={t.id} style={{background:t.color,color:"#fff",borderRadius:4,padding:"2px 4px",fontSize:8,fontWeight:700,marginBottom:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",lineHeight:1.3}}>{t.emoji} {t.name}</div>))}{dayTours.length>2&&<div style={{fontSize:8,color:B.gray,fontWeight:700,textAlign:"center"}}>+{dayTours.length-2} more</div>}</div>);})}</div>));})()}<div style={{marginTop:16,background:"#fff",borderRadius:12,padding:"14px 16px",border:"1px solid #E5E7EB"}}><div style={{fontSize:11,fontWeight:700,color:B.gray,textTransform:"uppercase",letterSpacing:.5,marginBottom:10}}>This Month's Tours</div>{(()=>{const monthTours=tours.filter(t=>{const d=new Date(t.date+"T12:00:00");return d.getMonth()===calMonth.month&&d.getFullYear()===calMonth.year;}).sort((a,b)=>a.date.localeCompare(b.date));if(!monthTours.length)return <div style={{color:B.gray,fontSize:13,textAlign:"center",padding:"12px 0"}}>No tours this month</div>;return monthTours.map(t=>(<div key={t.id} onClick={()=>setActiveTourId(t.id)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:"1px solid #F3F4F6",cursor:"pointer"}}><div style={{width:40,height:40,borderRadius:10,background:t.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{t.emoji}</div><div style={{flex:1,minWidth:0}}><div style={{fontWeight:700,fontSize:14,color:B.dark}}>{t.name}</div><div style={{fontSize:12,color:B.gray}}>{new Date(t.date+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})} · {t.time} · {t.listings.length} stops</div></div><div style={{color:B.gold,fontSize:16}}>›</div></div>));})()}</div></div>)}
-<div style={{padding:"20px 14px",display:showCalendar?"none":"flex",flexDirection:"column",gap:16}}>
+<div style={{padding:"20px 14px",display:"flex",flexDirection:"column",gap:16}}>
 {!hasAny&&(
 <div style={{textAlign:"center",padding:"60px 20px",color:B.gray}}>
 <div style={{fontSize:48,marginBottom:12}}>📊</div>
@@ -1577,9 +1575,7 @@ style={{background:"#fff",borderRadius:16,overflow:"hidden",boxShadow:"0 2px 10p
 /* ── TOURS DASHBOARD ── */
 function ToursDashboard({tours,setTours,isAdmin,isSuperAdmin,currentUser,onAdminLogin,onLogout,onTeamPage,onRequestsPage,listingRequests}) {
 const [filterDate,setFilterDate]=useState("upcoming");
-const [showCalendar,setShowCalendar]=useState(false);
-const [showHowItWorks,setShowHowItWorks]=useState(false);
-const [calMonth,setCalMonth]=useState(()=>{const d=new Date();return {year:d.getFullYear(),month:d.getMonth()};});
+React.useEffect(()=>{window._getMRTTours=function(ds){return tours.filter(function(t){return t.date===ds;});};},[tours]);
 const [showCreate,setShowCreate]=useState(false);
 const [newTour,setNewTour]=useState({name:"",time:"09:00",date:TODAY,color:"#1B3A6B",emoji:"🏡"});
 const [confirmDelete,setConfirmDelete]=useState(null);
@@ -1702,27 +1698,15 @@ style={{width:"100%",border:"1.5px solid #E5E7EB",borderRadius:10,padding:"11px 
 </div>
 <div style={{display:"flex",overflowX:"auto",paddingBottom:0}}>
 {allDateTabs.map(date=>(
-<button key={date} onClick={()=>{setShowCalendar(false);setFilterDate(date);}}
-style={{background:"none",border:"none",borderBottom:!showCalendar&&filterDate===date?`3px solid ${B.gold}`:"3px solid transparent",
-color:!showCalendar&&filterDate===date?B.primary:"rgba(107,114,128,.55)",fontWeight:!showCalendar&&filterDate===date?800:500,
-fontSize:13,padding:"10px 18px 12px",cursor:"pointer",whiteSpace:"nowrap"}}>
+<button key={date} onClick={()=>setFilterDate(date)}
+style={{background:"none",border:"none",borderBottom:filterDate===date?`3px solid ${B.gold}`:"3px solid transparent",
+color:filterDate===date?B.primary:"rgba(107,114,128,.55)",fontWeight:filterDate===date?700:500,
+fontSize:12,padding:"8px 16px 10px",cursor:"pointer",whiteSpace:"nowrap"}}>
 {date==="upcoming"?`Upcoming (${tours.filter(t=>t.date>=TODAY).length})`:new Date(date+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})}
 </button>
 ))}
-<button onClick={()=>setShowCalendar(!showCalendar)}
-style={{background:"none",border:"none",borderBottom:showCalendar?`3px solid ${B.gold}`:"3px solid transparent",
-color:showCalendar?B.primary:"rgba(107,114,128,.55)",fontWeight:showCalendar?800:500,
-fontSize:13,padding:"10px 18px 12px",cursor:"pointer",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:4}}>
-📅 Calendar
-</button>
-<div style={{marginLeft:"auto",flexShrink:0}}>
-<button onClick={()=>setShowHowItWorks(true)}
-style={{background:B.lightGray,border:"1px solid #E5E7EB",color:B.primary,fontWeight:700,
-fontSize:11,padding:"5px 12px",cursor:"pointer",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:4,
-borderRadius:6,margin:"4px 0"}}>
-ℹ️ How It Works
-</button>
-</div>
+<button onClick={()=>window.showCalendarView()} style={{background:B.primary,border:"none",color:"#fff",fontWeight:700,fontSize:12,padding:"6px 14px",cursor:"pointer",whiteSpace:"nowrap",borderRadius:8,margin:"4px 2px",display:"flex",alignItems:"center",gap:4}}>📅 Calendar</button>
+<button onClick={()=>window.showHowItWorks()} style={{background:B.gold,border:"none",color:"#fff",fontWeight:700,fontSize:12,padding:"6px 14px",cursor:"pointer",whiteSpace:"nowrap",borderRadius:8,margin:"4px 2px",display:"flex",alignItems:"center",gap:4}}>ℹ️ How It Works</button>
 </div>
 </div>
 <div style={{padding:"20px 14px",display:"flex",flexDirection:"column",gap:16}}>
@@ -1978,7 +1962,7 @@ try {
 await fetch(LISTING_REQUEST_FORMSPREE,{
 method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
 body:JSON.stringify({
-_cc:"bdennis@azgat.com",email:"marketreadytours@gmail.com",_replyto:fields.agentEmail,
+email:"marketreadytours@gmail.com",_replyto:fields.agentEmail,
 _subject:`New Listing Request: ${fields.address}`,
 message:`New listing request submitted!\n\nAgent: ${fields.agentName}\nEmail: ${fields.agentEmail}\nPhone: ${fields.agentPhone||"Not provided"}\n\nProperty: ${fields.address}, ${fields.city}\nTour: ${requestData.tourName}\nBeds: ${fields.beds} | Baths: ${fields.baths} | Sqft: ${fields.sqft}\nPrice: $${Number(String(fields.price).replace(/[^0-9]/g,"")).toLocaleString()}\nDOM: ${fields.dom}\nNotes: ${fields.notes||"None"}\n\nLog in to approve or deny this request.`,
 }),
@@ -2181,7 +2165,7 @@ try {
 await fetch(LISTING_REQUEST_FORMSPREE,{
 method:"POST", headers:{"Content-Type":"application/json","Accept":"application/json"},
 body:JSON.stringify({
-_cc:"bdennis@azgat.com",email:req.agentEmail, _replyto:"marketreadytours@gmail.com",
+email:req.agentEmail, _replyto:"marketreadytours@gmail.com",
 _subject:`✅ Your listing has been approved — MarketReady Tours`,
 message:`Hi ${req.agentName},\n\nGreat news! Your listing at ${req.address} has been approved for the ${req.tourName} tour.\n\nYour property will be featured on the tour. We look forward to showcasing your listing!\n\nIf you have any questions, reply to this email.\n\n— MarketReady Tours\nmarketreadytours.com`,
 }),
@@ -2196,7 +2180,7 @@ try {
 await fetch(LISTING_REQUEST_FORMSPREE,{
 method:"POST", headers:{"Content-Type":"application/json","Accept":"application/json"},
 body:JSON.stringify({
-_cc:"bdennis@azgat.com",email:req.agentEmail, _replyto:"marketreadytours@gmail.com",
+email:req.agentEmail, _replyto:"marketreadytours@gmail.com",
 _subject:`Your listing request — MarketReady Tours`,
 message:`Hi ${req.agentName},\n\nThank you for your interest in featuring ${req.address} on the ${req.tourName} tour.\n\nAfter review, we are unable to include your listing on this particular tour${denialReason?` — ${denialReason}`:""}.\n\nWe encourage you to submit future listings for upcoming tours. Thank you for your understanding.\n\n— MarketReady Tours\nmarketreadytours.com`,
 }),
@@ -2531,18 +2515,14 @@ boxShadow:"0 4px 16px rgba(0,0,0,.15)"}}>
 /* ── APP ROOT ── */
 function App() {
 React.useEffect(()=>{
-  const onHash=()=>{
-    const h=window.location.hash.slice(2)||"";
-    if(h==="sponsors"){setPage("sponsors");setActiveTourId(null);}
-    else if(h==="team"){setPage("team");setActiveTourId(null);}
-    else if(h==="requests"){setPage("requests");setActiveTourId(null);}
-    else if(h.startsWith("tour/")){setActiveTourId(h.slice(5));setPage("dashboard");}
-    else{setPage("dashboard");setActiveTourId(null);}
-  };
-  window.addEventListener("hashchange",onHash);
-  if(window.location.hash.length>2)onHash();
-  return()=>window.removeEventListener("hashchange",onHash);
-},[]);
+const onHash=()=>{const h=window.location.hash.slice(2)||"";
+if(h==="sponsors"){setPage("sponsors");setActiveTourId(null);}
+else if(h==="team"){setPage("team");setActiveTourId(null);}
+else if(h==="requests"){setPage("requests");setActiveTourId(null);}
+else if(h.startsWith("tour/")){setActiveTourId(h.slice(5));setPage("dashboard");}
+else{setPage("dashboard");setActiveTourId(null);}
+};window.addEventListener("hashchange",onHash);if(window.location.hash.length>2)onHash();
+return()=>window.removeEventListener("hashchange",onHash);},[]);
 const [tours,setTours]=useState(()=>{
 try { const s=localStorage.getItem("mrt_tours"); return s?JSON.parse(s):INITIAL_TOURS; } catch(e){return INITIAL_TOURS;}
 });
@@ -2634,7 +2614,7 @@ setPage("dashboard");
 {page==="requests-admin"&&(currentUser?.role==="super"||currentUser)&&<ListingRequestsAdmin requests={listingRequests} setRequests={setListingRequests} tours={tours} setTours={setTours} onBack={()=>{setPage("dashboard");window.location.hash="/";}} currentUser={currentUser}/>}
 <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:"#fff",borderTop:"1px solid #E5E7EB",display:"flex",padding:"10px 0 16px",boxShadow:"0 -4px 16px rgba(0,0,0,.07)",zIndex:200}}>
 <button onClick={()=>setPage("dashboard")} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,color:page==="dashboard"?B.primary:B.gray,fontWeight:page==="dashboard"?700:500,fontSize:11}}><span style={{fontSize:20}}>🗓️</span>Tours</button>
-<a href="https://www.marketreadytours.com" target="_blank" style={{flex:1,textDecoration:"none",display:"flex",flexDirection:"column",alignItems:"center",gap:3,color:B.gray,fontWeight:500,fontSize:11}}><span style={{fontSize:20}}>📊</span>Estimates</a>
+
 <button onClick={()=>setPage("sponsor-signup")} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,color:page==="sponsor-signup"?B.gold:B.gray,fontWeight:page==="sponsor-signup"?700:500,fontSize:11}}><span style={{fontSize:20}}>⭐</span>Sponsor</button>
 <button onClick={()=>setPage("request")} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,color:page==="request"?B.gold:B.gray,fontWeight:page==="request"?700:500,fontSize:11,position:"relative"}}>
 <span style={{fontSize:20}}>🏠</span>List Home
@@ -2644,7 +2624,86 @@ setPage("dashboard");
 </div>
 );
 }
+window._getMRTToursData=[];
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+
+<script>
+window.showHowItWorks=function(){
+if(document.getElementById("hiw-modal"))return;
+var ov=document.createElement("div");
+ov.id="hiw-modal";
+ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px";
+ov.onclick=function(){ov.remove()};
+var box=document.createElement("div");
+box.style.cssText="background:#fff;border-radius:20px;max-width:440px;width:100%;max-height:85vh;overflow-y:auto";
+box.onclick=function(e){e.stopPropagation()};
+var steps=[
+["\uD83D\uDD0D","Browse Tours","Explore curated tours by zip code and neighborhood."],
+["\u270B","RSVP","Reserve your spot. Limited to licensed agents."],
+["\uD83D\uDCE7","Get Details","Receive meeting location and tour route morning-of."],
+["\uD83E\uDD1D","Tour with Peers","Preview listings alongside fellow agents."],
+["\u2B50","Rate Homes","Submit structured feedback as you tour."],
+["\uD83C\uDFC6","Stay Connected","Walk away with market intel and stronger relationships."]
+];
+var h='<div style="background:#1B3A6B;padding:16px 20px;border-radius:20px 20px 0 0;display:flex;justify-content:space-between;align-items:center"><span style="color:#fff;font-family:Georgia,serif;font-size:17px;font-weight:700">How It Works</span><button onclick="document.getElementById(&quot;hiw-modal&quot;).remove()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer">\u2715</button></div>';
+h+='<div style="padding:20px 20px 28px"><div style="text-align:center;margin-bottom:20px"><div style="font-size:40px;margin-bottom:8px">\uD83C\uDFE1</div><div style="font-family:Georgia,serif;color:#1B3A6B;font-size:20px;font-weight:700">A Smarter Way to Preview Homes</div></div>';
+for(var i=0;i<steps.length;i++){
+h+='<div style="display:flex;gap:12px;margin-bottom:12px"><div style="width:36px;height:36px;border-radius:10px;background:#1B3A6B;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px">'+steps[i][0]+'</div><div><div style="font-weight:700;font-size:14px;color:#1B3A6B">'+steps[i][1]+'</div><div style="color:#6B7280;font-size:12px;line-height:1.5">'+steps[i][2]+'</div></div></div>';
+}
+h+='<div style="text-align:center;margin-top:16px"><button onclick="document.getElementById(&quot;hiw-modal&quot;).remove()" style="background:#C9A84C;color:#fff;border:none;border-radius:12px;padding:12px 36px;font-weight:700;font-size:14px;cursor:pointer">Browse Tours \u2192</button></div></div>';
+box.innerHTML=h;
+ov.appendChild(box);
+document.body.appendChild(ov);
+};
+
+window.showCalendarView=function(){
+if(document.getElementById("cal-modal"))return;
+var ov=document.createElement("div");
+ov.id="cal-modal";
+ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px";
+ov.onclick=function(){ov.remove()};
+var box=document.createElement("div");
+box.style.cssText="background:#fff;border-radius:20px;max-width:480px;width:100%;max-height:85vh;overflow-y:auto";
+box.onclick=function(e){e.stopPropagation()};
+var now=new Date();
+var cm={year:now.getFullYear(),month:now.getMonth()};
+function render(){
+var fd=new Date(cm.year,cm.month,1).getDay();
+var dm=new Date(cm.year,cm.month+1,0).getDate();
+var mn=new Date(cm.year,cm.month).toLocaleDateString("en-US",{month:"long",year:"numeric"});
+var today=new Date();var ty=today.getFullYear(),tm=today.getMonth(),td=today.getDate();
+var h='<div style="background:#1B3A6B;padding:16px 20px;border-radius:20px 20px 0 0;display:flex;justify-content:space-between;align-items:center"><span style="color:#fff;font-family:Georgia,serif;font-size:17px;font-weight:700">'+mn+'</span><button onclick="document.getElementById(&quot;cal-modal&quot;).remove()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer">\u2715</button></div>';
+h+='<div style="padding:16px"><div style="display:flex;justify-content:space-between;margin-bottom:12px"><button onclick="window._calPrev()" style="background:#F3F4F6;border:none;border-radius:8px;padding:6px 14px;cursor:pointer;font-size:16px;font-weight:700;color:#1B3A6B">\u2039</button><button onclick="window._calNext()" style="background:#F3F4F6;border:none;border-radius:8px;padding:6px 14px;cursor:pointer;font-size:16px;font-weight:700;color:#1B3A6B">\u203A</button></div>';
+h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px">';
+["S","M","T","W","T","F","S"].forEach(function(d){h+='<div style="text-align:center;font-size:11px;font-weight:700;color:#6B7280;padding:4px 0">'+d+'</div>';});
+h+='</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">';
+for(var i=0;i<fd;i++)h+='<div style="min-height:48px"></div>';
+for(var d=1;d<=dm;d++){
+var isToday=(cm.year===ty&&cm.month===tm&&d===td);
+var ds=cm.year+"-"+String(cm.month+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+var tours=window._getMRTTours?window._getMRTTours(ds):[];
+var bg=isToday?"#EFF6FF":"#fff";
+var bdr=isToday?"2px solid #1B3A6B":"1px solid #F3F4F6";
+var col=isToday?"#1B3A6B":"#0F172A";
+var fw=isToday?"800":"600";
+h+='<div style="min-height:48px;background:'+bg+';border:'+bdr+';border-radius:8px;padding:3px;text-align:center;overflow:hidden">';
+h+='<div style="font-size:12px;font-weight:'+fw+';color:'+col+'">'+d+'</div>';
+for(var t=0;t<Math.min(tours.length,2);t++){
+h+='<div style="background:'+tours[t].color+';color:#fff;border-radius:3px;padding:1px 3px;font-size:7px;font-weight:700;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+tours[t].emoji+' '+tours[t].name+'</div>';
+}
+if(tours.length>2)h+='<div style="font-size:7px;color:#6B7280">+'+(tours.length-2)+'</div>';
+h+='</div>';
+}
+h+='</div></div>';
+box.innerHTML=h;
+}
+window._calPrev=function(){cm.month--;if(cm.month<0){cm.month=11;cm.year--;}render();};
+window._calNext=function(){cm.month++;if(cm.month>11){cm.month=0;cm.year++;}render();};
+render();
+ov.appendChild(box);
+document.body.appendChild(ov);
+};
 </script>
 </body>
 </html>
