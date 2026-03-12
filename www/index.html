@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="MRT Tours"/>
 <title>MarketReady Tours — #1 Real Estate Home Tours App</title>
 <meta name="description" content="Tour. Rate. Decide. Browse curated home tours, RSVP, preview homes with peers, and submit real-time feedback."/>
 <meta property="og:type" content="website"/>
@@ -23,6 +26,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#FFFFFF}
@@ -44,6 +48,7 @@ const { useState, useEffect, useRef } = React;
 /* ── FIREBASE (background sync only — app works without it) ── */
 let _fb = null;
 let _fbAuth = null;
+let _fbStorage = null;
 const _fbConfig = {
     apiKey: "AIzaSyChm7UYPWXg_nhD8JqUW3WRfyzsTC491V8",
     authDomain: "marketready-tours.firebaseapp.com",
@@ -57,6 +62,7 @@ try {
   firebase.initializeApp(_fbConfig);
   _fb = firebase.database();
   _fbAuth = firebase.auth();
+  _fbStorage = firebase.storage();
 } catch(e) { /* Firebase unavailable — app still works via localStorage */ }
 
 /* Create a Firebase Auth user via secondary app (so current admin stays signed in) */
@@ -438,11 +444,39 @@ if(!codeUnlocked&&tour.code) return (
 const handlePhotoUpload=(e)=>{
 const files=Array.from(e.target.files);
 files.forEach(file=>{
-const reader=new FileReader();
-reader.onload=ev=>{
-setPhotos(prev=>[...prev,{url:ev.target.result,name:file.name}]);
-};
-reader.readAsDataURL(file);
+  const tempId="photo-"+Date.now()+"-"+Math.random();
+  const img=new Image();
+  const objectUrl=URL.createObjectURL(file);
+  img.onload=()=>{
+    URL.revokeObjectURL(objectUrl);
+    const MAX=800;
+    const scale=Math.min(1,MAX/Math.max(img.width,img.height));
+    const canvas=document.createElement("canvas");
+    canvas.width=Math.round(img.width*scale);
+    canvas.height=Math.round(img.height*scale);
+    canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);
+    const previewUrl=canvas.toDataURL("image/jpeg",0.75);
+    // Add with uploading flag so submit is blocked
+    setPhotos(prev=>[...prev,{url:previewUrl,name:file.name,tempId,uploading:true}]);
+    if(_fbStorage){
+      canvas.toBlob(blob=>{
+        const path=`mrt_rating_photos/${tour.id}/${listing.id}/${tempId}_${file.name.replace(/[^a-zA-Z0-9.]/g,"_")}`;
+        _fbStorage.ref(path).put(blob,{contentType:"image/jpeg"})
+          .then(snap=>snap.ref.getDownloadURL())
+          .then(dlUrl=>{
+            // Replace preview with real URL, clear uploading flag
+            setPhotos(prev=>prev.map(p=>p.tempId===tempId?{...p,url:dlUrl,uploading:false}:p));
+          })
+          .catch(()=>{
+            // Upload failed — keep compressed base64, clear flag
+            setPhotos(prev=>prev.map(p=>p.tempId===tempId?{...p,uploading:false}:p));
+          });
+      },"image/jpeg",0.75);
+    } else {
+      setPhotos(prev=>prev.map(p=>p.tempId===tempId?{...p,uploading:false}:p));
+    }
+  };
+  img.src=objectUrl;
 });
 };
 const starLabel=(n)=>n===0?"Not rated":"★".repeat(n)+"☆".repeat(5-n)+` (${n}/5)`;
@@ -468,7 +502,7 @@ _subject:`🏡 Home Tour Rating — ${listing.address}`,
 // Build email HTML
 const ratingRows=RATING_CATS.map(cat=>`<tr><td style="padding:6px 12px;color:#6B7280;font-size:13px">${cat.label}</td><td style="padding:6px 12px;text-align:right;font-size:14px">${"★".repeat(ratings[cat.key]||0)}${"☆".repeat(5-(ratings[cat.key]||0))} ${ratings[cat.key]||0}/5</td></tr>`).join("");
 const emailHtml=`<div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;background:#fff">
-<div style="background:#1B3A6B;padding:24px 28px"><img src="https://www.marketreadytours.com/logo.png" alt="MarketReady Tours" style="height:40px"/></div>
+<div style="background:#1B3A6B;padding:22px 28px"><p style="margin:0;font-family:Georgia,serif;font-size:24px;font-weight:900;color:#ffffff;letter-spacing:1px">Market<span style="color:#C9A84C">Ready</span> <span style="font-weight:300;font-size:20px;letter-spacing:3px">Tours</span></p></div>
 <div style="background:#C9A84C;height:4px"></div>
 <div style="padding:28px">
 <h2 style="color:#1B3A6B;margin:0 0 4px">New Rating Submitted</h2>
@@ -480,11 +514,11 @@ const emailHtml=`<div style="font-family:Georgia,serif;max-width:600px;margin:0 
 <table style="width:100%;border-collapse:collapse;margin-bottom:20px">${ratingRows}</table>
 ${suggestions?`<div style="margin-bottom:12px"><strong style="font-size:12px;color:#6B7280;text-transform:uppercase;letter-spacing:.5px">Suggestions</strong><p style="margin:4px 0 0;font-size:14px;color:#111">${suggestions}</p></div>`:""}
 <div style="margin-bottom:12px"><strong style="font-size:12px;color:#6B7280;text-transform:uppercase;letter-spacing:.5px">Suggested Price</strong><p style="margin:4px 0 0;font-size:14px;font-weight:700;color:#1B3A6B">${pricedRight?"✅ Priced Correctly":(sugPrice||"Not provided")}</p></div>
-${photos.length>0?`<div style="margin-top:16px"><strong style="font-size:12px;color:#6B7280;text-transform:uppercase;letter-spacing:.5px">📷 Photos (${photos.length})</strong><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">${photos.map(p=>`<img src="${p.url}" style="width:160px;height:120px;object-fit:cover;border-radius:8px;border:1px solid #E5E7EB"/>`).join("")}</div></div>`:""}
+${photos.filter(p=>p.url&&p.url.startsWith("https://")).length>0?`<div style="margin-top:16px"><strong style="font-size:12px;color:#6B7280;text-transform:uppercase;letter-spacing:.5px">&#128247; Photos (${photos.filter(p=>p.url&&p.url.startsWith("https://")).length})</strong><div style="margin-top:8px">${photos.filter(p=>p.url&&p.url.startsWith("https://")).map((p,i)=>`<a href="${p.url}" target="_blank" style="display:inline-block;margin:4px 6px 4px 0;background:#1B3A6B;color:#ffffff;text-decoration:none;padding:6px 14px;border-radius:6px;font-size:13px;font-family:Arial,sans-serif">&#128247; View Photo ${i+1}</a>`).join("")}</div></div>`:""}
 <p style="font-size:11px;color:#9CA3AF;margin-top:24px;border-top:1px solid #F3F4F6;padding-top:12px">All feedback is provided by licensed real estate agents specializing in the area.</p>
 </div></div>`;
 // Fire CF email first — independent of Formspree
-onRatingSubmit(listing.id, ratings, {suggestions,sugPrice:pricedRight?"Priced Correctly":sugPrice,pricedRight,photoCount:photos.length});
+onRatingSubmit(listing.id, ratings, {suggestions,sugPrice:pricedRight?"Priced Correctly":sugPrice,pricedRight,photoCount:photos.length,photoUrls:photos.map(p=>p.url).filter(u=>u&&u.startsWith("https://"))});
 const emailRecips=[...new Set([...(listing.agentEmail?[listing.agentEmail]:[]),"marketreadytours@gmail.com"])];
 for(const email of emailRecips){
   await sendCFEmail(email,`🏡 New Rating — ${listing.address} (${tour.emoji} ${tour.name})`,emailHtml,emailHtml);
@@ -595,7 +629,8 @@ cursor:"pointer",background:B.lightGray,color:B.gray,fontSize:13,fontWeight:600}
 <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}>
 {photos.map((p,i)=>(
 <div key={i} style={{position:"relative"}}>
-<img src={p.url} alt="" style={{width:72,height:56,objectFit:"cover",borderRadius:8,display:"block"}}/>
+<img src={p.url} alt="" style={{width:72,height:56,objectFit:"cover",borderRadius:8,display:"block",opacity:p.uploading?0.5:1}}/>
+{p.uploading&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:8,background:"rgba(0,0,0,.3)",fontSize:9,color:"#fff",fontWeight:700}}>⏳</div>}
 <button onClick={()=>setPhotos(prev=>prev.filter((_,j)=>j!==i))}
 style={{position:"absolute",top:-6,right:-6,background:B.red,color:"#fff",border:"none",
 borderRadius:"50%",width:20,height:20,fontSize:12,cursor:"pointer",display:"flex",
@@ -609,12 +644,12 @@ alignItems:"center",justifyContent:"center",fontWeight:700}}>✕</button>
 <div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:10,
 padding:"12px 16px",color:"#DC2626",fontSize:13}}>⚠️ {submitError}</div>
 )}
-<button onClick={handleSubmit} disabled={submitting} className="btn-hover"
-style={{background:submitting?"#9CA3AF":tour.color,color:"#fff",border:"none",borderRadius:12,
-padding:"16px 0",fontWeight:700,fontSize:16,cursor:submitting?"default":"pointer",
+<button onClick={handleSubmit} disabled={submitting||photos.some(p=>p.uploading)} className="btn-hover"
+style={{background:(submitting||photos.some(p=>p.uploading))?"#9CA3AF":tour.color,color:"#fff",border:"none",borderRadius:12,
+padding:"16px 0",fontWeight:700,fontSize:16,cursor:(submitting||photos.some(p=>p.uploading))?"default":"pointer",
 boxShadow:"0 4px 14px rgba(27,58,107,.3)",display:"flex",alignItems:"center",
 justifyContent:"center",gap:10}}>
-{submitting?(
+{photos.some(p=>p.uploading)?(<><span style={{display:"inline-block",width:18,height:18,border:"3px solid rgba(255,255,255,.4)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin .8s linear infinite"}}/> Uploading photo...</>):submitting?(
 <><span style={{display:"inline-block",width:18,height:18,border:"3px solid rgba(255,255,255,.4)",
 borderTopColor:"#fff",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
 Sending to {listing.agent}...</>
@@ -687,7 +722,7 @@ return v>0?(
 }
 /* ── RATING SUMMARY DASHBOARD ── */
 function SummaryDashboard({tour, onBack}) {
-const listings = tour.listings;
+const listings = tour.listings||[];
 const hasAny = listings.some(l=>tour.ratings?.[l.id]&&Object.values(tour.ratings[l.id]).some(v=>v>0));
 return (
 <div style={{background:B.cream,minHeight:"100vh",paddingBottom:40}}>
@@ -1140,7 +1175,7 @@ function AddListingForm({ tourColor, onAdd, onCancel }) {
 const [query, setQuery]       = useState("");
 const [suggestions, setSugg]  = useState([]);
 const [selected, setSelected] = useState(null);
-const [fields, setFields]     = useState({ address:"", city:"", beds:"", baths:"", sqft:"", dom:"", price:"", agent:"", photos:[] });
+const [fields, setFields]     = useState({ address:"", city:"", beds:"", baths:"", sqft:"", dom:"", price:"", agent:"", agentEmail:"", agentPhone:"", photos:[] });
 const [loading, setLoading]   = useState(false);
 const [status, setStatus]     = useState("");
 const [sessionToken, setToken]= useState(null);
@@ -1225,11 +1260,12 @@ photos: fields.photos?.length
 };
 const clearSelection = () => {
 setSelected(null); setQuery("");
-setFields({ address:"", city:"", beds:"", baths:"", sqft:"", dom:"", price:"", agent:"", photos:[] });
+setFields({ address:"", city:"", beds:"", baths:"", sqft:"", dom:"", price:"", agent:"", agentEmail:"", agentPhone:"", photos:[] });
 setStatus(""); setSugg([]);
 setTimeout(() => inputRef.current?.focus(), 100);
 };
-const fieldLabels = [["beds","Beds"],["baths","Baths"],["sqft","Sq Ft"],["dom","Days on Market"],["price","List Price ($)"],["agent","Listing Agent"]];
+const fieldLabels = [["beds","Beds"],["baths","Baths"],["sqft","Sq Ft"],["dom","Days on Market"],["price","List Price ($)"],["agent","Listing Agent Name"]];
+const agentContactFields = [["agentEmail","Agent Email","email"],["agentPhone","Agent Phone","tel"]];
 return (
 <div style={{background:"#fff", borderRadius:14, padding:16, border:`2px solid ${tourColor}40`}}>
 <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:14}}>
@@ -1309,6 +1345,14 @@ style={{width:"100%", border:"1.5px solid #E5E7EB", borderRadius:8, padding:"9px
 </div>
 ))}
 </div>
+{agentContactFields.map(([f,label,type])=>(
+<div key={f}>
+<label style={{display:"block", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, color:B.gray, marginBottom:4}}>{label}</label>
+<input type={type} value={fields[f]||""} onChange={e=>setFields(fi=>({...fi,[f]:e.target.value}))}
+placeholder={label}
+style={{width:"100%", border:"1.5px solid #E5E7EB", borderRadius:8, padding:"9px 10px", fontSize:14, outline:"none", background:B.cream}}/>
+</div>
+))}
 <div>
 <label style={{display:"block", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, color:B.gray, marginBottom:4}}>City, State ZIP</label>
 <input value={fields.city||""} onChange={e=>setFields(fi=>({...fi,city:e.target.value}))}
@@ -1401,7 +1445,7 @@ const [editingStop,setEditingStop]=useState(null); // id of listing being edited
 const [editFields,setEditFields]=useState({});
 useEffect(()=>{setAdminListings([...(tour.listings||[])].sort((a,b)=>a.order-b.order));},[tour]);
 const toggleFavorite=(listingId)=>{
-const fav={...tour.favorites,[listingId]:!tour.favorites?.[listingId]};
+const fav={...(tour.favorites||{}),[listingId]:!(tour.favorites||{})[listingId]};
 onUpdateTour({...tour,favorites:fav});
 };
 const handleRatingSubmit=(listingId,ratings,extra)=>{
@@ -1466,7 +1510,8 @@ const [showCancelModal,setShowCancelModal]=useState(false);
 const [cancelMsg,setCancelMsg]=useState({type:"cancel",newDate:"",newTime:"",note:""});
 const sendRoute=async()=>{
 if(adminListings.length<1){alert("No listings to send.");return;}
-const tourReqs=(listingRequests||[]).filter(r=>r.tourId===tour.id&&r.status==="approved");
+let tourReqs=(listingRequests||[]).filter(r=>r.tourId===tour.id&&r.status==="approved");
+if(tourReqs.length===0){const seen=new Set();tourReqs=(tour.listings||[]).filter(l=>l.agentEmail).reduce((acc,l)=>{if(!seen.has(l.agentEmail)){seen.add(l.agentEmail);acc.push({agentName:l.agent,agentEmail:l.agentEmail,status:"approved",tourId:tour.id});}return acc;},[]);}
 const signups=(listingRequests||[]).filter(r=>r.tourId===tour.id&&r.type==="tour-signup"&&r.status==="approved");
 const allRecipients=[];
 const seen=new Set();
@@ -1496,8 +1541,16 @@ alert(`Route sent! ✉️\n\n✅ ${sent} email${sent!==1?"s":""} sent successful
 };
 const saveAdmin=()=>{onUpdateTour({...tour,listings:adminListings});setShowAdmin(false);};
 const sendPostTourFollowUp=async()=>{
-const tourReqs=(listingRequests||[]).filter(r=>r.tourId===tour.id&&r.status==="approved");
-if(tourReqs.length===0){alert("No approved attendees or agents found for this tour.");return;}
+let tourReqs=(listingRequests||[]).filter(r=>r.tourId===tour.id&&r.status==="approved");
+// Fallback: build recipients from tour.listings agent emails if no requests found
+if(tourReqs.length===0){
+  const seen=new Set();
+  tourReqs=(tour.listings||[]).filter(l=>l.agentEmail).reduce((acc,l)=>{
+    if(!seen.has(l.agentEmail)){seen.add(l.agentEmail);acc.push({agentName:l.agent,agentEmail:l.agentEmail,status:"approved",tourId:tour.id});}
+    return acc;
+  },[]);
+}
+if(tourReqs.length===0){alert("No agent emails found for this tour. Add agent emails to listings via the Manage panel.");return;}
 setSendingFollowUp(true);
 const sorted=[...(tour.listings||[])].sort((a,b)=>a.order-b.order);
 const ratings=tour.ratings||{};
@@ -1522,7 +1575,7 @@ return `<div style="background:#F9FAFB;border-radius:8px;padding:12px 14px;margi
 <div style="font-size:11px;color:#9CA3AF;margin-bottom:6px">Submission #${si+1} · ${s.submittedAt?new Date(s.submittedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}):"—"}</div>
 ${subRatingRows}
 ${s.suggestions?`<div style="margin-top:6px;font-size:13px;color:#374151"><em>Suggestions:</em> ${s.suggestions}</div>`:""}
-${s.photoCount>0?`<div style="font-size:12px;color:#6B7280;margin-top:4px">📷 ${s.photoCount} photo(s)</div>`:""}
+${s.photoUrls?.length>0?`<div style="margin-top:8px">${s.photoUrls.map((url,i)=>`<a href="${url}" target="_blank" style="display:inline-block;margin:4px 6px 4px 0;background:#1B3A6B;color:#ffffff;text-decoration:none;padding:6px 14px;border-radius:6px;font-size:13px;font-family:Arial,sans-serif">&#128247; View Photo ${i+1}</a>`).join("")}</div>`:""}
 </div>`;
 }).join("");
 return `<div style="border-radius:12px;overflow:hidden;margin-bottom:20px;box-shadow:0 1px 6px rgba(0,0,0,.1)">
@@ -1556,11 +1609,9 @@ const listingBlocks=sorted.map((l,i)=>buildListingBlock(l,i)).join("");
 const buildHtml=(recipientName)=>`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;background:#F3F4F6;font-family:Georgia,serif">
 <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.12)">
-<div style="background:#1B3A6B;padding:24px 28px;display:flex;align-items:center;gap:16px">
-<img src="https://www.marketreadytours.com/logo.png" alt="MarketReady Tours" style="height:48px;object-fit:contain;background:#fff;border-radius:8px;padding:4px"/>
-<div><div style="color:rgba(255,255,255,.7);font-size:12px;text-transform:uppercase;letter-spacing:1px">Tour Summary</div>
-<div style="color:#fff;font-size:20px;font-weight:700">${tour.emoji} ${tour.name}</div>
-<div style="color:rgba(255,255,255,.7);font-size:13px">${tour.date} · ${tour.time}</div></div>
+<div style="background:#1B3A6B;padding:22px 28px">
+<p style="margin:0 0 4px;font-family:Georgia,serif;font-size:22px;font-weight:900;color:#ffffff;letter-spacing:1px">Market<span style="color:#C9A84C">Ready</span> <span style="font-weight:300;font-size:18px;letter-spacing:3px">Tours</span></p>
+<p style="margin:0;font-family:Arial,sans-serif;font-size:13px;color:rgba(255,255,255,0.7)">${tour.emoji} ${tour.name} &nbsp;·&nbsp; ${tour.date} · ${tour.time}</p>
 </div>
 <div style="background:#C9A84C;height:4px"></div>
 <div style="padding:24px 20px">
@@ -1587,8 +1638,9 @@ setSendingFollowUp(false);
 alert("Post-tour follow-up sent! 📊\n\n✅ "+sent+" email"+(sent!==1?"s":"")+" sent"+(failed>0?"\n❌ "+failed+" failed":""));
 };
 const sendCancelReschedule=async()=>{
-const tourReqs=(listingRequests||[]).filter(r=>r.tourId===tour.id&&r.status==="approved");
-if(tourReqs.length===0){alert("No approved attendees or agents found for this tour.");return;}
+let tourReqs=(listingRequests||[]).filter(r=>r.tourId===tour.id&&r.status==="approved");
+if(tourReqs.length===0){const seen=new Set();tourReqs=(tour.listings||[]).filter(l=>l.agentEmail).reduce((acc,l)=>{if(!seen.has(l.agentEmail)){seen.add(l.agentEmail);acc.push({agentName:l.agent,agentEmail:l.agentEmail,status:"approved",tourId:tour.id});}return acc;},[]);}
+if(tourReqs.length===0){alert("No agent emails found for this tour.");return;}
 setSendingCancel(true);
 const isCancel=cancelMsg.type==="cancel";
 const subject=isCancel
@@ -2236,16 +2288,16 @@ style={{background:"#fff",borderRadius:16,overflow:"hidden",boxShadow:"0 2px 10p
 );
 }
 /* ── TOURS DASHBOARD ── */
-function ToursDashboard({tours,setTours,isAdmin,isSuperAdmin,currentUser,onAdminLogin,onLogout,onTeamPage,onRequestsPage,listingRequests}) {
+function ToursDashboard({tours,setTours,isAdmin,isSuperAdmin,currentUser,onAdminLogin,onLogout,onTeamPage,onRequestsPage,onRequestTour,listingRequests}) {
 const [filterDate,setFilterDate]=useState("upcoming");
 React.useEffect(()=>{window._getMRTTours=function(ds){return tours.filter(function(t){return t.date===ds;});};},[tours]);
 const [showCreate,setShowCreate]=useState(false);
 const [newTour,setNewTour]=useState({name:"",time:"09:00",date:TODAY,color:"#1B3A6B",emoji:"🏡"});
 const [confirmDelete,setConfirmDelete]=useState(null);
 const [activeTourId,setActiveTourId]=useState(null);
-const pastDates=[...new Set(tours.map(t=>t.date).filter(d=>d<TODAY))].sort();
+const pastDates=[...new Set(tours.map(t=>t.date).filter(d=>d&&d<TODAY))].sort();
 const allDateTabs=["upcoming",...pastDates];
-const filtered=(filterDate==="upcoming"?tours.filter(t=>t.date>=TODAY):tours.filter(t=>t.date===filterDate)).sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
+const filtered=(filterDate==="upcoming"?tours.filter(t=>t.date>=TODAY):tours.filter(t=>t.date===filterDate)).sort((a,b)=>a.date.localeCompare(b.date)||((a.time||"").localeCompare(b.time||"")));
 const fmt12=t24=>{const[h,m]=t24.split(":");const hr=parseInt(h);const ampm=hr>=12?"PM":"AM";const hr12=hr%12||12;return `${hr12}:${m} ${ampm}`;};
 const createTour=()=>{
 if(!newTour.name)return;
@@ -2330,14 +2382,14 @@ style={{width:"100%",border:"1.5px solid #E5E7EB",borderRadius:10,padding:"11px 
 )}
 <div style={{background:"#fff",padding:"9px 18px 0",position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 12px rgba(0,0,0,.08)",borderBottom:"2px solid "+B.gold}}>
 <div style={{paddingBottom:14}}>
-<div style={{display:"flex",justifyContent:"flex-start"}}>
+<div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
 <img src={window.MRT_LOGO_DATA} alt="MarketReady Tours" style={{height:136,objectFit:"contain",borderRadius:8,background:"#fff",padding:6}}/>
+{!isAdmin&&(
+<button onClick={onAdminLogin} style={{background:B.primary,border:"none",color:"#fff",borderRadius:8,padding:"8px 13px",cursor:"pointer",fontSize:12,fontWeight:600,marginTop:8}}>🔐 Login</button>
+)}
 </div>
 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:2}}>
 <div style={{color:B.gray,fontFamily:"Georgia,serif",fontSize:15,fontWeight:400,letterSpacing:1.5,textTransform:"uppercase",lineHeight:1.4}}><span style={{fontSize:20,fontWeight:700,color:B.primary}}>#1</span> Real Estate<br/>Home Tours App</div>
-{!isAdmin&&(
-<button onClick={onAdminLogin} style={{background:B.primary,border:"none",color:"#fff",borderRadius:8,padding:"8px 13px",cursor:"pointer",fontSize:12,fontWeight:600}}>🔐 Login</button>
-)}
 </div>
 {isAdmin&&(
 <div style={{display:"flex",gap:8,marginTop:12}}>
@@ -2350,7 +2402,7 @@ style={{width:"100%",border:"1.5px solid #E5E7EB",borderRadius:10,padding:"11px 
 <span style={{fontSize:22}}>📋</span>
 <span style={{fontSize:12,fontWeight:700}}>Requests</span>
 <span style={{fontSize:9,opacity:.7,lineHeight:1.2}}>Listing Reviews</span>
-{listingRequests?.filter(r=>r.status==="pending").length>0&&<span style={{position:"absolute",top:-4,right:-4,background:"#DC2626",color:"#fff",borderRadius:"50%",fontSize:9,fontWeight:800,width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center"}}>{listingRequests.filter(r=>r.status==="pending").length}</span>}
+{(listingRequests||[])?.filter(r=>r.status==="pending").length>0&&<span style={{position:"absolute",top:-4,right:-4,background:"#DC2626",color:"#fff",borderRadius:"50%",fontSize:9,fontWeight:800,width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center"}}>{(listingRequests||[]).filter(r=>r.status==="pending").length}</span>}
 </button>
 <button onClick={()=>setShowCreate(true)} style={{flex:1,background:B.gold,border:"none",color:"#fff",borderRadius:10,padding:"12px 4px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
 <span style={{fontSize:22}}>➕</span>
@@ -2366,16 +2418,10 @@ style={{width:"100%",border:"1.5px solid #E5E7EB",borderRadius:10,padding:"11px 
 )}
 </div>
 <div style={{display:"flex",overflowX:"auto",paddingBottom:0}}>
-{allDateTabs.map(date=>(
-<button key={date} onClick={()=>setFilterDate(date)}
-style={{background:"none",border:"none",borderBottom:filterDate===date?`3px solid ${B.gold}`:"3px solid transparent",
-color:filterDate===date?B.primary:"rgba(107,114,128,.55)",fontWeight:filterDate===date?700:500,
-fontSize:12,padding:"8px 16px 10px",cursor:"pointer",whiteSpace:"nowrap"}}>
-{date==="upcoming"?`Upcoming (${tours.filter(t=>t.date>=TODAY).length})`:new Date(date+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})}
-</button>
-))}
+<div style={{flex:1}}/>
 <button onClick={()=>window.showCalendarView()} style={{background:B.primary,border:"none",color:"#fff",fontWeight:700,fontSize:12,padding:"6px 14px",cursor:"pointer",whiteSpace:"nowrap",borderRadius:8,margin:"4px 2px",display:"flex",alignItems:"center",gap:4}}>📅 Calendar</button>
-<button onClick={()=>window.showHowItWorks()} style={{background:B.gold,border:"none",color:"#fff",fontWeight:700,fontSize:12,padding:"6px 14px",cursor:"pointer",whiteSpace:"nowrap",borderRadius:8,margin:"4px 2px",display:"flex",alignItems:"center",gap:4}}>ℹ️ How It Works</button>
+<button onClick={()=>onRequestTour&&onRequestTour()} style={{background:B.gold,border:"none",color:"#fff",fontWeight:700,fontSize:12,padding:"6px 14px",cursor:"pointer",whiteSpace:"nowrap",borderRadius:8,margin:"4px 2px",display:"flex",alignItems:"center",gap:4}}>📩 Request Tour</button>
+<button onClick={()=>window.showHowItWorks()} style={{background:"#6B7280",border:"none",color:"#fff",fontWeight:700,fontSize:12,padding:"6px 14px",cursor:"pointer",whiteSpace:"nowrap",borderRadius:8,margin:"4px 2px",display:"flex",alignItems:"center",gap:4}}>❓ FAQ</button>
 </div>
 </div>
 <div style={{padding:"20px 14px",display:"flex",flexDirection:"column",gap:16}}>
@@ -2418,7 +2464,7 @@ return (
 {[...(tour.listings||[])].sort((a,b)=>a.order-b.order).map((l,i)=>(
 <div key={l.id} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:72,marginRight:10}}>
 <div style={{position:"relative"}}>
-<img src={l.photos[0]} alt="" style={{width:64,height:50,objectFit:"cover",borderRadius:8,display:"block"}}/>
+<img src={(l.photos||[])[0]} alt="" style={{width:64,height:50,objectFit:"cover",borderRadius:8,display:"block"}}/>
 <div style={{position:"absolute",top:3,left:3,background:tour.color,color:"#fff",borderRadius:4,padding:"1px 5px",fontSize:9,fontWeight:800}}>#{i+1}</div>
 {tour.favorites?.[l.id]&&<div style={{position:"absolute",top:2,right:2,fontSize:10}}>❤️</div>}
 </div>
@@ -3314,9 +3360,9 @@ const fbIgnore = useRef({});
 useEffect(()=>{
 if(!_fb) return;
 const paths = {
-  "mrt_tours": setTours,
-  "mrt_listing_requests": setListingRequests,
-  "mrt_subadmins": setSubAdmins,
+  "mrt_tours": (val) => setTours(Array.isArray(val) ? val : Object.values(val||{})),
+  "mrt_listing_requests": (val) => setListingRequests(Array.isArray(val) ? val : Object.values(val||{})),
+  "mrt_subadmins": (val) => setSubAdmins(Array.isArray(val) ? val : Object.values(val||{})),
 };
 // First load from Firebase
 Promise.all(Object.keys(paths).map(path=>
@@ -3353,7 +3399,7 @@ return (
 <div style={{maxWidth:480,margin:"0 auto",minHeight:"100vh"}}>
 <div id="fb-status" style={{position:"fixed",top:4,right:4,zIndex:9999,fontSize:10,padding:"2px 8px",borderRadius:10,background:_fb?"#D1FAE5":"#FEE2E2",color:_fb?"#065F46":"#991B1B"}}>{_fb?(fbReady.current?"🟢 Synced":"🟡 Connecting..."):"🔴 Local only"}</div>
 {showLogin&&!currentUser&&<LoginPage onLogin={u=>{setCurrentUser(u);setShowLogin(false);}} onClose={()=>setShowLogin(false)} subAdmins={subAdmins}/>}
-{page==="dashboard"&&<ToursDashboard tours={tours} setTours={setTours} isAdmin={isAnyAdmin} isSuperAdmin={isSuperAdmin} currentUser={currentUser} onAdminLogin={()=>setShowLogin(true)} onLogout={handleLogout} onTeamPage={()=>{setPage("team");window.location.hash="/team";}} onRequestsPage={()=>setPage("requests-admin")} listingRequests={listingRequests}/>}
+{page==="dashboard"&&<ToursDashboard tours={tours} setTours={setTours} isAdmin={isAnyAdmin} isSuperAdmin={isSuperAdmin} currentUser={currentUser} onAdminLogin={()=>setShowLogin(true)} onLogout={handleLogout} onTeamPage={()=>{setPage("team");window.location.hash="/team";}} onRequestsPage={()=>setPage("requests-admin")} onRequestTour={()=>{setPage("request");window.location.hash="/request";}} listingRequests={listingRequests}/>}
 {page==="team"&&isSuperAdmin&&<TeamPage subAdmins={subAdmins} setSubAdmins={setSubAdmins} onBack={()=>{setPage("dashboard");window.location.hash="/";}} currentUser={currentUser}/>}
 {page==="contact"&&<ContactPage onBack={()=>{setPage("dashboard");window.location.hash="/";}}/>}
 {page==="tour-signup"&&<RequestListingPage tourSignUp={true} tours={tours} onBack={()=>{setPage("dashboard");window.location.hash="/";}} onSubmit={(req)=>setListingRequests(prev=>[...prev,req])}/>}
@@ -3392,7 +3438,6 @@ Back to Tours
 )}
 <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:"#fff",borderTop:"1px solid #E5E7EB",display:"flex",padding:"10px 0 16px",boxShadow:"0 -4px 16px rgba(0,0,0,.07)",zIndex:200}}>
 <button onClick={()=>{setPage("dashboard");window.location.hash="/";}} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,color:page==="dashboard"?B.primary:B.gray,fontWeight:page==="dashboard"?700:500,fontSize:11}}><span style={{fontSize:20}}>🗓️</span>Tours</button>
-
 <button onClick={()=>{setPage("sponsor-signup");window.location.hash="/sponsor-signup";}} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,color:page==="sponsor-signup"?B.gold:B.gray,fontWeight:page==="sponsor-signup"?700:500,fontSize:11}}><span style={{fontSize:20}}>⭐</span>Sponsor</button>
 <button onClick={()=>{setPage("tour-signup");window.location.hash="/tour-signup";}} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,color:page==="tour-signup"?B.gold:B.gray,fontWeight:page==="tour-signup"?700:500,fontSize:11}}><span style={{fontSize:20}}>🗓️</span>Tour Sign Up</button>
 <button onClick={()=>{setPage("request");window.location.hash="/request";}} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,color:page==="request"?B.gold:B.gray,fontWeight:page==="request"?700:500,fontSize:11,position:"relative"}}>
@@ -3404,7 +3449,39 @@ Back to Tours
 );
 }
 window._getMRTToursData=[];
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+// iOS Add to Home Screen banner
+(function(){
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isInStandaloneMode=('standalone' in window.navigator)&&window.navigator.standalone;
+  const dismissed=sessionStorage.getItem('mrt_a2hs_dismissed');
+  if(!isIOS||isInStandaloneMode||dismissed) return;
+  const banner=document.createElement('div');
+  banner.id='mrt-a2hs';
+  banner.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:440px;background:#1B3A6B;color:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,.35);z-index:9999;display:flex;align-items:center;gap:12px;font-family:Georgia,serif';
+  banner.innerHTML=`
+    <div style="font-size:36px;flex-shrink:0">🏡</div>
+    <div style="flex:1">
+      <div style="font-weight:700;font-size:14px;margin-bottom:3px">Add to Home Screen</div>
+      <div style="font-size:12px;opacity:.85;line-height:1.4">Tap <strong style="background:rgba(255,255,255,.2);padding:1px 6px;border-radius:4px">Share</strong> then <strong style="background:rgba(255,255,255,.2);padding:1px 6px;border-radius:4px">Add to Home Screen</strong> for the full app experience.</div>
+    </div>
+    <button onclick="document.getElementById('mrt-a2hs').remove();sessionStorage.setItem('mrt_a2hs_dismissed','1')" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;flex-shrink:0;padding:4px;opacity:.7">✕</button>
+  `;
+  // Show after a short delay
+  setTimeout(()=>document.body.appendChild(banner), 2500);
+})();
+class ErrorBoundary extends React.Component {
+  constructor(p){super(p);this.state={err:null};}
+  static getDerivedStateFromError(e){return {err:e};}
+  componentDidCatch(e,info){console.error("MRT CRASH:",e,info);}
+  render(){
+    if(this.state.err)return <div style={{padding:24,fontFamily:"sans-serif"}}>
+      <h3 style={{color:"red"}}>App Error</h3>
+      <pre style={{fontSize:11,whiteSpace:"pre-wrap",background:"#f5f5f5",padding:12,borderRadius:8}}>{this.state.err?.message+"\n\n"+this.state.err?.stack}</pre>
+    </div>;
+    return this.props.children;
+  }
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<ErrorBoundary><App/></ErrorBoundary>);
 </script>
 
 <script>
