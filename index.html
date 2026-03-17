@@ -1546,7 +1546,6 @@ const sorted=[...(tour.listings||[])].sort((a,b)=>a.order-b.order);
 const listingsWithEmail=sorted.filter(l=>l.agentEmail);
 if(listingsWithEmail.length===0){alert("No agent emails found for this tour. Add agent emails to listings via the Manage panel.");return;}
 setSendingFollowUp(true);
-const sorted=[...(tour.listings||[])].sort((a,b)=>a.order-b.order);
 const ratings=tour.ratings||{};
 const ratingSubmissions=tour.ratingSubmissions||{};
 const CATS=[{key:"curbAppeal",label:"Curb Appeal"},{key:"landscape",label:"Landscape"},{key:"cleanliness",label:"Cleanliness"},{key:"flooring",label:"Flooring"},{key:"paint",label:"Paint"},{key:"showability",label:"Showability"},{key:"price",label:"Price"},{key:"kitchen",label:"Kitchen"},{key:"bedrooms",label:"Bedrooms"},{key:"windows",label:"Windows"}];
