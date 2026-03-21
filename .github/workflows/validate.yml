@@ -1,0 +1,44 @@
+name: Validate & Deploy MarketReady Tours
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    name: Validate HTML & JavaScript
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: www/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd www
+          npm install
+
+      - name: Run validation checks
+        run: |
+          cd www
+          node validate.js
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Validation failed — check the logs above for details."
+          echo "The site was NOT deployed. Fix the errors and push again."
+
+      - name: Success
+        if: success()
+        run: |
+          echo "✅ All checks passed — site is healthy."
