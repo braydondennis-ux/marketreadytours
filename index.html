@@ -12767,6 +12767,7 @@ function App() {
   const fbReady = useRef(false);
   const fbIgnore = useRef({});
   const fbWriteTimeout = useRef({});
+  const [fbLoaded, setFbLoaded] = useState(false);
 
   // On mount: load from Firebase ONCE, then start listening
   useEffect(() => {
@@ -12777,7 +12778,6 @@ function App() {
       "mrt_tour_requests": val => setTourRequests(Array.isArray(val) ? val : Object.values(val || {})),
       "mrt_subadmins": val => setSubAdmins(Array.isArray(val) ? val : Object.values(val || {}))
     };
-    // First load from Firebase
     Promise.all(Object.keys(paths).map(path => _fb.ref(path).once("value").then(snap => {
       try {
         const raw = snap.val();
@@ -12787,13 +12787,12 @@ function App() {
       } catch (e) {}
     }).catch(() => {}))).then(() => {
       fbReady.current = true;
-      // Listen for future changes from other browsers
+      setFbLoaded(true); // trigger re-render so write effects can now safely fire
       Object.entries(paths).forEach(_ref40 => {
         let [path, setter] = _ref40;
         try {
           _fb.ref(path).on("value", snap => {
             try {
-              // Only ignore if we just wrote (within 2 seconds)
               if (fbIgnore.current[path]) {
                 return;
               }
@@ -12822,21 +12821,21 @@ function App() {
     }, 800);
   };
   useEffect(() => {
-    if (!fbReady.current) return;
+    if (!fbLoaded || tours.length === 0) return;
     fbWrite("mrt_tours", tours);
-  }, [tours]);
+  }, [tours, fbLoaded]);
   useEffect(() => {
-    if (!fbReady.current) return;
+    if (!fbLoaded) return;
     fbWrite("mrt_listing_requests", listingRequests);
-  }, [listingRequests]);
+  }, [listingRequests, fbLoaded]);
   useEffect(() => {
-    if (!fbReady.current) return;
+    if (!fbLoaded) return;
     fbWrite("mrt_tour_requests", tourRequests);
-  }, [tourRequests]);
+  }, [tourRequests, fbLoaded]);
   useEffect(() => {
-    if (!fbReady.current) return;
+    if (!fbLoaded) return;
     fbWrite("mrt_subadmins", subAdmins);
-  }, [subAdmins]);
+  }, [subAdmins, fbLoaded]);
   // Show loading skeleton while Firebase Auth resolves (prevents blank flash)
   if (authLoading) return /*#__PURE__*/React.createElement("div", {
     style: {
