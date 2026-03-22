@@ -21,13 +21,13 @@
 <!-- React must load synchronously as app depends on it -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<!-- Non-critical scripts load in parallel without blocking render -->
+<!-- Firebase loads synchronously — app depends on it for data -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<!-- Non-critical scripts load after page without blocking render -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
-<!-- Firebase loads in parallel — app works without it via localStorage -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" defer></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js" defer></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js" defer></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js" defer></script>
 <!-- Google Maps loads lazily — only injected when address search is first used -->
 <script>
 window._mapsLoaded=false;
@@ -12814,19 +12814,7 @@ function App() {
     clearTimeout(fbWriteTimeout.current[path]);
     fbWriteTimeout.current[path] = setTimeout(() => {
       try {
-        // For mrt_tours use per-item update to avoid overwriting concurrent changes
-        if (path === "mrt_tours" && Array.isArray(data)) {
-          const update = {};
-          data.forEach((item, i) => {
-            if (item && item.id) update[item.id] = item;else update[i] = item;
-          });
-          _fb.ref(path).update(update).catch(() => {
-            // Fallback to set if update fails
-            _fb.ref(path).set(data).catch(() => {});
-          });
-        } else {
-          _fb.ref(path).set(data).catch(() => {});
-        }
+        _fb.ref(path).set(data).catch(() => {});
       } catch (e) {}
       setTimeout(() => {
         fbIgnore.current[path] = false;
