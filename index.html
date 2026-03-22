@@ -18,14 +18,36 @@
 <meta name="twitter:title" content="MarketReady Tours — #1 Real Estate Home Tours App"/>
 <meta name="twitter:description" content="Tour. Rate. Decide. Browse curated home tours, RSVP, and submit real-time feedback."/>
 <meta name="twitter:image" content="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200&h=630&fit=crop"/>
+<!-- React must load synchronously as app depends on it -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBoPhoNQ5C84nS79QDV36R93APg4Pizo_E&libraries=places"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<!-- Non-critical scripts load in parallel without blocking render -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+<!-- Firebase loads in parallel — app works without it via localStorage -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" defer></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js" defer></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js" defer></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js" defer></script>
+<!-- Google Maps loads lazily — only injected when address search is first used -->
+<script>
+window._mapsLoaded=false;
+window._mapsCallbacks=[];
+window.loadGoogleMaps=function(cb){
+  if(window.google&&window.google.maps){if(cb)cb();return;}
+  if(cb)window._mapsCallbacks.push(cb);
+  if(window._mapsLoading)return;
+  window._mapsLoading=true;
+  window._gmapsReady=function(){
+    window._mapsLoaded=true;
+    window._mapsCallbacks.forEach(function(fn){try{fn();}catch(e){}});
+    window._mapsCallbacks=[];
+  };
+  var s=document.createElement('script');
+  s.src='https://maps.googleapis.com/maps/api/js?key=AIzaSyBoPhoNQ5C84nS79QDV36R93APg4Pizo_E&libraries=places&callback=_gmapsReady';
+  s.async=true;s.defer=true;
+  document.head.appendChild(s);
+};
+</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F7F4EF}
@@ -3742,14 +3764,13 @@ function AddListingForm(_ref12) {
   const [sessionToken, setToken] = useState(null);
   const inputRef = useRef(null);
   useEffect(() => {
-    var _window$google;
-    if ((_window$google = window.google) !== null && _window$google !== void 0 && (_window$google = _window$google.maps) !== null && _window$google !== void 0 && _window$google.places) {
+    window.loadGoogleMaps && window.loadGoogleMaps(() => {
       setToken(new window.google.maps.places.AutocompleteSessionToken());
-    }
+    });
   }, []);
   useEffect(() => {
-    var _window$google2;
-    if (!query || query.length < 3 || !((_window$google2 = window.google) !== null && _window$google2 !== void 0 && (_window$google2 = _window$google2.maps) !== null && _window$google2 !== void 0 && _window$google2.places) || selected) {
+    var _window$google;
+    if (!query || query.length < 3 || !((_window$google = window.google) !== null && _window$google !== void 0 && (_window$google = _window$google.maps) !== null && _window$google !== void 0 && _window$google.places) || selected) {
       setSugg([]);
       return;
     }
@@ -8320,12 +8341,13 @@ const RequestATourInlineForm = React.forwardRef(function (_ref23, ref) {
   const [sessionToken, setToken] = useState(null);
   const addrInputRef = useRef(null);
   useEffect(() => {
-    var _window$google3;
-    if ((_window$google3 = window.google) !== null && _window$google3 !== void 0 && (_window$google3 = _window$google3.maps) !== null && _window$google3 !== void 0 && _window$google3.places) setToken(new window.google.maps.places.AutocompleteSessionToken());
+    window.loadGoogleMaps && window.loadGoogleMaps(() => {
+      setToken(new window.google.maps.places.AutocompleteSessionToken());
+    });
   }, []);
   useEffect(() => {
-    var _window$google4;
-    if (!query || query.length < 3 || !((_window$google4 = window.google) !== null && _window$google4 !== void 0 && (_window$google4 = _window$google4.maps) !== null && _window$google4 !== void 0 && _window$google4.places) || addrConfirmed) {
+    var _window$google2;
+    if (!query || query.length < 3 || !((_window$google2 = window.google) !== null && _window$google2 !== void 0 && (_window$google2 = _window$google2.maps) !== null && _window$google2 !== void 0 && _window$google2.places) || addrConfirmed) {
       setSugg([]);
       return;
     }
@@ -10351,12 +10373,13 @@ function RequestListingPage(_ref30) {
   const [sessionToken, setToken] = useState(null);
   const inputRef = useRef(null);
   useEffect(() => {
-    var _window$google5;
-    if ((_window$google5 = window.google) !== null && _window$google5 !== void 0 && (_window$google5 = _window$google5.maps) !== null && _window$google5 !== void 0 && _window$google5.places) setToken(new window.google.maps.places.AutocompleteSessionToken());
+    window.loadGoogleMaps && window.loadGoogleMaps(() => {
+      setToken(new window.google.maps.places.AutocompleteSessionToken());
+    });
   }, []);
   useEffect(() => {
-    var _window$google6;
-    if (!query || query.length < 3 || !((_window$google6 = window.google) !== null && _window$google6 !== void 0 && (_window$google6 = _window$google6.maps) !== null && _window$google6 !== void 0 && _window$google6.places) || addrConfirmed) {
+    var _window$google3;
+    if (!query || query.length < 3 || !((_window$google3 = window.google) !== null && _window$google3 !== void 0 && (_window$google3 = _window$google3.maps) !== null && _window$google3 !== void 0 && _window$google3.places) || addrConfirmed) {
       setSugg([]);
       return;
     }
