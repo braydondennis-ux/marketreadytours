@@ -5410,7 +5410,374 @@ function NotInterestedPage(_ref17) {
     }
   }, "\uD83C\uDFE1 Actually, I Changed My Mind!")))));
 }
-function TourDetailPage(_ref18) {
+/* ── ROUTE MAP VIEW ── */
+function RouteMapView(_ref18) {
+  var _window$google2;
+  let {
+    tour
+  } = _ref18;
+  const sorted = [...(tour.listings || [])].sort((a, b) => a.order - b.order);
+  const [mapReady, setMapReady] = useState(!!((_window$google2 = window.google) !== null && _window$google2 !== void 0 && _window$google2.maps));
+  const [mapError, setMapError] = useState(false);
+  const mapRef = useRef(null);
+  const mapInstance = useRef(null);
+  const markersRef = useRef([]);
+  useEffect(() => {
+    if (!sorted.length) return;
+    window.loadGoogleMaps(() => setMapReady(true));
+  }, []);
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || !sorted.length) return;
+    try {
+      // Init map
+      const map = new window.google.maps.Map(mapRef.current, {
+        zoom: 12,
+        mapTypeId: "roadmap",
+        styles: [{
+          featureType: "all",
+          elementType: "geometry",
+          stylers: [{
+            color: "#1a1a1a"
+          }]
+        }, {
+          featureType: "all",
+          elementType: "labels.text.fill",
+          stylers: [{
+            color: "#C9A55A"
+          }]
+        }, {
+          featureType: "all",
+          elementType: "labels.text.stroke",
+          stylers: [{
+            color: "#0D0D0D"
+          }]
+        }, {
+          featureType: "road",
+          elementType: "geometry",
+          stylers: [{
+            color: "#2a2a2a"
+          }]
+        }, {
+          featureType: "road.arterial",
+          elementType: "geometry",
+          stylers: [{
+            color: "#373737"
+          }]
+        }, {
+          featureType: "road.highway",
+          elementType: "geometry",
+          stylers: [{
+            color: "#3c3c3c"
+          }]
+        }, {
+          featureType: "water",
+          elementType: "geometry",
+          stylers: [{
+            color: "#0D1117"
+          }]
+        }, {
+          featureType: "poi",
+          elementType: "geometry",
+          stylers: [{
+            color: "#1a1a1a"
+          }]
+        }, {
+          featureType: "transit",
+          elementType: "geometry",
+          stylers: [{
+            color: "#2f3948"
+          }]
+        }],
+        disableDefaultUI: false,
+        zoomControl: true,
+        streetViewControl: false,
+        mapTypeControl: false,
+        fullscreenControl: true
+      });
+      mapInstance.current = map;
+
+      // Geocode and place markers for each listing
+      const geocoder = new window.google.maps.Geocoder();
+      const bounds = new window.google.maps.LatLngBounds();
+      const directionsService = new window.google.maps.DirectionsService();
+      const directionsRenderer = new window.google.maps.DirectionsRenderer({
+        map,
+        suppressMarkers: true,
+        polylineOptions: {
+          strokeColor: "#C9A55A",
+          strokeWeight: 3,
+          strokeOpacity: 0.8
+        }
+      });
+
+      // Geocode all addresses
+      const promises = sorted.map((l, i) => new Promise(resolve => {
+        geocoder.geocode({
+          address: l.address + ", " + l.city
+        }, (results, status) => {
+          if (status === "OK" && results[0]) {
+            const pos = results[0].geometry.location;
+            bounds.extend(pos);
+            // Custom numbered marker
+            const marker = new window.google.maps.Marker({
+              position: pos,
+              map,
+              label: {
+                text: String(i + 1),
+                color: "#0D0D0D",
+                fontWeight: "bold",
+                fontSize: "12px"
+              },
+              icon: {
+                path: window.google.maps.SymbolPath.CIRCLE,
+                scale: 18,
+                fillColor: "#C9A55A",
+                fillOpacity: 1,
+                strokeColor: "#0D0D0D",
+                strokeWeight: 2
+              },
+              title: l.address
+            });
+            markersRef.current.push(marker);
+            // Info window on click
+            const infoWindow = new window.google.maps.InfoWindow({
+              content: "<div style=\"background:#1a1a1a;color:#fff;padding:10px 14px;border-radius:8px;font-family:-apple-system,sans-serif;min-width:180px\">\n<div style=\"font-weight:700;color:#C9A55A;margin-bottom:4px\">Stop #".concat(i + 1, "</div>\n<div style=\"font-size:13px;font-weight:600\">").concat(l.address, "</div>\n<div style=\"font-size:11px;color:#8A8078;margin-top:2px\">").concat(l.city, "</div>\n<div style=\"font-size:12px;color:#C9A55A;margin-top:6px\">$").concat(Number(l.price).toLocaleString(), "</div>\n</div>")
+            });
+            marker.addListener("click", () => infoWindow.open(map, marker));
+            resolve({
+              pos,
+              index: i
+            });
+          } else {
+            resolve(null);
+          }
+        });
+      }));
+      Promise.all(promises).then(results => {
+        const validResults = results.filter(Boolean).sort((a, b) => a.index - b.index);
+        map.fitBounds(bounds);
+
+        // Draw route if 2+ listings
+        if (validResults.length >= 2) {
+          const origin = validResults[0].pos;
+          const destination = validResults[validResults.length - 1].pos;
+          const waypoints = validResults.slice(1, -1).map(r => ({
+            location: r.pos,
+            stopover: true
+          }));
+          directionsService.route({
+            origin,
+            destination,
+            waypoints,
+            travelMode: window.google.maps.TravelMode.DRIVING,
+            optimizeWaypoints: false
+          }, (result, status) => {
+            if (status === "OK") directionsRenderer.setDirections(result);
+          });
+        }
+      });
+    } catch (e) {
+      setMapError(true);
+    }
+  }, [mapReady]);
+
+  // Cleanup markers on unmount
+  useEffect(() => () => {
+    markersRef.current.forEach(m => m.setMap && m.setMap(null));
+  }, []);
+  const mapsUrl = "https://www.google.com/maps/dir/" + sorted.map(l => encodeURIComponent(l.address + " " + l.city)).join("/");
+  if (!sorted.length) return /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexDirection: "column",
+      gap: 12,
+      padding: 40,
+      color: B.gray
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 48
+    }
+  }, "\uD83D\uDDFA\uFE0F"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 14,
+      fontWeight: 600
+    }
+  }, "No stops added yet"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12
+    }
+  }, "Add listings to see the route map"));
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      display: "flex",
+      flexDirection: "column"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "12px 16px",
+      background: "#fff",
+      borderBottom: "1px solid #E8E2D8"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      fontWeight: 700,
+      textTransform: "uppercase",
+      letterSpacing: .5,
+      color: B.gray,
+      marginBottom: 8
+    }
+  }, sorted.length, " Stop", sorted.length !== 1 ? "s" : ""), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 6
+    }
+  }, sorted.map((l, i) => /*#__PURE__*/React.createElement("div", {
+    key: l.id,
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 24,
+      height: 24,
+      borderRadius: "50%",
+      background: B.gold,
+      color: "#0D0D0D",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: 11,
+      fontWeight: 800,
+      flexShrink: 0
+    }
+  }, i + 1), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 600,
+      color: B.dark,
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap"
+    }
+  }, l.address), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: B.gray
+    }
+  }, l.city)), i < sorted.length - 1 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10,
+      color: B.gold
+    }
+  }, "\u2193"))))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      position: "relative",
+      minHeight: 380
+    }
+  }, !mapReady && !mapError && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "absolute",
+      inset: 0,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexDirection: "column",
+      gap: 12,
+      background: B.cream
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 36,
+      height: 36,
+      border: "3px solid ".concat(B.gold),
+      borderTopColor: "transparent",
+      borderRadius: "50%",
+      animation: "spin 1s linear infinite"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: B.gray
+    }
+  }, "Loading map...")), mapError && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "absolute",
+      inset: 0,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexDirection: "column",
+      gap: 12,
+      background: B.cream,
+      padding: 24,
+      textAlign: "center"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 40
+    }
+  }, "\uD83D\uDDFA\uFE0F"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 14,
+      fontWeight: 600,
+      color: B.dark
+    }
+  }, "Map unavailable"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12,
+      color: B.gray
+    }
+  }, "Open in Google Maps to see the full route")), /*#__PURE__*/React.createElement("div", {
+    ref: mapRef,
+    style: {
+      width: "100%",
+      height: "100%",
+      minHeight: 380,
+      display: mapReady && !mapError ? "block" : "none"
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "12px 16px",
+      background: "#fff",
+      borderTop: "1px solid #E8E2D8"
+    }
+  }, /*#__PURE__*/React.createElement("a", {
+    href: mapsUrl,
+    target: "_blank",
+    rel: "noreferrer",
+    className: "btn-hover",
+    style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      background: B.primary,
+      color: "#fff",
+      textDecoration: "none",
+      borderRadius: 10,
+      padding: "13px 0",
+      fontWeight: 700,
+      fontSize: 14,
+      width: "100%"
+    }
+  }, "\uD83D\uDDFA\uFE0F Open Full Route in Google Maps")));
+}
+function TourDetailPage(_ref19) {
   let {
     tour,
     onBack,
@@ -5419,7 +5786,7 @@ function TourDetailPage(_ref18) {
     listingRequests,
     isSuperAdmin,
     currentUser
-  } = _ref18;
+  } = _ref19;
   const [subpage, setSubpage] = useState("list");
   const [selected, setSelected] = useState(null);
   const [showInvite, setShowInvite] = useState(false);
@@ -5493,7 +5860,12 @@ function TourDetailPage(_ref18) {
     const si = idx + dir;
     if (si < 0 || si >= arr.length) return;
     [arr[idx].order, arr[si].order] = [arr[si].order, arr[idx].order];
-    setAdminListings([...arr].sort((a, b) => a.order - b.order));
+    const sorted = [...arr].sort((a, b) => a.order - b.order);
+    setAdminListings(sorted);
+    onUpdateTour({
+      ...tour,
+      listings: sorted
+    }); // auto-save order change
   };
   const addListing = listingData => {
     if (adminListings.length >= 8) return;
@@ -5502,13 +5874,26 @@ function TourDetailPage(_ref18) {
       id: uid("listing"),
       order: adminListings.length + 1
     };
-    setAdminListings(prev => [...prev, item]);
+    const updated = [...adminListings, item];
+    setAdminListings(updated);
+    onUpdateTour({
+      ...tour,
+      listings: updated
+    }); // auto-save immediately
     setShowAddForm(false);
+    showToast("✅ Listing added and saved", "success", 2500);
   };
-  const deleteStop = id => setAdminListings(prev => prev.filter(l => l.id !== id).map((l, i) => ({
-    ...l,
-    order: i + 1
-  })));
+  const deleteStop = id => {
+    const updated = adminListings.filter(l => l.id !== id).map((l, i) => ({
+      ...l,
+      order: i + 1
+    }));
+    setAdminListings(updated);
+    onUpdateTour({
+      ...tour,
+      listings: updated
+    }); // auto-save immediately
+  };
   const [optimizing, setOptimizing] = useState(false);
   const optimizeRoute = async () => {
     if (adminListings.length < 3) {
@@ -5643,6 +6028,7 @@ function TourDetailPage(_ref18) {
       listings: adminListings
     });
     setShowAdmin(false);
+    showToast("✅ Tour saved", "success", 2000);
   };
   const sendPostTourFollowUp = async () => {
     if (!canSend("followUp_" + tour.id, 5000)) {
@@ -5787,6 +6173,65 @@ function TourDetailPage(_ref18) {
     photos: selected.photos,
     onClose: () => setSubpage("list")
   });
+  if (subpage === "routemap") return /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: B.cream,
+      minHeight: "100vh",
+      display: "flex",
+      flexDirection: "column"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: tour.color,
+      padding: "14px 18px",
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+      position: "sticky",
+      top: 0,
+      zIndex: 100,
+      boxShadow: "0 2px 8px rgba(0,0,0,.2)"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setSubpage("list"),
+    style: {
+      background: "none",
+      border: "none",
+      color: "#fff",
+      cursor: "pointer",
+      fontSize: 22
+    }
+  }, "\u2190"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      color: "rgba(255,255,255,.7)",
+      fontSize: 11,
+      textTransform: "uppercase",
+      letterSpacing: 1
+    }
+  }, tour.emoji, " ", tour.name), /*#__PURE__*/React.createElement("div", {
+    style: {
+      color: "#fff",
+      fontFamily: "Georgia,serif",
+      fontSize: 15,
+      fontWeight: 700
+    }
+  }, "\uD83D\uDDFA\uFE0F Tour Route")), /*#__PURE__*/React.createElement("img", {
+    src: window.MRT_LOGO_DATA,
+    alt: "MRT",
+    style: {
+      height: 40,
+      objectFit: "contain",
+      borderRadius: 6,
+      background: "#fff",
+      padding: 3
+    }
+  })), /*#__PURE__*/React.createElement(RouteMapView, {
+    tour: tour
+  }));
   if (subpage === "rating" && selected) return /*#__PURE__*/React.createElement(RatingPage, {
     listing: selected,
     tour: tour,
@@ -6197,8 +6642,8 @@ function TourDetailPage(_ref18) {
       flexDirection: "column",
       gap: 8
     }
-  }, [["🏘️", "Targeted Exposure", "Your listing gets in front of serious, motivated buyers actively touring homes in the area."], ["📊", "Real-Time Feedback", "Every attendee rates each home on curb appeal, cleanliness, flooring, paint, showability & price — actionable insights directly from buyers."], ["⭐", "Professional Presentation", "Your property is showcased in our curated tour app with photos, details, and an interactive experience."], ["🤝", "Agent Networking", "Connect with other professional agents in your area."], ["📈", "Increased Showings", "Homes on our tours consistently see a boost in interest and follow-up showings."]].map(_ref19 => {
-    let [icon, title, desc] = _ref19;
+  }, [["🏘️", "Targeted Exposure", "Your listing gets in front of serious, motivated buyers actively touring homes in the area."], ["📊", "Real-Time Feedback", "Every attendee rates each home on curb appeal, cleanliness, flooring, paint, showability & price — actionable insights directly from buyers."], ["⭐", "Professional Presentation", "Your property is showcased in our curated tour app with photos, details, and an interactive experience."], ["🤝", "Agent Networking", "Connect with other professional agents in your area."], ["📈", "Increased Showings", "Homes on our tours consistently see a boost in interest and follow-up showings."]].map(_ref20 => {
+    let [icon, title, desc] = _ref20;
     return /*#__PURE__*/React.createElement("div", {
       key: title,
       style: {
@@ -6531,8 +6976,8 @@ function TourDetailPage(_ref18) {
       flexDirection: "column",
       gap: 8
     }
-  }, [["address", "Address"], ["city", "City"], ["agent", "Listing Agent"], ["agentEmail", "Agent Email"], ["price", "List Price"], ["beds", "Beds"], ["baths", "Baths"], ["sqft", "Sq Ft"], ["dom", "Days on Market"]].map(_ref20 => {
-    let [f, label] = _ref20;
+  }, [["address", "Address"], ["city", "City"], ["agent", "Listing Agent"], ["agentEmail", "Agent Email"], ["price", "List Price"], ["beds", "Beds"], ["baths", "Baths"], ["sqft", "Sq Ft"], ["dom", "Days on Market"]].map(_ref21 => {
+    let [f, label] = _ref21;
     return /*#__PURE__*/React.createElement("div", {
       key: f
     }, /*#__PURE__*/React.createElement("label", {
@@ -6563,11 +7008,17 @@ function TourDetailPage(_ref18) {
     }));
   }), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
-      setAdminListings(prev => prev.map(item => item.id === l.id ? {
+      const updated = adminListings.map(item => item.id === l.id ? {
         ...item,
         ...editFields
-      } : item));
+      } : item);
+      setAdminListings(updated);
+      onUpdateTour({
+        ...tour,
+        listings: updated
+      }); // auto-save inline edit
       setEditingStop(null);
+      showToast("✅ Listing updated and saved", "success", 2000);
     },
     style: {
       background: tour.color,
@@ -7140,6 +7591,19 @@ function TourDetailPage(_ref18) {
       marginTop: 10
     }
   }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setSubpage("routemap"),
+    style: {
+      flex: 1,
+      background: subpage === "routemap" ? B.gold : "rgba(255,255,255,.15)",
+      border: "1px solid rgba(255,255,255,.2)",
+      color: "#fff",
+      borderRadius: 8,
+      padding: "7px 0",
+      cursor: "pointer",
+      fontSize: 12,
+      fontWeight: 600
+    }
+  }, "\uD83D\uDDFA\uFE0F Route"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setSubpage("ranking"),
     style: {
       flex: 1,
@@ -7881,12 +8345,12 @@ const INITIAL_SPONSORS = [{
   logo: "https://upload.wikimedia.org/wikipedia/en/thumb/d/d3/Starbucks_Corporation_Logo_2011.svg/1200px-Starbucks_Corporation_Logo_2011.svg.png",
   tagline: "It starts with you"
 }];
-function SponsorsPage(_ref21) {
+function SponsorsPage(_ref22) {
   let {
     sponsors,
     setSponsors,
     isAdmin
-  } = _ref21;
+  } = _ref22;
   const [editing, setEditing] = useState(null);
   const [draft, setDraft] = useState({});
   const [logoPreview, setLogoPreview] = useState("");
@@ -8079,8 +8543,8 @@ function SponsorsPage(_ref21) {
       outline: "none",
       background: B.cream
     }
-  })), [["name", "Company Name"], ["tagline", "Tagline"], ["url", "Website URL"]].map(_ref22 => {
-    let [f, label] = _ref22;
+  })), [["name", "Company Name"], ["tagline", "Tagline"], ["url", "Website URL"]].map(_ref23 => {
+    let [f, label] = _ref23;
     return /*#__PURE__*/React.createElement("div", {
       key: f
     }, /*#__PURE__*/React.createElement("label", {
@@ -8317,11 +8781,11 @@ function SponsorsPage(_ref21) {
 }
 /* ── TOURS DASHBOARD ── */
 /* ── REQUEST A TOUR INLINE FORM ── */
-const RequestATourInlineForm = React.forwardRef(function (_ref23, ref) {
+const RequestATourInlineForm = React.forwardRef(function (_ref24, ref) {
   let {
     onClose,
     onSubmit
-  } = _ref23;
+  } = _ref24;
   const [fields, setFields] = useState({
     name: "",
     email: "",
@@ -8346,8 +8810,8 @@ const RequestATourInlineForm = React.forwardRef(function (_ref23, ref) {
     });
   }, []);
   useEffect(() => {
-    var _window$google2;
-    if (!query || query.length < 3 || !((_window$google2 = window.google) !== null && _window$google2 !== void 0 && (_window$google2 = _window$google2.maps) !== null && _window$google2 !== void 0 && _window$google2.places) || addrConfirmed) {
+    var _window$google3;
+    if (!query || query.length < 3 || !((_window$google3 = window.google) !== null && _window$google3 !== void 0 && (_window$google3 = _window$google3.maps) !== null && _window$google3 !== void 0 && _window$google3.places) || addrConfirmed) {
       setSugg([]);
       return;
     }
@@ -8547,8 +9011,8 @@ const RequestATourInlineForm = React.forwardRef(function (_ref23, ref) {
       fontSize: 13,
       color: "#5A4A2A"
     }
-  }, "\uD83D\uDDD3\uFE0F Interested in attending an upcoming home tour? Fill out this form and we'll reach out to confirm your spot within 24\u201348 hours."), [["name", "Full Name *", "text"], ["email", "Email Address *", "email"], ["phone", "Phone Number", "tel"], ["brokerage", "Brokerage Name", "text"]].map(_ref24 => {
-    let [f, ph, t] = _ref24;
+  }, "\uD83D\uDDD3\uFE0F Interested in attending an upcoming home tour? Fill out this form and we'll reach out to confirm your spot within 24\u201348 hours."), [["name", "Full Name *", "text"], ["email", "Email Address *", "email"], ["phone", "Phone Number", "tel"], ["brokerage", "Brokerage Name", "text"]].map(_ref25 => {
+    let [f, ph, t] = _ref25;
     return /*#__PURE__*/React.createElement("input", {
       key: f,
       type: t,
@@ -8758,8 +9222,8 @@ const RequestATourInlineForm = React.forwardRef(function (_ref23, ref) {
     }
   }, submitting ? "Submitting..." : "📩 Submit Request")));
 });
-function ToursDashboard(_ref25) {
-  var _ref26;
+function ToursDashboard(_ref26) {
+  var _ref27;
   let {
     tours,
     setTours,
@@ -8776,7 +9240,7 @@ function ToursDashboard(_ref25) {
     setTourRequests,
     initialTourId,
     onClearTourId
-  } = _ref25;
+  } = _ref26;
   const [filterDate, setFilterDate] = useState("upcoming");
   const [showRequestForm, setShowRequestForm] = useState(false);
   const requestFormRef = React.useRef(null);
@@ -9344,7 +9808,7 @@ function ToursDashboard(_ref25) {
       opacity: .7,
       lineHeight: 1.2
     }
-  }, "Listing Reviews"), ((_ref26 = listingRequests || []) === null || _ref26 === void 0 ? void 0 : _ref26.filter(r => r.status === "pending").length) > 0 && /*#__PURE__*/React.createElement("span", {
+  }, "Listing Reviews"), ((_ref27 = listingRequests || []) === null || _ref27 === void 0 ? void 0 : _ref27.filter(r => r.status === "pending").length) > 0 && /*#__PURE__*/React.createElement("span", {
     style: {
       position: "absolute",
       top: -4,
@@ -9750,13 +10214,13 @@ function ToursDashboard(_ref25) {
   })));
 }
 /* ── TEAM PAGE ── */
-function TeamPage(_ref27) {
+function TeamPage(_ref28) {
   let {
     subAdmins,
     setSubAdmins,
     onBack,
     currentUser
-  } = _ref27;
+  } = _ref28;
   const [showAdd, setShowAdd] = useState(false);
   const [newUser, setNewUser] = useState({
     name: "",
@@ -10065,8 +10529,8 @@ function TeamPage(_ref27) {
       flexDirection: "column",
       gap: 10
     }
-  }, [["name", "Full Name", "text"], ["email", "Email Address", "email"]].map(_ref28 => {
-    let [f, ph, t] = _ref28;
+  }, [["name", "Full Name", "text"], ["email", "Email Address", "email"]].map(_ref29 => {
+    let [f, ph, t] = _ref29;
     return /*#__PURE__*/React.createElement("div", {
       key: f,
       style: {
@@ -10308,8 +10772,8 @@ function TeamPage(_ref27) {
       fontWeight: 700,
       marginBottom: 10
     }
-  }, "\uD83D\uDD10 Permission Levels"), [["👑", "Super Admin (You)", "Create tours · Manage listings · Edit sponsors · Add/remove team · Full access"], ["👤", "Sub-Admin (Team)", "Create tours · Manage listings · Invite attendees · View rankings & summary"]].map(_ref29 => {
-    let [icon, label, desc] = _ref29;
+  }, "\uD83D\uDD10 Permission Levels"), [["👑", "Super Admin (You)", "Create tours · Manage listings · Edit sponsors · Add/remove team · Full access"], ["👤", "Sub-Admin (Team)", "Create tours · Manage listings · Invite attendees · View rankings & summary"]].map(_ref30 => {
+    let [icon, label, desc] = _ref30;
     return /*#__PURE__*/React.createElement("div", {
       key: label,
       style: {
@@ -10341,14 +10805,14 @@ function TeamPage(_ref27) {
   }))));
 }
 /* ── REQUEST LISTING PAGE ── */
-function RequestListingPage(_ref30) {
+function RequestListingPage(_ref31) {
   let {
     tours,
     onBack,
     onSubmit,
     tourSignUp,
     preselectedTourId
-  } = _ref30;
+  } = _ref31;
   // Parse URL params for pre-fill from campaign email links
   const urlParams = new URLSearchParams(window.location.search);
   const paramEmail = urlParams.get("email") || "";
@@ -10378,8 +10842,8 @@ function RequestListingPage(_ref30) {
     });
   }, []);
   useEffect(() => {
-    var _window$google3;
-    if (!query || query.length < 3 || !((_window$google3 = window.google) !== null && _window$google3 !== void 0 && (_window$google3 = _window$google3.maps) !== null && _window$google3 !== void 0 && _window$google3.places) || addrConfirmed) {
+    var _window$google4;
+    if (!query || query.length < 3 || !((_window$google4 = window.google) !== null && _window$google4 !== void 0 && (_window$google4 = _window$google4.maps) !== null && _window$google4 !== void 0 && _window$google4.places) || addrConfirmed) {
       setSugg([]);
       return;
     }
@@ -10633,8 +11097,8 @@ function RequestListingPage(_ref30) {
       flexDirection: "column",
       gap: 10
     }
-  }, [["agentName", "Full Name *", "text"], ["agentEmail", "Email Address *", "email"], ["agentPhone", "Phone Number", "tel"], ["brokerageName", "Brokerage Name", "text"]].map(_ref31 => {
-    let [f, ph, t] = _ref31;
+  }, [["agentName", "Full Name *", "text"], ["agentEmail", "Email Address *", "email"], ["agentPhone", "Phone Number", "tel"], ["brokerageName", "Brokerage Name", "text"]].map(_ref32 => {
+    let [f, ph, t] = _ref32;
     return /*#__PURE__*/React.createElement("input", {
       key: f,
       type: t,
@@ -10839,8 +11303,8 @@ function RequestListingPage(_ref30) {
       gap: 10,
       marginBottom: 10
     }
-  }, [["beds", "Beds"], ["baths", "Baths"], ["sqft", "Sq Ft"], ["dom", "Days on Market"], ["price", "List Price ($)"]].map(_ref32 => {
-    let [f, ph] = _ref32;
+  }, [["beds", "Beds"], ["baths", "Baths"], ["sqft", "Sq Ft"], ["dom", "Days on Market"], ["price", "List Price ($)"]].map(_ref33 => {
+    let [f, ph] = _ref33;
     return /*#__PURE__*/React.createElement("input", {
       key: f,
       placeholder: ph,
@@ -11084,7 +11548,7 @@ function makeGoogleCalUrl(tourName, tourDate, tourTime, tourEmoji, address) {
   const location = encodeURIComponent(address || "");
   return "https://calendar.google.com/calendar/render?action=TEMPLATE&text=".concat(title, "&dates=").concat(fmt(dt), "/").concat(fmt(end), "&details=").concat(details, "&location=").concat(location);
 }
-function ListingRequestsAdmin(_ref33) {
+function ListingRequestsAdmin(_ref34) {
   let {
     requests,
     setRequests,
@@ -11094,7 +11558,7 @@ function ListingRequestsAdmin(_ref33) {
     setTours,
     onBack,
     currentUser
-  } = _ref33;
+  } = _ref34;
   const [filter, setFilter] = useState("pending");
   const [section, setSection] = useState("listing"); // "listing" or "tour"
   const [reviewing, setReviewing] = useState(null);
@@ -11364,8 +11828,8 @@ function ListingRequestsAdmin(_ref33) {
       background: "#fff",
       borderBottom: "1px solid #D8D0C8"
     }
-  }, [["pending", "⏳ Pending", (section === "listing" ? requests : tourRequests || []).filter(r => r.status === "pending").length], ["contacted", "📞 Contacted", (section === "listing" ? requests : tourRequests || []).filter(r => r.status === "contacted").length], ["all", "All", (section === "listing" ? requests : tourRequests || []).length]].map(_ref34 => {
-    let [val, label, count] = _ref34;
+  }, [["pending", "⏳ Pending", (section === "listing" ? requests : tourRequests || []).filter(r => r.status === "pending").length], ["contacted", "📞 Contacted", (section === "listing" ? requests : tourRequests || []).filter(r => r.status === "contacted").length], ["all", "All", (section === "listing" ? requests : tourRequests || []).length]].map(_ref35 => {
+    let [val, label, count] = _ref35;
     return /*#__PURE__*/React.createElement("button", {
       key: val,
       onClick: () => setFilter(val),
@@ -11896,10 +12360,10 @@ function ListingRequestsAdmin(_ref33) {
   }, processing ? "Processing..." : "Confirm Denial"))))));
 }
 /* ── CONTACT PAGE ── */
-function ContactPage(_ref35) {
+function ContactPage(_ref36) {
   let {
     onBack
-  } = _ref35;
+  } = _ref36;
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -12079,8 +12543,8 @@ function ContactPage(_ref35) {
       fontSize: 18,
       marginBottom: 4
     }
-  }, "Send a Message"), [["name", "Your Name *", "text"], ["email", "Email Address *", "email"], ["phone", "Phone Number", "tel"]].map(_ref36 => {
-    let [f, ph, t] = _ref36;
+  }, "Send a Message"), [["name", "Your Name *", "text"], ["email", "Email Address *", "email"], ["phone", "Phone Number", "tel"]].map(_ref37 => {
+    let [f, ph, t] = _ref37;
     return /*#__PURE__*/React.createElement("input", {
       key: f,
       type: t,
@@ -12153,13 +12617,13 @@ function ContactPage(_ref35) {
   }, "Send Message"))));
 }
 /* ── SPONSOR SIGNUP PAGE (public) ── */
-function SponsorSignupPage(_ref37) {
+function SponsorSignupPage(_ref38) {
   var _upcomingTours$find, _upcomingTours$find2;
   let {
     tours,
     onBack,
     onSubmit
-  } = _ref37;
+  } = _ref38;
   const [selectedTour, setSelectedTour] = useState("");
   const [plan, setPlan] = useState("full");
   const [form, setForm] = useState({
@@ -12413,8 +12877,8 @@ function SponsorSignupPage(_ref37) {
       display: "flex",
       gap: 8
     }
-  }, [["full", "$199", "Full Sponsor", "Exclusive placement"], ["half", "$99.50", "Half (1/2)", "Shared with 1"], ["split", "$49.75", "Quarter (1/4)", "Shared with 3"]].map(_ref38 => {
-    let [key, price, label, desc] = _ref38;
+  }, [["full", "$199", "Full Sponsor", "Exclusive placement"], ["half", "$99.50", "Half (1/2)", "Shared with 1"], ["split", "$49.75", "Quarter (1/4)", "Shared with 3"]].map(_ref39 => {
+    let [key, price, label, desc] = _ref39;
     return /*#__PURE__*/React.createElement("button", {
       key: key,
       onClick: () => setPlan(key),
@@ -12471,8 +12935,8 @@ function SponsorSignupPage(_ref37) {
       flexDirection: "column",
       gap: 10
     }
-  }, [["name", "Company / Business Name *"], ["contactName", "Your Name"], ["email", "Email Address *"], ["phone", "Phone Number"], ["url", "Website URL"], ["tagline", "Tagline / Slogan"]].map(_ref39 => {
-    let [f, label] = _ref39;
+  }, [["name", "Company / Business Name *"], ["contactName", "Your Name"], ["email", "Email Address *"], ["phone", "Phone Number"], ["url", "Website URL"], ["tagline", "Tagline / Slogan"]].map(_ref40 => {
+    let [f, label] = _ref40;
     return /*#__PURE__*/React.createElement("input", {
       key: f,
       value: form[f],
@@ -12788,8 +13252,8 @@ function App() {
     }).catch(() => {}))).then(() => {
       fbReady.current = true;
       setFbLoaded(true); // trigger re-render so write effects can now safely fire
-      Object.entries(paths).forEach(_ref40 => {
-        let [path, setter] = _ref40;
+      Object.entries(paths).forEach(_ref41 => {
+        let [path, setter] = _ref41;
         try {
           _fb.ref(path).on("value", snap => {
             try {
