@@ -187,7 +187,7 @@ async function sendWelcomeEmail(name, email) {
     // Send Firebase password reset so user sets their own password
     await _fbAuth.sendPasswordResetEmail(email);
     // Also send a welcome notification via Formspree
-    await fetch(FORMSPREE_URL, {
+    await fetchWithTimeout(FORMSPREE_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -3563,7 +3563,7 @@ function TourSponsorsModal(_ref10) {
       const amt = showPayment.paymentPlan === "split" ? 49.75 : showPayment.paymentPlan === "half" ? 99.50 : 199.00;
       const planLabel = showPayment.paymentPlan === "split" ? "Quarter Sponsor (1/4)" : showPayment.paymentPlan === "half" ? "Half Sponsor (1/2)" : "Full Sponsor";
       try {
-        const resp = await fetch(STRIPE_CHECKOUT_URL, {
+        const resp = await fetchWithTimeout(STRIPE_CHECKOUT_URL, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -3628,7 +3628,7 @@ function TourSponsorsModal(_ref10) {
       const planLabel = showPayment.paymentPlan === "split" ? "Quarter Sponsor (1/4)" : showPayment.paymentPlan === "half" ? "Half Sponsor (1/2)" : "Full Sponsor";
       let stripeLink = "";
       try {
-        const resp = await fetch(STRIPE_CHECKOUT_URL, {
+        const resp = await fetchWithTimeout(STRIPE_CHECKOUT_URL, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -3656,7 +3656,7 @@ function TourSponsorsModal(_ref10) {
             email: showPayment.email,
             _replyto: "marketreadytours@gmail.com",
             _subject: "💳 Sponsorship Invoice — " + tour.emoji + " " + tour.name + " | $" + amt,
-            message: "Hi ".concat(showPayment.contactName || showPayment.name, ",\n\n") + "Thank you for sponsoring our ".concat(tour.emoji, " ").concat(tour.name, " tour! We truly appreciate your support.\n\n") + "INVOICE DETAILS\n" + "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n" + "Sponsor: ".concat(showPayment.name, "\n") + "Tour: ".concat(tour.emoji, " ").concat(tour.name, "\n") + "Date: ".concat(new Date(tour.date + "T12:00:00").toLocaleDateString("en-US", {
+            message: "Hi ".concat(showPayment.contactName || showPayment.name, ",\n\n") + "Thank you for sponsoring our ".concat(tour.emoji, " ").concat(tour.name, " tour! We truly appreciate your support.\n\n") + "INVOICE DETAILS\n" + "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n" + "Sponsor: ".concat(showPayment.name, "\n") + "Tour: ".concat(tour.emoji, " ").concat(tour.name, "\n") + "Date: ".concat((tour.date ? new Date(tour.date + "T12:00:00") : new Date()).toLocaleDateString("en-US", {
               weekday: "long",
               month: "long",
               day: "numeric",
@@ -3876,18 +3876,22 @@ function AddListingForm(_ref12) {
       const uploaded = [];
       for (let i = 0; i < finalPhotos.length; i++) {
         setUploadProgress("Uploading photo ".concat(i + 1, " of ").concat(finalPhotos.length, "..."));
-        // If it's already a URL (https), keep it. If base64, it needs uploading.
         if (finalPhotos[i].startsWith("https://")) {
           uploaded.push(finalPhotos[i]);
         } else {
-          // Convert base64 back to blob for upload
-          const res = await fetch(finalPhotos[i]);
-          const blob = await res.blob();
-          const file = new File([blob], "photo.jpg", {
-            type: "image/jpeg"
-          });
-          const url = await compressAndUpload(file, listingId);
-          if (url) uploaded.push(url);
+          try {
+            const res = await fetch(finalPhotos[i]);
+            const blob = await res.blob();
+            const file = new File([blob], "photo.jpg", {
+              type: "image/jpeg"
+            });
+            const url = await compressAndUpload(file, listingId);
+            if (url) uploaded.push(url);
+          } catch (e) {
+            console.warn("Photo conversion failed, skipping:", e);
+            // Still include as base64 if upload fails - better than losing the photo
+            uploaded.push(finalPhotos[i]);
+          }
         }
       }
       finalPhotos = uploaded.filter(Boolean);
@@ -4431,7 +4435,7 @@ const buildCampaignEmails = tour => {
     month: "long",
     day: "numeric",
     year: "numeric"
-  }) : tour.date;
+  }) : "TBD";
   const addLink = window.location.origin + window.location.pathname + "#/request/" + tour.id;
   const notInterestedLink = window.location.origin + window.location.pathname + "#/not-interested?tour=" + tour.id + "&email={{email}}";
   const btnHtml = (addUrl, niUrl) => "\n<div style=\"text-align:center;margin:28px 0\">\n<a href=\"".concat(addUrl, "\" style=\"display:inline-block;background:#C9A55A;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:700;font-size:16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin-bottom:12px\">\uD83C\uDFE1 Add My Listing to This Tour</a><br/>\n<a href=\"").concat(niUrl, "\" style=\"display:inline-block;background:#F0EDE8;color:#8A8078;text-decoration:none;padding:10px 24px;border-radius:10px;font-weight:600;font-size:13px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin-top:8px\">Not Interested In This Tour</a>\n</div>");
@@ -5981,8 +5985,14 @@ function TourDetailPage(_ref19) {
   };
   const [optimizing, setOptimizing] = useState(false);
   const optimizeRoute = async () => {
+    var _window$google3;
     if (adminListings.length < 3) {
       showToast("Need at least 3 listings to optimize route.", "warn");
+      return;
+    }
+    if (!((_window$google3 = window.google) !== null && _window$google3 !== void 0 && _window$google3.maps)) {
+      window.loadGoogleMaps && window.loadGoogleMaps(() => showToast("Maps loaded — tap Optimize again.", "info", 3000));
+      showToast("Loading Google Maps...", "info", 2000);
       return;
     }
     setOptimizing(true);
@@ -6702,7 +6712,7 @@ function TourDetailPage(_ref19) {
     style: {
       margin: "0 0 10px"
     }
-  }, "We're putting together our ", /*#__PURE__*/React.createElement("strong", null, tour.emoji, " ", tour.name), " tour on ", /*#__PURE__*/React.createElement("strong", null, new Date(tour.date + "T12:00:00").toLocaleDateString("en-US", {
+  }, "We're putting together our ", /*#__PURE__*/React.createElement("strong", null, tour.emoji, " ", tour.name), " tour on ", /*#__PURE__*/React.createElement("strong", null, (tour.date ? new Date(tour.date + "T12:00:00") : new Date()).toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -6846,9 +6856,13 @@ function TourDetailPage(_ref19) {
         setInviteError("Please fill in all fields.");
         return;
       }
+      if (!isValidEmail(inviteForm.email)) {
+        setInviteError("Please enter a valid email address.");
+        return;
+      }
       setInviteSending(true);
       setInviteError("");
-      const tourDate = new Date(tour.date + "T12:00:00").toLocaleDateString("en-US", {
+      const tourDate = (tour.date ? new Date(tour.date + "T12:00:00") : new Date()).toLocaleDateString("en-US", {
         weekday: "long",
         month: "long",
         day: "numeric",
@@ -7655,7 +7669,7 @@ function TourDetailPage(_ref19) {
       fontSize: 15,
       fontWeight: 700
     }
-  }, "\uD83D\uDCC5 ", new Date(tour.date + "T12:00:00").toLocaleDateString("en-US", {
+  }, "\uD83D\uDCC5 ", (tour.date ? new Date(tour.date + "T12:00:00") : new Date()).toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric"
@@ -8895,8 +8909,8 @@ const RequestATourInlineForm = React.forwardRef(function (_ref24, ref) {
     });
   }, []);
   useEffect(() => {
-    var _window$google3;
-    if (!query || query.length < 3 || !((_window$google3 = window.google) !== null && _window$google3 !== void 0 && (_window$google3 = _window$google3.maps) !== null && _window$google3 !== void 0 && _window$google3.places) || addrConfirmed) {
+    var _window$google4;
+    if (!query || query.length < 3 || !((_window$google4 = window.google) !== null && _window$google4 !== void 0 && (_window$google4 = _window$google4.maps) !== null && _window$google4 !== void 0 && _window$google4.places) || addrConfirmed) {
       setSugg([]);
       return;
     }
@@ -10142,7 +10156,7 @@ function ToursDashboard(_ref26) {
         fontWeight: 700,
         marginTop: 2
       }
-    }, "\uD83D\uDCC5 ", new Date(tour.date + "T12:00:00").toLocaleDateString("en-US", {
+    }, "\uD83D\uDCC5 ", (tour.date ? new Date(tour.date + "T12:00:00") : new Date()).toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
       day: "numeric"
@@ -10322,6 +10336,10 @@ function TeamPage(_ref28) {
       setAddError("Name and email are required.");
       return;
     }
+    if (!isValidEmail(newUser.email)) {
+      setAddError("Please enter a valid email address.");
+      return;
+    }
     if (subAdmins.find(u => {
       var _u$email;
       return ((_u$email = u.email) === null || _u$email === void 0 ? void 0 : _u$email.toLowerCase()) === newUser.email.toLowerCase();
@@ -10333,7 +10351,7 @@ function TeamPage(_ref28) {
     setAddError("");
     try {
       // Create Firebase Auth account with random temp password (user will set their own via reset email)
-      const tempPass = crypto.randomUUID().slice(0, 12) + "Aa1!";
+      const tempPass = (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID().slice(0, 12) : Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6)) + "Aa1!";
       await createFirebaseUser(newUser.email, tempPass);
       // Add role to Firebase database
       const key = newUser.email.replace(/\./g, ",");
@@ -10700,7 +10718,7 @@ function TeamPage(_ref28) {
       fontSize: 44,
       marginBottom: 12
     }
-  }, "\uD83D\uDC65"), /*#__PURE__*/React.createElement("p", null, "No team members yet.")), subAdmins.map(u => /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDC65"), /*#__PURE__*/React.createElement("p", null, "No team members yet.")), (subAdmins || []).map(u => /*#__PURE__*/React.createElement("div", {
     key: u.id,
     style: {
       background: "#fff",
@@ -10919,7 +10937,13 @@ function RequestListingPage(_ref31) {
     notes: ""
   });
   const [addrConfirmed, setAddrConfirmed] = useState(!!paramAddress);
+  const [query, setQuery] = useState(paramAddress || "");
+  const [sugg, setSugg] = useState([]);
   const [sessionToken, setToken] = useState(null);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+  const [photos, setPhotos] = useState([]);
   const inputRef = useRef(null);
   useEffect(() => {
     window.loadGoogleMaps && window.loadGoogleMaps(() => {
@@ -10927,8 +10951,8 @@ function RequestListingPage(_ref31) {
     });
   }, []);
   useEffect(() => {
-    var _window$google4;
-    if (!query || query.length < 3 || !((_window$google4 = window.google) !== null && _window$google4 !== void 0 && (_window$google4 = _window$google4.maps) !== null && _window$google4 !== void 0 && _window$google4.places) || addrConfirmed) {
+    var _window$google5;
+    if (!query || query.length < 3 || !((_window$google5 = window.google) !== null && _window$google5 !== void 0 && (_window$google5 = _window$google5.maps) !== null && _window$google5 !== void 0 && _window$google5.places) || addrConfirmed) {
       setSugg([]);
       return;
     }
@@ -10979,6 +11003,13 @@ function RequestListingPage(_ref31) {
       setError("Please fill in all required fields.");
       return;
     }
+    if (!isValidEmail(fields.agentEmail)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    const safeName = sanitize(fields.agentName);
+    const safeBrokerage = sanitize(fields.brokerageName);
+    const safeNotes = sanitize(fields.notes);
     setSubmitting(true);
     setError("");
     const tour = tours.find(t => t.id === fields.tourId);
@@ -10986,8 +11017,8 @@ function RequestListingPage(_ref31) {
       id: uid("req"),
       status: "pending",
       submittedAt: new Date().toISOString(),
-      agentName: fields.agentName,
-      agentEmail: fields.agentEmail,
+      agentName: safeName,
+      agentEmail: fields.agentEmail.trim().toLowerCase(),
       agentPhone: fields.agentPhone,
       tourId: fields.tourId,
       tourName: tour ? "".concat(tour.emoji, " ").concat(tour.name) : "",
@@ -10998,14 +11029,14 @@ function RequestListingPage(_ref31) {
       sqft: Number(String(fields.sqft).replace(/[^0-9]/g, "")) || 0,
       dom: Number(fields.dom) || 0,
       price: Number(String(fields.price).replace(/[^0-9]/g, "")) || 0,
-      agent: fields.agentName,
-      notes: fields.notes,
+      agent: safeName,
+      notes: safeNotes,
       photos: photos.length ? photos : ["https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop"],
       order: 0,
       type: tourSignUp ? "tour-signup" : "listing-request"
     };
     try {
-      await fetch(LISTING_REQUEST_FORMSPREE, {
+      await fetchWithTimeout(LISTING_REQUEST_FORMSPREE, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -11014,10 +11045,10 @@ function RequestListingPage(_ref31) {
         body: JSON.stringify({
           email: "marketreadytours@gmail.com",
           _replyto: fields.agentEmail,
-          _subject: tourSignUp ? "New Tour Sign Up: ".concat(fields.agentName) : "New Listing Request: ".concat(fields.address),
-          message: "New listing request submitted!\n\nAgent: ".concat(fields.agentName, "\nEmail: ").concat(fields.agentEmail, "\nPhone: ").concat(fields.agentPhone || "Not provided", "\nBrokerage: ").concat(fields.brokerageName || "Not provided", "\n\nProperty: ").concat(fields.address, ", ").concat(fields.city, "\nTour: ").concat(requestData.tourName, "\nBeds: ").concat(fields.beds, " | Baths: ").concat(fields.baths, " | Sqft: ").concat(fields.sqft, "\nPrice: $").concat(Number(String(fields.price).replace(/[^0-9]/g, "")).toLocaleString(), "\nDOM: ").concat(fields.dom, "\nNotes: ").concat(fields.notes || "None", "\n\nLog in to approve or deny this request.")
+          _subject: tourSignUp ? "New Tour Sign Up: ".concat(safeName) : "New Listing Request: ".concat(fields.address),
+          message: "New listing request submitted!\n\nAgent: ".concat(safeName, "\nEmail: ").concat(fields.agentEmail, "\nPhone: ").concat(sanitize(fields.agentPhone) || "Not provided", "\nBrokerage: ").concat(safeBrokerage || "Not provided", "\n\nProperty: ").concat(fields.address, ", ").concat(fields.city, "\nTour: ").concat(requestData.tourName, "\nBeds: ").concat(fields.beds, " | Baths: ").concat(fields.baths, " | Sqft: ").concat(fields.sqft, "\nPrice: $").concat(Number(String(fields.price).replace(/[^0-9]/g, "")).toLocaleString(), "\nDOM: ").concat(fields.dom, "\nNotes: ").concat(safeNotes || "None", "\n\nLog in to approve or deny this request.")
         })
-      });
+      }, 10000);
       // Notify the tour's sub-admin directly via CF email
       const notifyTour = tours.find(t => t.id === fields.tourId);
       const subAdminEmail = notifyTour === null || notifyTour === void 0 ? void 0 : notifyTour.createdBy;
@@ -11473,20 +11504,19 @@ function RequestListingPage(_ref31) {
       fontSize: 13,
       color: B.dark
     }
-  }, "Click to upload photos"), /*#__PURE__*/React.createElement("div", {
+  }, "Click to upload a photo"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
       color: B.gray
     }
-  }, "JPG, PNG \u2014 multiple files OK")), /*#__PURE__*/React.createElement("input", {
+  }, "JPG, PNG \u2014 1 photo max")), /*#__PURE__*/React.createElement("input", {
     type: "file",
     accept: "image/*",
-    multiple: true,
     style: {
       display: "none"
     },
     onChange: e => {
-      const files = Array.from(e.target.files);
+      const files = Array.from(e.target.files).slice(0, 1);
       if (!files.length) return;
       Promise.all(files.map(f => new Promise((res, rej) => {
         const reader = new FileReader();
@@ -11687,7 +11717,7 @@ function ListingRequestsAdmin(_ref34) {
     // Send approval email with calendar link
     try {
       const calUrl = makeGoogleCalUrl(req.tourName, (tour === null || tour === void 0 ? void 0 : tour.date) || req.tourDate || "", (tour === null || tour === void 0 ? void 0 : tour.time) || req.tourTime || "", (tour === null || tour === void 0 ? void 0 : tour.emoji) || "🏡", req.address);
-      const tourDateFmt = tour ? new Date(tour.date + "T12:00:00").toLocaleDateString("en-US", {
+      const tourDateFmt = tour ? (tour.date ? new Date(tour.date + "T12:00:00") : new Date()).toLocaleDateString("en-US", {
         weekday: "long",
         month: "long",
         day: "numeric",
@@ -11697,10 +11727,15 @@ function ListingRequestsAdmin(_ref34) {
       const senderName = (tour === null || tour === void 0 ? void 0 : tour.createdByName) || "MarketReady Tours";
       const senderEmail = (tour === null || tour === void 0 ? void 0 : tour.createdBy) || SUPER_ADMIN_EMAIL;
       const approvalHtml = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head>\n<body style=\"margin:0;background:#F0EDE8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif\">\n<div style=\"max-width:600px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.12)\">\n<div style=\"background:#0D0D0D;padding:22px 28px\">\n<p style=\"margin:0 0 4px;font-family:Georgia,serif;font-size:22px;font-weight:900;color:#fff;letter-spacing:1px\">Market<span style=\"color:#C9A55A\">Ready</span> <span style=\"font-weight:300;font-size:18px;letter-spacing:3px\">Tours</span></p>\n<p style=\"margin:0;font-size:13px;color:rgba(255,255,255,.7)\">".concat((tour === null || tour === void 0 ? void 0 : tour.emoji) || "🏡", " ").concat(req.tourName, " &nbsp;\xB7&nbsp; ").concat(tourDateFmt, "</p>\n</div>\n<div style=\"background:#C9A55A;height:4px\"></div>\n<div style=\"padding:28px 24px\">\n<div style=\"background:#F0FDF4;border-radius:12px;padding:16px 20px;margin-bottom:24px;border:1px solid #BBF7D0;text-align:center\">\n<div style=\"font-size:36px;margin-bottom:8px\">\uD83C\uDF89</div>\n<h2 style=\"color:#065F46;font-family:Georgia,serif;margin:0 0 4px;font-size:20px\">You're on the tour!</h2>\n<p style=\"color:#065F46;margin:0;font-size:14px\">Your listing has been approved</p>\n</div>\n<p style=\"font-size:15px;color:#111;margin:0 0 20px\">Hi ").concat(req.agentName, ",</p>\n<p style=\"font-size:14px;color:#374151;margin:0 0 20px;line-height:1.7\">Great news \u2014 your listing at <strong>").concat(req.address, "</strong> has been approved for the <strong>").concat(req.tourName, "</strong> tour!</p>\n<div style=\"background:#F9FAFB;border-radius:12px;padding:18px 20px;margin-bottom:24px\">\n<div style=\"display:flex;flex-direction:column;gap:10px\">\n<div style=\"display:flex;gap:12px;align-items:center\"><span style=\"font-size:18px\">\uD83D\uDCC5</span><div><div style=\"font-size:11px;color:#8A8078;font-weight:700;text-transform:uppercase;letter-spacing:.5px\">Tour Date</div><div style=\"font-size:14px;color:#111;font-weight:600;margin-top:2px\">").concat(tourDateFmt, "</div></div></div>\n<div style=\"display:flex;gap:12px;align-items:center\"><span style=\"font-size:18px\">\uD83D\uDD52</span><div><div style=\"font-size:11px;color:#8A8078;font-weight:700;text-transform:uppercase;letter-spacing:.5px\">Tour Time</div><div style=\"font-size:14px;color:#111;font-weight:600;margin-top:2px\">").concat(tourTime, "</div></div></div>\n<div style=\"display:flex;gap:12px;align-items:center\"><span style=\"font-size:18px\">\uD83C\uDFE0</span><div><div style=\"font-size:11px;color:#8A8078;font-weight:700;text-transform:uppercase;letter-spacing:.5px\">Your Listing</div><div style=\"font-size:14px;color:#111;font-weight:600;margin-top:2px\">").concat(req.address, "</div></div></div>\n</div>\n</div>\n<div style=\"text-align:center;margin:24px 0\">\n<a href=\"").concat(calUrl, "\" style=\"display:inline-block;background:#0D0D0D;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px\">\uD83D\uDCC5 Add to Google Calendar</a>\n</div>\n<div style=\"background:#EFF6FF;border-radius:10px;padding:14px 18px;margin-bottom:24px\">\n<p style=\"margin:0;font-weight:700;color:#1E40AF;font-size:13px;margin-bottom:6px\">What happens next:</p>\n<p style=\"margin:0;color:#374151;font-size:13px;line-height:1.8\">\uD83D\uDCCD You'll receive the tour route closer to the date<br/>\u2B50 Agents will rate your home in real time during the tour<br/>\uD83D\uDCCA You'll receive individual ratings as they come in<br/>\uD83D\uDCE7 A full summary is emailed to you after the tour</p>\n</div>\n<p style=\"font-size:13px;color:#8A8078;margin:0\">Questions? Reply to this email or contact <a href=\"mailto:").concat(senderEmail, "\" style=\"color:#0D0D0D\">").concat(senderEmail, "</a></p>\n</div>\n<div style=\"background:#0D0D0D;padding:16px 20px;text-align:center\">\n<p style=\"margin:0;color:rgba(255,255,255,.5);font-size:11px\">Sent by ").concat(senderName, " via MarketReady Tours &nbsp;\xB7&nbsp; <a href=\"https://www.marketreadytours.com\" style=\"color:rgba(255,255,255,.5)\">marketreadytours.com</a></p>\n</div>\n</div></body></html>");
+      if (!isValidEmail(req.agentEmail)) {
+        showToast("Invalid agent email — approval saved but email not sent.", "warn");
+        setProcessing(false);
+        return;
+      }
       await sendCFEmail(req.agentEmail, "\u2705 Your listing is approved \u2014 ".concat(req.tourName), "Please view this email in an HTML-compatible client.", approvalHtml);
       // Schedule 48h and 24h reminder emails in Firebase
-      if (_fb && tour !== null && tour !== void 0 && tour.date) {
-        const tourDateMs = new Date(tour.date + "T12:00:00").getTime();
+      if (_fb && tour !== null && tour !== void 0 && tour.date && tourDateMs) {
+        const tourDateMs = tour.date ? new Date(tour.date + "T12:00:00").getTime() : null;
         const timeParts = (tour.time || "").match(/(\d+):(\d+)\s*(AM|PM)/i);
         let tourMs = tourDateMs;
         if (timeParts) {
@@ -11762,7 +11797,9 @@ function ListingRequestsAdmin(_ref34) {
   const handleDeny = async req => {
     setProcessing(true);
     try {
-      await sendCFEmail(req.agentEmail, "Your listing request \u2014 MarketReady Tours", "Hi ".concat(req.agentName, ",\n\nThank you for your interest in featuring ").concat(req.address, " on the ").concat(req.tourName, " tour.\n\nAfter review, we are unable to include your listing on this particular tour").concat(denialReason ? " \u2014 ".concat(denialReason) : "", ".\n\nWe encourage you to submit future listings for upcoming tours. Thank you for your understanding.\n\n\u2014 MarketReady Tours\nmarketreadytours.com"));
+      if (isValidEmail(req.agentEmail)) {
+        await sendCFEmail(req.agentEmail, "Your listing request \u2014 MarketReady Tours", "Hi ".concat(req.agentName, ",\n\nThank you for your interest in featuring ").concat(req.address, " on the ").concat(req.tourName, " tour.\n\nAfter review, we are unable to include your listing on this particular tour").concat(denialReason ? " \u2014 ".concat(denialReason) : "", ".\n\nWe encourage you to submit future listings for upcoming tours. Thank you for your understanding.\n\n\u2014 MarketReady Tours\nmarketreadytours.com"));
+      }
     } catch (e) {
       console.warn("Denial email failed", e);
     }
@@ -12670,7 +12707,7 @@ function ContactPage(_ref36) {
     onClick: async () => {
       if (form.name && form.email && form.message) {
         try {
-          await fetch("https://formspree.io/f/xdallqwa", {
+          await fetchWithTimeout("https://formspree.io/f/xdallqwa", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -13336,7 +13373,7 @@ function App() {
       } catch (e) {}
     }).catch(() => {}))).then(() => {
       fbReady.current = true;
-      setFbLoaded(true); // trigger re-render so write effects can now safely fire
+      setFbLoaded(true);
       Object.entries(paths).forEach(_ref41 => {
         let [path, setter] = _ref41;
         try {
@@ -13352,10 +13389,15 @@ function App() {
         } catch (e) {}
       });
     });
+    // Cleanup: remove all Firebase listeners on unmount
+    return () => {
+      try {
+        Object.keys(paths).forEach(path => _fb.ref(path).off());
+      } catch (e) {}
+    };
   }, []);
 
   // Debounced write to Firebase — waits 800ms after last change before writing
-  // Uses update() instead of set() to avoid overwriting concurrent changes
   const fbWrite = (path, data) => {
     if (!_fb || !fbReady.current) return;
     fbIgnore.current[path] = true;
