@@ -3737,7 +3737,7 @@ function TourSponsorsModal(_ref10) {
 }
 /* ── ADD LISTING FORM with Google Places Autocomplete ── */
 function AddListingForm(_ref12) {
-  var _fields$photos2;
+  var _fields$photos;
   let {
     tourColor,
     onAdd,
@@ -3833,11 +3833,66 @@ function AddListingForm(_ref12) {
       setLoading(false);
     });
   };
-  const handleAdd = () => {
-    var _fields$photos;
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState("");
+  const compressAndUpload = async (file, listingId) => {
+    return new Promise(resolve => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        const MAX = 800;
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        const preview = canvas.toDataURL("image/jpeg", 0.75);
+        if (!_fbStorage) {
+          resolve(preview);
+          return;
+        } // fallback to base64 if no storage
+        canvas.toBlob(blob => {
+          const path = "mrt_listing_photos/".concat(listingId, "/").concat(uid("photo"), "_").concat(file.name.replace(/[^a-zA-Z0-9.]/g, "_"));
+          _fbStorage.ref(path).put(blob, {
+            contentType: "image/jpeg"
+          }).then(snap => snap.ref.getDownloadURL()).then(url => resolve(url)).catch(() => resolve(preview)); // fallback to compressed base64 on error
+        }, "image/jpeg", 0.75);
+      };
+      img.onerror = () => resolve(null);
+      img.src = objectUrl;
+    });
+  };
+  const handleAdd = async () => {
     if (!fields.address || !selected) {
       setStatus("⚠️ Please select a valid address from the suggestions.");
       return;
+    }
+    // Upload photos to Firebase Storage first
+    let finalPhotos = fields.photos || [];
+    if (finalPhotos.length > 0 && _fbStorage) {
+      setUploading(true);
+      const listingId = uid("listing-photos");
+      const uploaded = [];
+      for (let i = 0; i < finalPhotos.length; i++) {
+        setUploadProgress("Uploading photo ".concat(i + 1, " of ").concat(finalPhotos.length, "..."));
+        // If it's already a URL (https), keep it. If base64, it needs uploading.
+        if (finalPhotos[i].startsWith("https://")) {
+          uploaded.push(finalPhotos[i]);
+        } else {
+          // Convert base64 back to blob for upload
+          const res = await fetch(finalPhotos[i]);
+          const blob = await res.blob();
+          const file = new File([blob], "photo.jpg", {
+            type: "image/jpeg"
+          });
+          const url = await compressAndUpload(file, listingId);
+          if (url) uploaded.push(url);
+        }
+      }
+      finalPhotos = uploaded.filter(Boolean);
+      setUploading(false);
+      setUploadProgress("");
     }
     onAdd({
       ...fields,
@@ -3846,7 +3901,7 @@ function AddListingForm(_ref12) {
       sqft: Number(String(fields.sqft).replace(/[^0-9]/g, "")) || 0,
       dom: Number(fields.dom) || 0,
       price: Number(String(fields.price).replace(/[^0-9]/g, "")) || 0,
-      photos: (_fields$photos = fields.photos) !== null && _fields$photos !== void 0 && _fields$photos.length ? fields.photos : ["https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop"]
+      photos: finalPhotos.length ? finalPhotos : ["https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop"]
     });
   };
   const clearSelection = () => {
@@ -4189,21 +4244,26 @@ function AddListingForm(_ref12) {
       fontSize: 13,
       color: B.dark
     }
-  }, "Click to upload photos"), /*#__PURE__*/React.createElement("div", {
+  }, "Click to upload a photo"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
       color: B.gray
     }
-  }, "JPG, PNG, HEIC \u2014 multiple files OK")), /*#__PURE__*/React.createElement("input", {
+  }, "JPG, PNG, HEIC \u2014 1 photo max")), /*#__PURE__*/React.createElement("input", {
     type: "file",
     accept: "image/*",
-    multiple: true,
     style: {
       display: "none"
     },
     onChange: e => {
-      const files = Array.from(e.target.files);
+      const files = Array.from(e.target.files).slice(0, 1); // max 1 photo
       if (!files.length) return;
+      const MAX_MB = 10;
+      const oversized = files.filter(f => f.size > MAX_MB * 1024 * 1024);
+      if (oversized.length > 0) {
+        setStatus("\u274C ".concat(oversized.length, " photo(s) are too large. Max ").concat(MAX_MB, "MB each."));
+        return;
+      }
       Promise.all(files.map(f => new Promise((res, rej) => {
         const reader = new FileReader();
         reader.onload = ev => res(ev.target.result);
@@ -4216,7 +4276,7 @@ function AddListingForm(_ref12) {
         }));
       });
     }
-  })), ((_fields$photos2 = fields.photos) === null || _fields$photos2 === void 0 ? void 0 : _fields$photos2.length) > 0 && /*#__PURE__*/React.createElement("div", {
+  })), ((_fields$photos = fields.photos) === null || _fields$photos === void 0 ? void 0 : _fields$photos.length) > 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 8,
       display: "grid",
@@ -4274,7 +4334,32 @@ function AddListingForm(_ref12) {
       borderRadius: 4,
       padding: "2px 5px"
     }
-  }, "COVER"))))), /*#__PURE__*/React.createElement("div", {
+  }, "COVER"))))), uploading && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#F0ECE4",
+      border: "1px solid #D4C5A9",
+      borderRadius: 8,
+      padding: "8px 12px",
+      fontSize: 12,
+      fontWeight: 600,
+      color: "#7A5A28",
+      marginBottom: 8,
+      display: "flex",
+      alignItems: "center",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: "inline-block",
+      width: 14,
+      height: 14,
+      border: "2px solid #C9A55A",
+      borderTopColor: "transparent",
+      borderRadius: "50%",
+      animation: "spin .8s linear infinite",
+      flexShrink: 0
+    }
+  }), uploadProgress || "Uploading photos..."), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 10
@@ -4292,19 +4377,19 @@ function AddListingForm(_ref12) {
     }
   }, "Cancel"), /*#__PURE__*/React.createElement("button", {
     onClick: handleAdd,
-    disabled: !selected || loading,
+    disabled: !selected || loading || uploading,
     className: "btn-hover",
     style: {
       flex: 2,
-      background: !selected || loading ? "#9CA3AF" : tourColor,
+      background: !selected || loading || uploading ? "#9CA3AF" : tourColor,
       color: "#fff",
       border: "none",
       borderRadius: 9,
       padding: "11px 0",
       fontWeight: 700,
-      cursor: !selected || loading ? "default" : "pointer"
+      cursor: !selected || loading || uploading ? "default" : "pointer"
     }
-  }, loading ? "Loading..." : "✓ Add Listing")));
+  }, uploading ? "⏳ Uploading..." : loading ? "Loading..." : "✓ Add Listing")));
 }
 /* ── TOUR DETAIL PAGE ── */
 /* ── INSTANTLY.AI API HELPERS ── */
