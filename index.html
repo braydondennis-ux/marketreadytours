@@ -2301,15 +2301,44 @@ function AgentBrandingModal(_ref0) {
     brokerageName: tour.brokerageName || "",
     brokerageLogo: tour.brokerageLogo || ""
   });
-  const handlePhoto = (key, e) => {
+  const [uploadingBranding, setUploadingBranding] = useState(false);
+  const handlePhoto = async (key, e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => setDraft(d => ({
+    if (file.size > 5 * 1024 * 1024) return; // 5MB limit
+    setUploadingBranding(true);
+    const MAX = 400;
+    const compress = () => new Promise(resolve => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        const preview = canvas.toDataURL("image/jpeg", 0.8);
+        if (!_fbStorage) {
+          resolve(preview);
+          return;
+        }
+        canvas.toBlob(blob => {
+          const path = "mrt_branding/".concat(tour.id, "/").concat(key, "_").concat(uid("img"), ".jpg");
+          _fbStorage.ref(path).put(blob, {
+            contentType: "image/jpeg"
+          }).then(snap => snap.ref.getDownloadURL()).then(url => resolve(url)).catch(() => resolve(preview));
+        }, "image/jpeg", 0.8);
+      };
+      img.onerror = () => resolve(null);
+      img.src = objectUrl;
+    });
+    const url = await compress();
+    if (url) setDraft(d => ({
       ...d,
-      [key]: ev.target.result
+      [key]: url
     }));
-    reader.readAsDataURL(file);
+    setUploadingBranding(false);
   };
   return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2494,18 +2523,19 @@ function AgentBrandingModal(_ref0) {
     }
   }, "Cancel"), /*#__PURE__*/React.createElement("button", {
     onClick: () => onSave(draft),
+    disabled: uploadingBranding,
     className: "btn-hover",
     style: {
       flex: 2,
-      background: B.primary,
+      background: uploadingBranding ? "#9CA3AF" : B.primary,
       color: "#fff",
       border: "none",
       borderRadius: 10,
       padding: 13,
       fontWeight: 700,
-      cursor: "pointer"
+      cursor: uploadingBranding ? "default" : "pointer"
     }
-  }, "Save Branding")))));
+  }, uploadingBranding ? "⏳ Uploading..." : "Save Branding")))));
 }
 /* ── TOUR SPONSORS MODAL ── */
 function TourSponsorsModal(_ref10) {
@@ -2532,31 +2562,67 @@ function TourSponsorsModal(_ref10) {
   });
   const [logoPreview, setLogoPreview] = useState("");
   const [headshotPreview, setHeadshotPreview] = useState("");
-  const handleLogoFile = e => {
+  const [uploadingSponsorImg, setUploadingSponsorImg] = useState(false);
+  const compressSponsorImg = (file, path) => new Promise(resolve => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const MAX = 400; // sponsor logos don't need to be large
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      const preview = canvas.toDataURL("image/jpeg", 0.8);
+      if (!_fbStorage) {
+        resolve(preview);
+        return;
+      }
+      canvas.toBlob(blob => {
+        _fbStorage.ref(path).put(blob, {
+          contentType: "image/jpeg"
+        }).then(snap => snap.ref.getDownloadURL()).then(url => resolve(url)).catch(() => resolve(preview));
+      }, "image/jpeg", 0.8);
+    };
+    img.onerror = () => resolve(null);
+    img.src = objectUrl;
+  });
+  const handleLogoFile = async e => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      setLogoPreview(ev.target.result);
+    if (file.size > 5 * 1024 * 1024) {
+      return;
+    } // 5MB limit
+    setUploadingSponsorImg(true);
+    const path = "mrt_sponsor_logos/".concat(tour.id, "/").concat(uid("logo"), "_").concat(file.name.replace(/[^a-zA-Z0-9.]/g, "_"));
+    const url = await compressSponsorImg(file, path);
+    if (url) {
+      setLogoPreview(url);
       setDraft(d => ({
         ...d,
-        logo: ev.target.result
+        logo: url
       }));
-    };
-    reader.readAsDataURL(file);
+    }
+    setUploadingSponsorImg(false);
   };
-  const handleHeadshotFile = e => {
+  const handleHeadshotFile = async e => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      setHeadshotPreview(ev.target.result);
+    if (file.size > 5 * 1024 * 1024) {
+      return;
+    }
+    setUploadingSponsorImg(true);
+    const path = "mrt_sponsor_headshots/".concat(tour.id, "/").concat(uid("headshot"), "_").concat(file.name.replace(/[^a-zA-Z0-9.]/g, "_"));
+    const url = await compressSponsorImg(file, path);
+    if (url) {
+      setHeadshotPreview(url);
       setDraft(d => ({
         ...d,
-        headshot: ev.target.result
+        headshot: url
       }));
-    };
-    reader.readAsDataURL(file);
+    }
+    setUploadingSponsorImg(false);
   };
   const startAdd = () => {
     setEditing("new");
@@ -2628,7 +2694,7 @@ function TourSponsorsModal(_ref10) {
       }));
       newList = [...base, {
         ...draft,
-        id: "sp-" + uid("sp")
+        id: uid("sp")
       }];
     } else {
       let base = sponsors;
@@ -3113,18 +3179,19 @@ function TourSponsorsModal(_ref10) {
     }
   }, "Cancel"), /*#__PURE__*/React.createElement("button", {
     onClick: saveSponsor,
+    disabled: uploadingSponsorImg,
     className: "btn-hover",
     style: {
       flex: 2,
-      background: B.primary,
+      background: uploadingSponsorImg ? "#9CA3AF" : B.primary,
       color: "#fff",
       border: "none",
       borderRadius: 10,
       padding: 12,
       fontWeight: 700,
-      cursor: "pointer"
+      cursor: uploadingSponsorImg ? "default" : "pointer"
     }
-  }, editing === "new" ? "Add Sponsor" : "Save"))) : /*#__PURE__*/React.createElement("div", {
+  }, uploadingSponsorImg ? "⏳ Uploading..." : editing === "new" ? "Add Sponsor" : "Save"))) : /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
