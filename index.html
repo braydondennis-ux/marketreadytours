@@ -11411,7 +11411,7 @@ function RequestListingPage(_ref31) {
       alignItems: "center",
       justifyContent: "center"
     }
-  }, "\u2715")), suggestions.length > 0 && !addrConfirmed && /*#__PURE__*/React.createElement("div", {
+  }, "\u2715")), sugg.length > 0 && !addrConfirmed && /*#__PURE__*/React.createElement("div", {
     style: {
       position: "absolute",
       top: "100%",
@@ -11425,7 +11425,7 @@ function RequestListingPage(_ref31) {
       overflow: "hidden",
       marginTop: 4
     }
-  }, suggestions.map((s, i) => {
+  }, sugg.map((s, i) => {
     var _s$structured_formatt5, _s$structured_formatt6;
     return /*#__PURE__*/React.createElement("button", {
       key: s.place_id,
@@ -11434,7 +11434,7 @@ function RequestListingPage(_ref31) {
         width: "100%",
         background: "none",
         border: "none",
-        borderBottom: i < suggestions.length - 1 ? "1px solid #F0EDE8" : "none",
+        borderBottom: i < sugg.length - 1 ? "1px solid #F0EDE8" : "none",
         padding: "11px 14px",
         cursor: "pointer",
         textAlign: "left",
