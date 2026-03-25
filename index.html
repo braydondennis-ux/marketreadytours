@@ -4426,7 +4426,7 @@ const instantlyAPI = async function (endpoint) {
     }
   };
   if (body) opts.body = JSON.stringify(body);
-  const res = await fetchWithTimeout("https://api.instantly.ai/api/v2/".concat(endpoint), opts, 20000);
+  const res = await fetchWithTimeout(INSTANTLY_PROXY_URL, {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({endpoint,method,body,apiKey:key})},30000);
   if (!res.ok) {
     const t = await res.text().catch(() => "");
     if (res.status === 401) throw new Error("Invalid Instantly API key. Please check your key in Settings.");
