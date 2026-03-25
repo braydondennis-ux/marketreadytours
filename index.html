@@ -3712,33 +3712,23 @@ function TourSponsorsModal(_ref10) {
         const data = await resp.json();
         if (data.url) stripeLink = data.url;
       } catch (e) {}
+      // Build the invoice message
+      const invoiceMsg = "Hi ".concat(showPayment.contactName || showPayment.name, ",\n\n") + "Thank you for sponsoring our ".concat(tour.emoji, " ").concat(tour.name, " tour! We truly appreciate your support.\n\n") + "INVOICE DETAILS\n" + "━━━━━━━━━━━━━━━━━━━━━━━━\n" + "Sponsor: ".concat(showPayment.name, "\n") + "Tour: ".concat(tour.emoji, " ").concat(tour.name, "\n") + "Date: ".concat((tour.date ? new Date(tour.date + "T12:00:00") : new Date()).toLocaleDateString("en-US", {weekday:"long",month:"long",day:"numeric",year:"numeric"}), "\n") + "Plan: ".concat(planLabel, "\n") + "Amount Due: $".concat(amt, "\n") + "━━━━━━━━━━━━━━━━━━━━━━━━\n\n" + (stripeLink ? "PAY ONLINE (Credit/Debit Card)\n━━━━━━━━━━━━━━━━━━━━━━━━\n".concat(stripeLink, "\n\n") : "") + "OTHER PAYMENT OPTIONS\n" + "━━━━━━━━━━━━━━━━━━━━━━━━\n" + "• Venmo: @MarketReadyTours\n" + "• Zelle: payments@marketreadytours.com\n" + "• Check: Make payable to MarketReady Tours\n\n" + "Please remit payment at your earliest convenience. If you have any questions, feel free to reply to this email.\n\n" + "Thank you for helping make this tour possible!\n\n" + "Best regards,\nMarketReady Tours\nwww.marketreadytours.com";
       try {
-        await fetch(FORMSPREE_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          body: JSON.stringify({
-            email: showPayment.email,
-            _replyto: "marketreadytours@gmail.com",
-            _subject: "💳 Sponsorship Invoice — " + tour.emoji + " " + tour.name + " | $" + amt,
-            message: "Hi ".concat(showPayment.contactName || showPayment.name, ",\n\n") + "Thank you for sponsoring our ".concat(tour.emoji, " ").concat(tour.name, " tour! We truly appreciate your support.\n\n") + "INVOICE DETAILS\n" + "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n" + "Sponsor: ".concat(showPayment.name, "\n") + "Tour: ".concat(tour.emoji, " ").concat(tour.name, "\n") + "Date: ".concat((tour.date ? new Date(tour.date + "T12:00:00") : new Date()).toLocaleDateString("en-US", {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-              year: "numeric"
-            }), "\n") + "Plan: ".concat(planLabel, "\n") + "Amount Due: $".concat(amt, "\n") + "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n" + (stripeLink ? "PAY ONLINE (Credit/Debit Card)\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n".concat(stripeLink, "\n\n") : "") + "OTHER PAYMENT OPTIONS\n" + "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n" + "\u2022 Venmo: @MarketReadyTours\n" + "\u2022 Zelle: payments@marketreadytours.com\n" + "\u2022 Check: Make payable to MarketReady Tours\n\n" + "Please remit payment at your earliest convenience. If you have any questions about your sponsorship or the tour, feel free to reply to this email.\n\n" + "Thank you for helping make this tour possible!\n\n" + "Best regards,\n" + "MarketReady Tours\n" + "www.marketreadytours.com"
-          })
-        });
-        setShowPayment(sp => ({
-          ...sp,
+        const emailOk = await sendCFEmail(
+          showPayment.email,
+          "\uD83D\uDCB3 Sponsorship Invoice \u2014 " + tour.emoji + " " + tour.name + " | $" + amt,
+          invoiceMsg
+        );
+        if (!emailOk) throw new Error("Email delivery failed");
+        setShowPayment(prev => ({
+          ...prev,
           _sent: true,
           _sending: false
         }));
       } catch (e) {
-        setShowPayment(sp => ({
-          ...sp,
+        setShowPayment(prev => ({
+          ...prev,
           _sending: false,
           _error: "Failed to send. Please try again."
         }));
