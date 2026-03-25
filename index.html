@@ -4681,7 +4681,7 @@ function InviteCampaignTab(_ref15) {
     try {
       const templates = emailTemplates || buildCampaignEmails(tour);
       // Create campaign
-      const campaign = await instantlyAPI("campaigns", "POST", {campaign_schedule:{scheduleFrom:"08:00",scheduleTo:"18:00",days:{monday:true,tuesday:true,wednesday:true,thursday:true,friday:true,saturday:false,sunday:false},timezone:"America/Phoenix"},
+      const campaign = await instantlyAPI("campaigns", "POST", {campaign_schedule:{schedules:[{name:"Default",timing:{from:"08:00",to:"18:00"},days:{monday:true,tuesday:true,wednesday:true,thursday:true,friday:true,saturday:false,sunday:false},timezone:"America/Phoenix"}]},
         name: "".concat(tour.emoji, " ").concat(tour.name, " \u2014 ").concat(tour.date),
         subject: templates[0].subject,
         body: templates[0].body
