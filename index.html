@@ -139,7 +139,11 @@ const B = {
   muted: "#5A5450"
 };
 const SUPER_ADMIN_EMAIL = "marketreadytours@gmail.com";
-const STRIPE_CHECKOUT_URL = "https://us-central1-marketready-tours.cloudfunctions.net/createCheckoutSession";
+const SQUARE_LINKS = {
+  full: "https://square.link/u/GZQLj5Ey",
+  half: "https://square.link/u/7wF91jvQ",
+  split: "https://square.link/u/ZqkeM21q"
+};
 const SEND_EMAIL_URL = "https://sendemail-wraz5q2v2a-uc.a.run.app";
 const sendCFEmail = async (to, subject, message, html) => {
   if (!to || !isValidEmail(to)) {
@@ -3619,64 +3623,26 @@ function TourSponsorsModal(_ref10) {
       flexDirection: "column",
       gap: 8
     }
-  }, /*#__PURE__*/React.createElement("button", {
-    disabled: showPayment._stripeLoading,
-    onClick: async () => {
-      setShowPayment(sp => ({
-        ...sp,
-        _stripeLoading: true,
-        _error: ""
-      }));
-      const amt = showPayment.paymentPlan === "split" ? 49.75 : showPayment.paymentPlan === "half" ? 99.50 : 199.00;
-      const planLabel = showPayment.paymentPlan === "split" ? "Quarter Sponsor (1/4)" : showPayment.paymentPlan === "half" ? "Half Sponsor (1/2)" : "Full Sponsor";
-      try {
-        const resp = await fetchWithTimeout(STRIPE_CHECKOUT_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            sponsorName: showPayment.name,
-            tourName: tour.name,
-            planLabel,
-            amount: amt,
-            email: showPayment.email || "",
-            tourEmoji: tour.emoji
-          })
-        });
-        const data = await resp.json();
-        if (data.url) {
-          window.open(data.url, "_blank");
-        } else {
-          throw new Error(data.error || "Failed to create checkout");
-        }
-        setShowPayment(sp => ({
-          ...sp,
-          _stripeLoading: false
-        }));
-      } catch (e) {
-        setShowPayment(sp => ({
-          ...sp,
-          _stripeLoading: false,
-          _error: "Payment setup failed. Please try again."
-        }));
-      }
-    },
+  }, /*#__PURE__*/React.createElement("a", {
+    href: SQUARE_LINKS[showPayment.paymentPlan] || SQUARE_LINKS.full,
+    target: "_blank",
+    rel: "noreferrer",
     style: {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
       gap: 8,
-      background: showPayment._stripeLoading ? "#9CA3AF" : "linear-gradient(135deg, #635BFF 0%, #7A73FF 100%)",
+      background: "linear-gradient(135deg, #00B388 0%, #009E78 100%)",
       color: "#fff",
       border: "none",
       borderRadius: 10,
       padding: "14px 0",
       fontWeight: 700,
       fontSize: 14,
-      cursor: showPayment._stripeLoading ? "default" : "pointer"
+      textDecoration: "none",
+      cursor: "pointer"
     }
-  }, showPayment._stripeLoading ? "Opening Stripe..." : "💳 Pay with Card"), /*#__PURE__*/React.createElement("div", {
+  }, "💳 Pay with Card (Square)"), /*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
       color: B.gray,
@@ -3693,27 +3659,9 @@ function TourSponsorsModal(_ref10) {
       }));
       const amt = showPayment.paymentPlan === "split" ? "49.75" : showPayment.paymentPlan === "half" ? "99.50" : "199.00";
       const planLabel = showPayment.paymentPlan === "split" ? "Quarter Sponsor (1/4)" : showPayment.paymentPlan === "half" ? "Half Sponsor (1/2)" : "Full Sponsor";
-      let stripeLink = "";
-      try {
-        const resp = await fetchWithTimeout(STRIPE_CHECKOUT_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            sponsorName: showPayment.name,
-            tourName: tour.name,
-            planLabel,
-            amount: parseFloat(amt),
-            email: showPayment.email || "",
-            tourEmoji: tour.emoji
-          })
-        });
-        const data = await resp.json();
-        if (data.url) stripeLink = data.url;
-      } catch (e) {}
       // Build the invoice message
-      const invoiceMsg = "Hi ".concat(showPayment.contactName || showPayment.name, ",\n\n") + "Thank you for sponsoring our ".concat(tour.emoji, " ").concat(tour.name, " tour! We truly appreciate your support.\n\n") + "INVOICE DETAILS\n" + "━━━━━━━━━━━━━━━━━━━━━━━━\n" + "Sponsor: ".concat(showPayment.name, "\n") + "Tour: ".concat(tour.emoji, " ").concat(tour.name, "\n") + "Date: ".concat((tour.date ? new Date(tour.date + "T12:00:00") : new Date()).toLocaleDateString("en-US", {weekday:"long",month:"long",day:"numeric",year:"numeric"}), "\n") + "Plan: ".concat(planLabel, "\n") + "Amount Due: $".concat(amt, "\n") + "━━━━━━━━━━━━━━━━━━━━━━━━\n\n" + (stripeLink ? "PAY ONLINE (Credit/Debit Card)\n━━━━━━━━━━━━━━━━━━━━━━━━\n".concat(stripeLink, "\n\n") : "") + "OTHER PAYMENT OPTIONS\n" + "━━━━━━━━━━━━━━━━━━━━━━━━\n" + "• Venmo: @MarketReadyTours\n" + "• Zelle: payments@marketreadytours.com\n" + "• Check: Make payable to MarketReady Tours\n\n" + "Please remit payment at your earliest convenience. If you have any questions, feel free to reply to this email.\n\n" + "Thank you for helping make this tour possible!\n\n" + "Best regards,\nMarketReady Tours\nwww.marketreadytours.com";
+      const squareLink = SQUARE_LINKS[showPayment.paymentPlan] || SQUARE_LINKS.full;
+      const invoiceMsg = "Hi ".concat(showPayment.contactName || showPayment.name, ",\n\n") + "Thank you for sponsoring our ".concat(tour.emoji, " ").concat(tour.name, " tour! We truly appreciate your support.\n\n") + "INVOICE DETAILS\n" + "━━━━━━━━━━━━━━━━━━━━━━━━\n" + "Sponsor: ".concat(showPayment.name, "\n") + "Tour: ".concat(tour.emoji, " ").concat(tour.name, "\n") + "Date: ".concat((tour.date ? new Date(tour.date + "T12:00:00") : new Date()).toLocaleDateString("en-US", {weekday:"long",month:"long",day:"numeric",year:"numeric"}), "\n") + "Plan: ".concat(planLabel, "\n") + "Amount Due: $".concat(amt, "\n") + "━━━━━━━━━━━━━━━━━━━━━━━━\n\n" + "PAY ONLINE (Credit/Debit Card)\n━━━━━━━━━━━━━━━━━━━━━━━━\n".concat(squareLink, "\n\n") + "Please remit payment at your earliest convenience. If you have any questions, feel free to reply to this email.\n\n" + "Thank you for helping make this tour possible!\n\n" + "Best regards,\nMarketReady Tours\nwww.marketreadytours.com";
       try {
         const emailOk = await sendCFEmail(
           showPayment.email,
@@ -3749,7 +3697,7 @@ function TourSponsorsModal(_ref10) {
       cursor: showPayment._sending ? "default" : "pointer"
     }
   }, showPayment._sending ? "Sending..." : "✉️ Email Invoice"), showPayment.phone && /*#__PURE__*/React.createElement("a", {
-    href: "sms:".concat(showPayment.phone, "?body=").concat(encodeURIComponent("Hi " + (showPayment.contactName || showPayment.name) + "! Your sponsorship invoice for " + tour.emoji + " " + tour.name + " is $" + (showPayment.paymentPlan === "split" ? "49.75" : showPayment.paymentPlan === "half" ? "99.50" : "199.00") + ". Pay via Venmo @MarketReadyTours or Zelle payments@marketreadytours.com. Thank you! — MarketReady Tours")),
+    href: "sms:".concat(showPayment.phone, "?body=").concat(encodeURIComponent("Hi " + (showPayment.contactName || showPayment.name) + "! Your sponsorship invoice for " + tour.emoji + " " + tour.name + " is $" + (showPayment.paymentPlan === "split" ? "49.75" : showPayment.paymentPlan === "half" ? "99.50" : "199.00") + ". Pay online: " + (SQUARE_LINKS[showPayment.paymentPlan] || SQUARE_LINKS.full) + " — MarketReady Tours")),
     style: {
       display: "flex",
       alignItems: "center",
