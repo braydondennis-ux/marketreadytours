@@ -4671,6 +4671,21 @@ function InviteCampaignTab(_ref15) {
       if (!window.confirm("Launch campaign for " + pending.length + " contact" + (pending.length !== 1 ? "s" : "") + "?\n\nThis will start the 5-email sequence.")) return;
     }
     setLaunching(true);
+    setLaunchStatus("Checking for existing campaigns...");
+    try {
+      const existingSnap = await _fb.ref("mrt_campaigns").orderByChild("tourId").equalTo(tour.id).once("value");
+      const existing = existingSnap.val();
+      if (existing) {
+        const active = Object.values(existing).find(c => c.status === "active");
+        if (active) {
+          if (!window.confirm("An active campaign already exists for this tour. Launch a new one anyway?")) {
+            setLaunching(false);
+            setLaunchStatus("");
+            return;
+          }
+        }
+      }
+    } catch(e) { console.warn("Could not check existing campaigns:", e.message); }
     setLaunchStatus("Launching campaign...");
     try {
       const templates = emailTemplates || buildCampaignEmails(tour);
