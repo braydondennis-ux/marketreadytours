@@ -5125,7 +5125,21 @@ function InviteCampaignTab(_ref15) {
       fontWeight: 700,
       whiteSpace: "nowrap"
     }
-  }, statusLabels[c.status] || c.status), /*#__PURE__*/React.createElement("button", {
+  }, statusLabels[c.status] || c.status), c.status !== "pending" && /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      const updated = contacts.map(x => x.id === c.id ? {...x, status: "pending", emailsSent: 0, lastEmailDay: null} : x);
+      setContacts(updated);
+      onUpdateTour({...tour, campaignContacts: updated});
+    },
+    style: {
+      background: "none",
+      border: "none",
+      color: "#2D6A4F",
+      fontSize: 10,
+      cursor: "pointer",
+      padding: "0 4px"
+    }
+  }, "Reset"), /*#__PURE__*/React.createElement("button", {
     onClick: () => removeContact(c.id),
     style: {
       background: "none",
