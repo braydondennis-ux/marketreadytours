@@ -10986,6 +10986,18 @@ function RequestListingPage(_ref31) {
       await sendCFEmail(fields.agentEmail, tourSignUp ? "Tour Sign Up Confirmation — MarketReady Tours" : "We received your listing request — MarketReady Tours", "Hi ".concat(fields.agentName, ",\n\nThank you for submitting your listing at ").concat(fields.address, "!\n\nWe've received your request for the ").concat(requestData.tourName, " tour and will review it shortly. You'll receive an email letting you know whether your listing has been approved or denied.\n\nIf you have any questions, reply to marketreadytours@gmail.com.\n\n\u2014 MarketReady Tours\nmarketreadytours.com"));
       onSubmit(requestData);
       sendSMS(tourSignUp ? "New Tour Sign Up: ".concat(fields.agentName, " for ").concat(requestData.tourName) : "New Listing: ".concat(fields.address, " by ").concat(fields.agentName, " for ").concat(requestData.tourName));
+      // Mark contact as converted in any active campaign for this tour - stop follow-up emails
+      try {
+        const campSnap = await _fb.ref("mrt_campaigns").orderByChild("tourId").equalTo(fields.tourId).once("value");
+        const camps = campSnap.val();
+        if (camps) {
+          const contactKey = fields.agentEmail.trim().toLowerCase().replace(/[.#$[\]]/g, "_");
+          for (const [campId, camp] of Object.entries(camps)) {
+            if (camp.status !== "active") continue;
+            await _fb.ref("mrt_campaigns/" + campId + "/contacts/" + contactKey + "/status").set("converted");
+          }
+        }
+      } catch(e) { console.warn("Could not mark campaign contact as converted:", e.message); }
       setDone(true);
     } catch (e) {
       setError("Submission failed. Please try again.");
