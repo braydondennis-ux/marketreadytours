@@ -4697,7 +4697,7 @@ function InviteCampaignTab(_ref15) {
         personalization: "",
         variables: {propertyAddress: c.address || "", phone: c.phone || ""}
       }));
-      await instantlyAPI("leads", "POST", {leads, campaign_id: campaignId});
+      for(const lead of leads){await instantlyAPI("leads", "POST", {...lead, campaign_id: campaignId});}
       // Activate campaign
       await instantlyAPI("campaigns/".concat(campaignId, "/activate"), "POST", {});
       // Update contact statuses
