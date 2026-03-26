@@ -4495,7 +4495,21 @@ function InviteCampaignTab(_ref15) {
   const [savingKey, setSavingKey] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(false);
   const [checkingKey, setCheckingKey] = useState(true);
+  const [activeCampaign, setActiveCampaign] = useState(null);
   const fileRef = useRef(null);
+  useEffect(() => {
+    if (!_fb || !tour.id) return;
+    const ref = _fb.ref("mrt_campaigns").orderByChild("tourId").equalTo(tour.id);
+    const handler = snap => {
+      const data = snap.val();
+      if (!data) { setActiveCampaign(null); return; }
+      const campaigns = Object.entries(data).map(([id, c]) => ({id, ...c}));
+      const active = campaigns.find(c => c.status === "active") || campaigns.sort((a,b) => (b.launchedAt||0)-(a.launchedAt||0))[0];
+      setActiveCampaign(active || null);
+    };
+    ref.on("value", handler);
+    return () => ref.off("value", handler);
+  }, [tour.id]);
   useEffect(() => {
     getInstantlyKey().then(k => {
       setHasApiKey(!!k);
@@ -4737,20 +4751,39 @@ function InviteCampaignTab(_ref15) {
   const statusColors = {
     pending: "#E5E7EB",
     invited: "#BFDBFE",
+    contacted: "#BFDBFE",
     registered: "#BBF7D0",
-    not_interested: "#FECACA"
+    converted: "#BBF7D0",
+    not_interested: "#FECACA",
+    unsubscribed: "#FECACA",
+    error: "#FED7AA"
   };
   const statusLabels = {
     pending: "⬜ Pending",
     invited: "📧 Invited",
+    contacted: "📧 Emailed",
     registered: "✅ Registered",
-    not_interested: "🚫 Not Interested"
+    converted: "🏠 Applied",
+    not_interested: "🚫 Not Interested",
+    unsubscribed: "🚫 Unsubscribed",
+    error: "⚠️ Error"
   };
+  const liveContacts = React.useMemo(() => {
+    if (!activeCampaign || !activeCampaign.contacts) return contacts;
+    const fbContacts = Object.values(activeCampaign.contacts);
+    return contacts.map(c => {
+      const key = (c.id || c.email).replace(/[.#$@[\]]/g, "_");
+      const fbContact = activeCampaign.contacts[key] || fbContacts.find(fc => fc.email === c.email);
+      if (!fbContact) return c;
+      const emailsSent = fbContact.emailsSent ? Object.keys(fbContact.emailsSent).length : 0;
+      return {...c, status: fbContact.status || c.status, emailsSent, lastEmailDay: fbContact.lastEmailDay};
+    });
+  }, [contacts, activeCampaign]);
   const counts = {
-    pending: contacts.filter(c => c.status === "pending").length,
-    invited: contacts.filter(c => c.status === "invited").length,
-    registered: contacts.filter(c => c.status === "registered").length,
-    not_interested: contacts.filter(c => c.status === "not_interested").length
+    pending: liveContacts.filter(c => c.status === "pending").length,
+    invited: liveContacts.filter(c => ["invited","contacted"].includes(c.status)).length,
+    registered: liveContacts.filter(c => ["registered","converted"].includes(c.status)).length,
+    not_interested: liveContacts.filter(c => ["not_interested","unsubscribed"].includes(c.status)).length
   };
   if (checkingKey) return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -4763,7 +4796,45 @@ function InviteCampaignTab(_ref15) {
     style: {
       padding: 16
     }
-  },   /*#__PURE__*/React.createElement("div", {
+  },   activeCampaign && /*#__PURE__*/React.createElement("div", {
+    style: {background:"#fff",borderRadius:14,padding:16,marginBottom:14,boxShadow:"0 2px 8px rgba(0,0,0,.06)"}
+  },
+  /*#__PURE__*/React.createElement("div", {style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}},
+    /*#__PURE__*/React.createElement("div", {style:{fontWeight:700,fontSize:13,color:B.primary}}, "📊 Campaign Dashboard"),
+    /*#__PURE__*/React.createElement("div", {style:{display:"flex",alignItems:"center",gap:6}},
+      /*#__PURE__*/React.createElement("div", {style:{width:8,height:8,borderRadius:"50%",background:activeCampaign.status==="active"?"#10B981":"#9CA3AF"}}),
+      /*#__PURE__*/React.createElement("span", {style:{fontSize:11,color:B.gray,fontWeight:600}}, activeCampaign.status==="active"?"Active":activeCampaign.status==="complete"?"Complete":"Paused")
+    )
+  ),
+  /*#__PURE__*/React.createElement("div", {style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:12}},
+    [
+      {label:"Emailed", val: activeCampaign.contacts ? Object.values(activeCampaign.contacts).filter(c=>c.emailsSent&&Object.keys(c.emailsSent).length>0).length : 0, color:"#BFDBFE"},
+      {label:"Converted", val: activeCampaign.contacts ? Object.values(activeCampaign.contacts).filter(c=>c.status==="converted").length : 0, color:"#BBF7D0"},
+      {label:"Unsub", val: activeCampaign.contacts ? Object.values(activeCampaign.contacts).filter(c=>c.status==="unsubscribed").length : 0, color:"#FECACA"},
+      {label:"Errors", val: activeCampaign.contacts ? Object.values(activeCampaign.contacts).filter(c=>c.status==="error").length : 0, color:"#FED7AA"}
+    ].map(({label,val,color}) => /*#__PURE__*/React.createElement("div", {key:label, style:{background:color,borderRadius:8,padding:"8px 4px",textAlign:"center"}},
+      /*#__PURE__*/React.createElement("div", {style:{fontSize:16,fontWeight:800,color:B.primary}}, val),
+      /*#__PURE__*/React.createElement("div", {style:{fontSize:10,color:B.gray,fontWeight:600}}, label)
+    ))
+  ),
+  activeCampaign.lastRun && /*#__PURE__*/React.createElement("div", {style:{fontSize:11,color:B.gray,textAlign:"center",marginBottom:8}},
+    "Last run: " + activeCampaign.lastRun.date + " · Step " + (activeCampaign.lastRun.stepIndex+1) + " of 5 · " + activeCampaign.lastRun.sent + " sent"
+  ),
+  activeCampaign.status === "active" && /*#__PURE__*/React.createElement("button", {
+    onClick: async () => {
+      if (!window.confirm("Pause this campaign? No more emails will send until resumed.")) return;
+      await _fb.ref("mrt_campaigns/" + activeCampaign.id + "/status").set("paused");
+    },
+    style:{width:"100%",background:"#FEF3C7",color:"#92400E",border:"1.5px solid #FCD34D",borderRadius:8,padding:"8px 0",fontWeight:700,fontSize:12,cursor:"pointer"}
+  }, "⏸ Pause Campaign"),
+  activeCampaign.status === "paused" && /*#__PURE__*/React.createElement("button", {
+    onClick: async () => {
+      if (!window.confirm("Resume this campaign?")) return;
+      await _fb.ref("mrt_campaigns/" + activeCampaign.id + "/status").set("active");
+    },
+    style:{width:"100%",background:"#D1FAE5",color:"#065F46",border:"1.5px solid #6EE7B7",borderRadius:8,padding:"8px 0",fontWeight:700,fontSize:12,cursor:"pointer"}
+  }, "▶️ Resume Campaign")
+  ), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "grid",
       gridTemplateColumns: "repeat(4,1fr)",
@@ -5285,7 +5356,7 @@ function NotInterestedPage(_ref17) {
           if (campaigns) {
             for (const [campId, camp] of Object.entries(campaigns)) {
               if (camp.status !== "active") continue;
-              const contactKey = email.replace(/[.#$[\]]/g, "_");
+              const contactKey = email.replace(/[.#$@[\]]/g, "_");
               await _fb.ref("mrt_campaigns/" + campId + "/contacts/" + contactKey + "/status").set("unsubscribed");
             }
           }
