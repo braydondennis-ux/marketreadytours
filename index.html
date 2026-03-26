@@ -5125,11 +5125,17 @@ function InviteCampaignTab(_ref15) {
       fontWeight: 700,
       whiteSpace: "nowrap"
     }
-  }, statusLabels[c.status] || c.status), c.status !== "pending" && /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
+  }, statusLabels[c.status] || c.status), /*#__PURE__*/React.createElement("button", {
+    onClick: async () => {
       const updated = contacts.map(x => x.id === c.id ? {...x, status: "pending", emailsSent: 0, lastEmailDay: null} : x);
       setContacts(updated);
       onUpdateTour({...tour, campaignContacts: updated});
+      // Also reset in Firebase campaign if exists
+      if (activeCampaign && activeCampaign.id) {
+        const key = (c.id || c.email).replace(/[.#$@[\]]/g, "_");
+        await _fb.ref("mrt_campaigns/" + activeCampaign.id + "/contacts/" + key + "/status").set("pending").catch(()=>{});
+        await _fb.ref("mrt_campaigns/" + activeCampaign.id + "/contacts/" + key + "/emailsSent").remove().catch(()=>{});
+      }
     },
     style: {
       background: "none",
