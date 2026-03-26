@@ -4698,7 +4698,7 @@ function InviteCampaignTab(_ref15) {
         skip_if_in_campaign: true,
         variables: {propertyAddress: String(c.address || ""), phone: String(c.phone || "")}
       }));
-      await instantlyAPI("leads", "POST", {leads, campaign_id: campaignId});
+      for(const lead of leads){ try{ await instantlyAPI("leads", "POST", lead); }catch(e){ console.warn("Lead add failed:",lead.email,e.message); } }
       // Activate campaign
       await instantlyAPI("campaigns/".concat(campaignId, "/activate"), "POST", {});
       // Update contact statuses
