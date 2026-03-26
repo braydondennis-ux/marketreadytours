@@ -4691,13 +4691,14 @@ function InviteCampaignTab(_ref15) {
       setLaunchStatus("Adding contacts...");
       const leads = pending.map(c => ({
         email: c.email,
-        first_name: c.firstName,
-        last_name: c.lastName,
+        first_name: c.firstName || "",
+        last_name: c.lastName || "",
         campaign_id: campaignId,
-        personalization: "",
-        variables: {propertyAddress: c.address || "", phone: c.phone || ""}
+        skip_if_in_workspace: true,
+        skip_if_in_campaign: true,
+        variables: {propertyAddress: String(c.address || ""), phone: String(c.phone || "")}
       }));
-      for(const lead of leads){await instantlyAPI("leads", "POST", {...lead, campaign_id: campaignId});}
+      await instantlyAPI("leads", "POST", {leads, campaign_id: campaignId});
       // Activate campaign
       await instantlyAPI("campaigns/".concat(campaignId, "/activate"), "POST", {});
       // Update contact statuses
