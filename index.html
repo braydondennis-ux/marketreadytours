@@ -4684,7 +4684,7 @@ function InviteCampaignTab(_ref15) {
       const delays = [0, 2, 5, 8, 12];
       const campaign = await instantlyAPI("campaigns", "POST", {
         name: "".concat(tour.emoji, " ").concat(tour.name, " \u2014 ").concat(tour.date),
-        campaign_schedule: {schedules:[{name:"Default",timing:{from:"08:00",to:"17:00"},days:{monday:true,tuesday:true,wednesday:true,thursday:true,friday:true,saturday:false,sunday:false},timezone:"America/Denver"}]},
+        campaign_schedule: {schedules:[{name:"Default",timing:{from:"08:00",to:"17:00"},days:{monday:true,tuesday:true,wednesday:true,thursday:true,friday:true,saturday:false,sunday:false},timezone:"America/Chicago"}]},
         sequences: [{steps: templates.map((t,i) => ({type:"email",subject:t.subject,body:t.body,delay:delays[i]||0}))}]
       });
       const campaignId = campaign.id;
