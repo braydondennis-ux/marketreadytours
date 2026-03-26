@@ -5279,6 +5279,17 @@ function NotInterestedPage(_ref17) {
           email,
           confirmedAt: new Date().toISOString()
         });
+        try {
+          const campaignsSnap = await _fb.ref("mrt_campaigns").orderByChild("tourId").equalTo(tourId).once("value");
+          const campaigns = campaignsSnap.val();
+          if (campaigns) {
+            for (const [campId, camp] of Object.entries(campaigns)) {
+              if (camp.status !== "active") continue;
+              const contactKey = email.replace(/[.#$[\]]/g, "_");
+              await _fb.ref("mrt_campaigns/" + campId + "/contacts/" + contactKey + "/status").set("unsubscribed");
+            }
+          }
+        } catch(e) { console.warn("Could not unsubscribe from campaign:", e.message); }
       } catch (e) {}
     }
     setStatus("confirmed");
