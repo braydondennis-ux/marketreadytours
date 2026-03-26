@@ -4697,7 +4697,7 @@ function InviteCampaignTab(_ref15) {
         const subject = (templates[0].subject || "").replace(/\{\{firstName\}\}/gi, firstName).replace(/\{\{propertyAddress\}\}/gi, c.address || "");
         const html = (templates[0].body || "").replace(/\{\{firstName\}\}/gi, firstName).replace(/\{\{propertyAddress\}\}/gi, c.address || "");
         try {
-          await fetchWithTimeout(SEND_EMAIL_URL, {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:c.email,subject,message:subject,html})}, 15000);
+          await fetchWithTimeout(SEND_EMAIL_URL, {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:c.email,subject,message:subject||" ",html})}, 15000);
           await _fb.ref("mrt_campaigns/" + campaignId + "/contacts/" + (c.id||c.email).replace(/[.#$[\]]/g,"_") + "/emailsSent/0").set(Date.now());
           firstSent++;
         } catch(emailErr) { console.warn("First email failed:", c.email, emailErr.message); }
