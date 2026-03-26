@@ -4645,22 +4645,16 @@ function InviteCampaignTab(_ref15) {
   const launchCampaign = async () => {
     const pending = contacts.filter(c => c.status === "pending");
     if (pending.length === 0) {
-      setLaunchStatus("❌ No pending contacts to invite.");
+      setLaunchStatus("\u274c No pending contacts to invite.");
       setTimeout(() => setLaunchStatus(""), 4000);
       return;
     }
-    if (!hasApiKey) {
-      setLaunchStatus("❌ Please save your Instantly API key first.");
-      setTimeout(() => setLaunchStatus(""), 4000);
-      return;
-    }
-    // ── TOUR PROXIMITY CHECK ──
     const SEQUENCE_DAYS = [0, 2, 5, 8, 12];
     const tourMs = tour.date ? new Date(tour.date + "T12:00:00").getTime() : null;
     const daysUntil = tourMs ? Math.floor((tourMs - Date.now()) / (1000 * 60 * 60 * 24)) : null;
     if (daysUntil !== null) {
       if (daysUntil < 2) {
-        setLaunchStatus("❌ Tour is in " + daysUntil + (daysUntil === 1 ? " day" : " days") + " — not enough time to launch a campaign. Consider calling contacts directly.");
+        setLaunchStatus("\u274c Tour is in " + daysUntil + (daysUntil === 1 ? " day" : " days") + " \u2014 not enough time to launch a campaign. Consider calling contacts directly.");
         setTimeout(() => setLaunchStatus(""), 7000);
         return;
       }
@@ -4668,70 +4662,62 @@ function InviteCampaignTab(_ref15) {
       const emailsThatMiss = SEQUENCE_DAYS.length - emailsThatFit;
       if (emailsThatMiss > 0) {
         const skippedDays = SEQUENCE_DAYS.filter(d => d >= daysUntil);
-        const msg = emailsThatFit === 1 ? "\u26A0\uFE0F Only 1 of 5 emails will send before the tour (".concat(daysUntil, " days away). The remaining ").concat(emailsThatMiss, " emails will fire after the tour. Consider a direct call instead.") : "\u26A0\uFE0F Only ".concat(emailsThatFit, " of 5 emails will send before the tour (").concat(daysUntil, " days away). Emails on Day").concat(skippedDays.length > 1 ? "s" : "", " ").concat(skippedDays.join(", "), " will be missed.");
+        const msg = "\u26A0\uFE0F Only " + emailsThatFit + " of 5 emails will send before the tour (" + daysUntil + " days away). Days " + skippedDays.join(", ") + " will be missed.";
         if (!window.confirm(msg + "\n\nLaunch anyway with " + emailsThatFit + " email" + (emailsThatFit !== 1 ? "s" : "") + "?")) return;
       } else {
-        if (!window.confirm("Launch campaign for ".concat(pending.length, " contact").concat(pending.length !== 1 ? "s" : "", "?\n\nAll 5 emails will send before the tour date (").concat(daysUntil, " days away)."))) return;
+        if (!window.confirm("Launch campaign for " + pending.length + " contact" + (pending.length !== 1 ? "s" : "") + "?\n\nAll 5 emails will send before the tour date (" + daysUntil + " days away).")) return;
       }
     } else {
-      if (!window.confirm("Launch campaign for ".concat(pending.length, " contact").concat(pending.length !== 1 ? "s" : "", "?\n\nThis will start the 5-email sequence in Instantly."))) return;
+      if (!window.confirm("Launch campaign for " + pending.length + " contact" + (pending.length !== 1 ? "s" : "") + "?\n\nThis will start the 5-email sequence.")) return;
     }
     setLaunching(true);
-    setLaunchStatus("Creating campaign in Instantly...");
+    setLaunchStatus("Launching campaign...");
     try {
       const templates = emailTemplates || buildCampaignEmails(tour);
-      // Create campaign
-      const delays = [0, 2, 5, 8, 12];
-      const campaign = await instantlyAPI("campaigns", "POST", {
-        name: "".concat(tour.emoji, " ").concat(tour.name, " \u2014 ").concat(tour.date),
-        email_list:["marketreadytours@gmail.com"],campaign_schedule:{schedules:[{name:"Default",timing:{from:"08:00",to:"17:00"},days:{monday:true,tuesday:true,wednesday:true,thursday:true,friday:true},timezone:"America/Boise"}]},
-        sequences: [{steps: templates.map((t,i) => ({type:"email",delay:delays[i]||0,variants:[{subject:t.subject,body:t.body}]}))}]
+      const campaignId = uid("camp");
+      const contactsObj = {};
+      pending.forEach(c => {
+        const key = (c.id || c.email).replace(/[.#$[\]]/g, "_");
+        contactsObj[key] = {...c, status: "invited", invitedAt: new Date().toISOString(), emailsSent: {}};
       });
-      const campaignId = campaign.id;
-      setLaunchStatus("Adding contacts...");
-      for(const c of pending){
-        try{
-          await instantlyAPI("leads", "POST", {
-            email: c.email,
-            first_name: c.firstName || "",
-            last_name: c.lastName || "",
-            campaign: campaignId
-          });
-        }catch(e){ console.warn("Lead failed:",c.email,e.message); }
+      await _fb.ref("mrt_campaigns/" + campaignId).set({
+        tourId: tour.id,
+        tourName: (tour.emoji || "") + " " + tour.name,
+        tourDate: tour.date,
+        launchedAt: Date.now(),
+        launchedBy: currentUser ? currentUser.email : "",
+        status: "active",
+        emailTemplates: templates,
+        contacts: contactsObj
+      });
+      setLaunchStatus("Sending first emails...");
+      let firstSent = 0;
+      for (const c of pending) {
+        const firstName = c.firstName || c.email.split("@")[0];
+        const subject = (templates[0].subject || "").replace(/\{\{firstName\}\}/gi, firstName).replace(/\{\{propertyAddress\}\}/gi, c.address || "");
+        const html = (templates[0].body || "").replace(/\{\{firstName\}\}/gi, firstName).replace(/\{\{propertyAddress\}\}/gi, c.address || "");
+        try {
+          await fetchWithTimeout(SEND_EMAIL_URL, {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:c.email,subject,message:subject,html})}, 15000);
+          await _fb.ref("mrt_campaigns/" + campaignId + "/contacts/" + (c.id||c.email).replace(/[.#$[\]]/g,"_") + "/emailsSent/0").set(Date.now());
+          firstSent++;
+        } catch(emailErr) { console.warn("First email failed:", c.email, emailErr.message); }
       }
-      // Activate campaign
-      await instantlyAPI("campaigns/".concat(campaignId, "/activate"), "POST", {});
-      // Update contact statuses
-      const updatedContacts = contacts.map(c => c.status === "pending" ? {
-        ...c,
-        status: "invited",
-        campaignId,
-        invitedAt: new Date().toISOString()
-      } : c);
+      const updatedContacts = contacts.map(c => c.status === "pending" ? {...c, status: "invited", campaignId, invitedAt: new Date().toISOString()} : c);
       setContacts(updatedContacts);
-      onUpdateTour({
-        ...tour,
-        campaignContacts: updatedContacts,
-        instantlyCampaignId: campaignId
-      });
-      setLaunchStatus("\u2705 Campaign launched! ".concat(pending.length, " contacts added to the 5-email sequence."));
-      setTimeout(() => setLaunchStatus(""), 6000);
+      onUpdateTour({...tour, campaignContacts: updatedContacts, mrtCampaignId: campaignId});
+      setLaunchStatus("\u2705 Campaign launched! " + firstSent + " of " + pending.length + " first emails sent. Follow-ups send automatically at 8am on Days 2, 5, 8, and 12.");
+      setTimeout(() => setLaunchStatus(""), 10000);
     } catch (e) {
-      setLaunchStatus("❌ " + e.message);
+      setLaunchStatus("\u274c " + e.message);
     }
     setLaunching(false);
   };
-  const removeFromInstantly = async (email, campaignId) => {
+  const removeFromCampaign = async (contactId, campaignId) => {
     if (!campaignId) return;
     try {
-      await instantlyAPI("campaigns/".concat(campaignId, "/leads/remove"), "POST", {
-        leads: [{
-          email
-        }]
-      });
-    } catch (e) {
-      console.warn("Could not remove from Instantly:", e.message);
-    }
+      const key = (contactId || "").replace(/[.#$[\]]/g, "_");
+      await _fb.ref("mrt_campaigns/" + campaignId + "/contacts/" + key + "/status").set("removed");
+    } catch (e) { console.warn("Could not remove from campaign:", e.message); }
   };
   const statusColors = {
     pending: "#E5E7EB",
@@ -4762,86 +4748,7 @@ function InviteCampaignTab(_ref15) {
     style: {
       padding: 16
     }
-  }, isSuperAdmin && !hasApiKey && /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: "#F5EDD8",
-      border: "1px solid #FCD34D",
-      borderRadius: 12,
-      padding: 16,
-      marginBottom: 16
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontWeight: 700,
-      fontSize: 13,
-      color: "#7A5A28",
-      marginBottom: 8
-    }
-  }, "\u26A0\uFE0F Instantly API Key Required"), /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 12,
-      color: "#7A5A28",
-      marginBottom: 10,
-      lineHeight: 1.5
-    }
-  }, "Enter your Instantly.ai API key to enable campaign launching. This is stored securely and shared across all tours."), /*#__PURE__*/React.createElement("input", {
-    value: apiKeyInput,
-    onChange: e => setApiKeyInput(e.target.value),
-    placeholder: "sk-instantly-...",
-    type: "password",
-    style: {
-      width: "100%",
-      border: "1.5px solid #FCD34D",
-      borderRadius: 8,
-      padding: "10px 12px",
-      fontSize: 13,
-      outline: "none",
-      marginBottom: 8
-    }
-  }), /*#__PURE__*/React.createElement("button", {
-    onClick: saveApiKey,
-    disabled: savingKey || !apiKeyInput.trim(),
-    style: {
-      width: "100%",
-      background: B.gold,
-      color: "#fff",
-      border: "none",
-      borderRadius: 8,
-      padding: "10px 0",
-      fontWeight: 700,
-      fontSize: 13,
-      cursor: "pointer"
-    }
-  }, savingKey ? "Saving..." : "Save API Key")), isSuperAdmin && hasApiKey && /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: "#E8F0EC",
-      border: "1px solid #A0C8B0",
-      borderRadius: 10,
-      padding: "10px 14px",
-      marginBottom: 12,
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center"
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 12,
-      color: "#2D5A40",
-      fontWeight: 600
-    }
-  }, "\u2705 Instantly API Connected"), /*#__PURE__*/React.createElement("button", {
-    onClick: async () => {
-      if (confirm("Replace API key?")) setHasApiKey(false);
-    },
-    style: {
-      background: "none",
-      border: "none",
-      color: "#2D5A40",
-      fontSize: 11,
-      cursor: "pointer",
-      textDecoration: "underline"
-    }
-  }, "Change Key")), /*#__PURE__*/React.createElement("div", {
+  },   /*#__PURE__*/React.createElement("div", {
     style: {
       display: "grid",
       gridTemplateColumns: "repeat(4,1fr)",
@@ -5021,7 +4928,7 @@ function InviteCampaignTab(_ref15) {
     const tooClose = daysUntil !== null && daysUntil < 2;
     return /*#__PURE__*/React.createElement("button", {
       onClick: launchCampaign,
-      disabled: launching || !hasApiKey || tooClose,
+      disabled: launching || tooClose,
       style: {
         width: "100%",
         background: launching || !hasApiKey || tooClose ? "#9CA3AF" : "#2D6A4F",
@@ -5031,7 +4938,7 @@ function InviteCampaignTab(_ref15) {
         padding: "13px 0",
         fontWeight: 700,
         fontSize: 15,
-        cursor: launching || !hasApiKey || tooClose ? "default" : "pointer",
+        cursor: launching || tooClose ? "default" : "pointer",
         marginBottom: 8,
         display: "flex",
         alignItems: "center",
