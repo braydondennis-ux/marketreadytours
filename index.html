@@ -144,7 +144,7 @@ const SQUARE_LINKS = {
   half: "https://square.link/u/7wF91jvQ",
   split: "https://square.link/u/ZqkeM21q"
 };
-const SEND_EMAIL_URL = "https://sendemail-wraz5q2v2a-uc.a.run.app";
+const SEND_EMAIL_URL = "https://us-central1-marketready-tours.cloudfunctions.net/sendEmail";
 const sendCFEmail = async (to, subject, message, html) => {
   if (!to || !isValidEmail(to)) {
     console.warn("sendCFEmail: invalid recipient", to);
