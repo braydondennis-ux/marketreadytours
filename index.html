@@ -4695,7 +4695,7 @@ function InviteCampaignTab(_ref15) {
             email: c.email,
             first_name: c.firstName || "",
             last_name: c.lastName || "",
-            campaign_id: campaignId
+            campaign: campaignId
           });
         }catch(e){ console.warn("Lead failed:",c.email,e.message); }
       }
