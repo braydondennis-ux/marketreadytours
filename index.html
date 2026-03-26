@@ -4689,16 +4689,16 @@ function InviteCampaignTab(_ref15) {
       });
       const campaignId = campaign.id;
       setLaunchStatus("Adding contacts...");
-      const leads = pending.map(c => ({
-        email: c.email,
-        first_name: c.firstName || "",
-        last_name: c.lastName || "",
-        campaign_id: campaignId,
-        skip_if_in_workspace: true,
-        skip_if_in_campaign: true,
-        variables: {propertyAddress: String(c.address || ""), phone: String(c.phone || "")}
-      }));
-      for(const lead of leads){ try{ await instantlyAPI("leads", "POST", lead); }catch(e){ console.warn("Lead add failed:",lead.email,e.message); } }
+      for(const c of pending){
+        try{
+          await instantlyAPI("leads", "POST", {
+            email: c.email,
+            first_name: c.firstName || "",
+            last_name: c.lastName || "",
+            campaign_id: campaignId
+          });
+        }catch(e){ console.warn("Lead failed:",c.email,e.message); }
+      }
       // Activate campaign
       await instantlyAPI("campaigns/".concat(campaignId, "/activate"), "POST", {});
       // Update contact statuses
