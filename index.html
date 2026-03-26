@@ -4681,36 +4681,23 @@ function InviteCampaignTab(_ref15) {
     try {
       const templates = emailTemplates || buildCampaignEmails(tour);
       // Create campaign
-      const campaign = await instantlyAPI("campaigns", "POST", {campaign_schedule:{schedules:[{name:"Default",timeFrom:"08:00",timeTo:"18:00",days:{monday:true,tuesday:true,wednesday:true,thursday:true,friday:true,saturday:false,sunday:false},timezone:"America/Phoenix"}]},
+      const delays = [0, 2, 5, 8, 12];
+      const campaign = await instantlyAPI("campaigns", "POST", {
         name: "".concat(tour.emoji, " ").concat(tour.name, " \u2014 ").concat(tour.date),
-        subject: templates[0].subject,
-        body: templates[0].body
+        campaign_schedule: {schedules:[{name:"Default",timing:{from:"08:00",to:"17:00"},days:{monday:true,tuesday:true,wednesday:true,thursday:true,friday:true,saturday:false,sunday:false},timezone:"America/Denver"}]},
+        sequences: [{steps: templates.map((t,i) => ({type:"email",subject:t.subject,body:t.body,delay:delays[i]||0}))}]
       });
       const campaignId = campaign.id;
       setLaunchStatus("Adding contacts...");
-      // Add leads to campaign
       const leads = pending.map(c => ({
         email: c.email,
         first_name: c.firstName,
         last_name: c.lastName,
+        campaign_id: campaignId,
         personalization: "",
-        variables: {
-          propertyAddress: c.address || "",
-          phone: c.phone || ""
-        }
+        variables: {propertyAddress: c.address || "", phone: c.phone || ""}
       }));
-      await instantlyAPI("campaigns/".concat(campaignId, "/leads"), "POST", {
-        leads
-      });
-      // Add follow-up emails (2-5)
-      for (let i = 1; i < templates.length; i++) {
-        const delays = [0, 2, 5, 8, 12];
-        await instantlyAPI("campaigns/".concat(campaignId, "/sequences"), "POST", {
-          subject: templates[i].subject,
-          body: templates[i].body,
-          delay_days: delays[i]
-        });
-      }
+      await instantlyAPI("leads", "POST", {leads, campaign_id: campaignId});
       // Activate campaign
       await instantlyAPI("campaigns/".concat(campaignId, "/activate"), "POST", {});
       // Update contact statuses
