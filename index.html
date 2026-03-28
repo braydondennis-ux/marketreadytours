@@ -4825,6 +4825,26 @@ function InviteCampaignTab(_ref15) {
   activeCampaign.lastRun && /*#__PURE__*/React.createElement("div", {style:{fontSize:11,color:B.gray,textAlign:"center",marginBottom:8}},
     "Last run: " + activeCampaign.lastRun.date + " · Step " + (activeCampaign.lastRun.stepIndex+1) + " of 5 · " + activeCampaign.lastRun.sent + " sent"
   ),
+  activeCampaign.status === "active" && activeCampaign.launchedAt && /*#__PURE__*/React.createElement("div", {style:{background:"#F0FDF4",border:"1.5px solid #86EFAC",borderRadius:10,padding:"10px 14px",marginBottom:10}},
+    /*#__PURE__*/React.createElement("div", {style:{fontWeight:700,fontSize:12,color:"#065F46",marginBottom:6}}, "Email Schedule"),
+    /*#__PURE__*/React.createElement("div", {style:{display:"flex",flexDirection:"column",gap:4}},
+      [0,2,5,8,12].map((day,i) => {
+        const launchMidnight = new Date(new Date(activeCampaign.launchedAt).toLocaleDateString("en-CA",{timeZone:"America/Phoenix"}) + "T08:00:00-07:00");
+        const sendDate = new Date(launchMidnight); sendDate.setDate(sendDate.getDate()+day);
+        const now = new Date();
+        const isPast = sendDate < now;
+        const isToday = sendDate.toDateString() === now.toDateString();
+        const dateStr = sendDate.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
+        const labels = ["1 - Intro","2 - Follow-up","3 - Follow-up","4 - Follow-up","5 - Final"];
+        return /*#__PURE__*/React.createElement("div",{key:day,style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 8px",borderRadius:6,background:isToday?"#DCFCE7":isPast?"#F9FAFB":"#fff"}},
+          /*#__PURE__*/React.createElement("span",{style:{fontSize:11,color:isPast?"#9CA3AF":B.dark,fontWeight:isToday?700:500}}, "Email "+labels[i]),
+          /*#__PURE__*/React.createElement("span",{style:{fontSize:11,color:isToday?"#065F46":isPast?"#9CA3AF":B.gray,fontWeight:isToday?700:400}},
+            isToday ? "Today @ 8:00 AM" : isPast ? "Sent "+dateStr : dateStr+" @ 8am"
+          )
+        );
+      })
+    )
+  ),
   activeCampaign.status === "active" && /*#__PURE__*/React.createElement("button", {
     onClick: async () => {
       if (!window.confirm("Pause this campaign? No more emails will send until resumed.")) return;
