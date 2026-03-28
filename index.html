@@ -7517,14 +7517,20 @@ function TourDetailPage(_ref19) {
   }, /*#__PURE__*/React.createElement("button", {
     onClick: onBack,
     style: {
-      background: "none",
-      border: "none",
+      background: "rgba(255,255,255,0.15)",
+      border: "1.5px solid rgba(255,255,255,0.3)",
       color: "#fff",
       cursor: "pointer",
-      fontSize: 22,
-      flexShrink: 0
+      fontSize: 16,
+      fontWeight: 700,
+      flexShrink: 0,
+      borderRadius: 8,
+      padding: "6px 12px",
+      display: "flex",
+      alignItems: "center",
+      gap: 6
     }
-  }, "\u2190"), /*#__PURE__*/React.createElement("div", {
+  }, "\u2190 Back"), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1
     }
@@ -9380,7 +9386,7 @@ function ToursDashboard(_ref26) {
     window._openMRTTour = function (tourId) {
       var _document$getElementB;
       setActiveTourId(tourId);
-      window.location.hash = "/tour/" + tourId;
+      window.history.pushState({page: 'tour', tourId}, '', '#/tour/' + tourId);
       (_document$getElementB = document.getElementById("cal-modal")) === null || _document$getElementB === void 0 || _document$getElementB.remove();
     };
   }, [tours]);
@@ -13279,6 +13285,8 @@ function App() {
       }
     };
     window.addEventListener("hashchange", onHash);
+    // Browser back button support
+    window.addEventListener("popstate", onHash);
     const initHash = window.location.hash.slice(2) || "";
     if (!initHash || initHash === "/") window.location.hash = "/";
     return () => window.removeEventListener("hashchange", onHash);
