@@ -3939,7 +3939,7 @@ function AddListingForm(_ref12) {
       return (_inputRef$current = inputRef.current) === null || _inputRef$current === void 0 ? void 0 : _inputRef$current.focus();
     }, 100);
   };
-  const fieldLabels = [["beds", "Beds"], ["baths", "Baths"], ["sqft", "Sq Ft"], ["dom", "Days on Market"], ["price", "List Price ($)"], ["agent", "Listing Agent Name"]];
+  const fieldLabels = [["beds", "Beds"], ["baths", "Baths"], ["sqft", "Sq Ft"], ["dom", "Days on Market"], ["price", "List Price ($)"], ["agent", "Listing Agent Name"], ["gateCode", "Gate Code (if any)"]];
   const fieldMaxLen = {
     beds: 4,
     baths: 4,
@@ -6124,7 +6124,7 @@ function TourDetailPage(_ref19) {
     }
     setSendingRoute(true);
     const sorted = [...adminListings].sort((a, b) => a.order - b.order);
-    const routeText = sorted.map((l, i) => "Stop #".concat(i + 1, ": ").concat(l.address, ", ").concat(l.city)).join("\n");
+    const routeText = sorted.map((l, i) => "Stop #".concat(i + 1, ": ").concat(l.address, ", ").concat(l.city).concat(l.gateCode ? "\n   \uD83D\uDD11 Gate Code: " + l.gateCode : "")).join("\n");
     const mapsUrl = "https://www.google.com/maps/dir/" + sorted.map(l => encodeURIComponent(l.address + " " + l.city)).join("/");
     let sent = 0;
     let failed = 0;
@@ -7098,7 +7098,7 @@ function TourDetailPage(_ref19) {
       flexDirection: "column",
       gap: 8
     }
-  }, [["address", "Address"], ["city", "City"], ["agent", "Listing Agent"], ["agentEmail", "Agent Email"], ["price", "List Price"], ["beds", "Beds"], ["baths", "Baths"], ["sqft", "Sq Ft"], ["dom", "Days on Market"]].map(_ref21 => {
+  }, [["address", "Address"], ["city", "City"], ["agent", "Listing Agent"], ["agentEmail", "Agent Email"], ["price", "List Price"], ["beds", "Beds"], ["baths", "Baths"], ["sqft", "Sq Ft"], ["dom", "Days on Market"], ["gateCode", "Gate Code"]].map(_ref21 => {
     let [f, label] = _ref21;
     return /*#__PURE__*/React.createElement("div", {
       key: f
@@ -10963,6 +10963,7 @@ function RequestListingPage(_ref31) {
     sqft: "",
     dom: "",
     price: "",
+    gateCode: "",
     notes: ""
   });
   const [addrConfirmed, setAddrConfirmed] = useState(!!paramAddress);
@@ -11062,7 +11063,8 @@ function RequestListingPage(_ref31) {
       notes: safeNotes,
       photos: photos.length ? photos : ["https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop"],
       order: 0,
-      type: tourSignUp ? "tour-signup" : "listing-request"
+      type: tourSignUp ? "tour-signup" : "listing-request",
+      gateCode: sanitize(fields.gateCode || "")
     };
     try {
       await fetchWithTimeout(LISTING_REQUEST_FORMSPREE, {
@@ -11460,7 +11462,7 @@ function RequestListingPage(_ref31) {
       gap: 10,
       marginBottom: 10
     }
-  }, [["beds", "Beds"], ["baths", "Baths"], ["sqft", "Sq Ft"], ["dom", "Days on Market"], ["price", "List Price ($)"]].map(_ref33 => {
+  }, [["beds", "Beds"], ["baths", "Baths"], ["sqft", "Sq Ft"], ["dom", "Days on Market"], ["price", "List Price ($)"], ["gateCode", "Gate Code (if gated community)"]].map(_ref33 => {
     let [f, ph] = _ref33;
     return /*#__PURE__*/React.createElement("input", {
       key: f,
