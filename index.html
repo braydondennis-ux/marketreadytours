@@ -4858,7 +4858,11 @@ function InviteCampaignTab(_ref15) {
       await _fb.ref("mrt_campaigns/" + activeCampaign.id + "/status").set("active");
     },
     style:{width:"100%",background:"#D1FAE5",color:"#065F46",border:"1.5px solid #6EE7B7",borderRadius:8,padding:"8px 0",fontWeight:700,fontSize:12,cursor:"pointer"}
-  }, "▶️ Resume Campaign")
+  }, "▶️ Resume Campaign"),
+  /*#__PURE__*/React.createElement("button", {
+    onClick: () => { _fb.ref("mrt_campaigns").orderByChild("tourId").equalTo(tour.id).once("value").then(snap => { const data = snap.val(); if (data) { const camps = Object.entries(data).map(([id,c]) => ({id,...c})); const active = camps.find(c=>c.status==="active") || camps.sort((a,b)=>(b.launchedAt||0)-(a.launchedAt||0))[0]; setActiveCampaign(active||null); } }); },
+    style:{width:"100%",background:"#F0F9FF",color:"#0369A1",border:"1.5px solid #BAE6FD",borderRadius:8,padding:"8px 0",fontWeight:700,fontSize:12,cursor:"pointer",marginTop:4}
+  }, "Refresh Stats")
   ), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "grid",
