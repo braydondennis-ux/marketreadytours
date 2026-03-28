@@ -1646,7 +1646,10 @@ function RatingPage(_ref7) {
       color: B.gray,
       marginTop: 2
     }
-  }, "Listed by ", listing.agent)), /*#__PURE__*/React.createElement("div", {
+  }, "Listed by ", listing.agent, listing.agentPhone || listing.agentEmail ? /*#__PURE__*/React.createElement("span", {style:{marginLeft:8,display:"inline-flex",gap:6,verticalAlign:"middle"}},
+      listing.agentPhone && /*#__PURE__*/React.createElement("a", {href:"tel:"+listing.agentPhone, title:listing.agentPhone, style:{display:"inline-flex",alignItems:"center",justifyContent:"center",width:22,height:22,borderRadius:"50%",background:"#E8F5E9",color:"#2D6A4F",textDecoration:"none",fontSize:12}}, "📞"),
+      listing.agentEmail && /*#__PURE__*/React.createElement("a", {href:"mailto:"+listing.agentEmail, title:listing.agentEmail, style:{display:"inline-flex",alignItems:"center",justifyContent:"center",width:22,height:22,borderRadius:"50%",background:"#EFF6FF",color:"#1E40AF",textDecoration:"none",fontSize:12}}, "✉️")
+    ) : null)), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8
