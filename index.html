@@ -8395,7 +8395,7 @@ function TourDetailPage(_ref19) {
         color: B.dark,
         fontWeight: 600
       }
-    }, listing.agent), " \xB7 Listing Agent"), /*#__PURE__*/React.createElement("div", {
+    }, listing.agent), " \xB7 Listing Agent", (listing.agentPhone || listing.agentEmail) ? /*#__PURE__*/React.createElement("span", {style:{marginLeft:8,display:"inline-flex",gap:5,verticalAlign:"middle"}}, listing.agentPhone && /*#__PURE__*/React.createElement("a", {href:"tel:"+listing.agentPhone,title:listing.agentPhone,onClick:e=>e.stopPropagation(),style:{display:"inline-flex",alignItems:"center",justifyContent:"center",width:20,height:20,borderRadius:"50%",background:"#E8F5E9",color:"#2D6A4F",textDecoration:"none",fontSize:11}}, "📞"), listing.agentEmail && /*#__PURE__*/React.createElement("a", {href:"mailto:"+listing.agentEmail,title:listing.agentEmail,onClick:e=>e.stopPropagation(),style:{display:"inline-flex",alignItems:"center",justifyContent:"center",width:20,height:20,borderRadius:"50%",background:"#EFF6FF",color:"#1E40AF",textDecoration:"none",fontSize:11}}, "✉️")) : null), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         gap: 8
