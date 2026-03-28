@@ -13223,7 +13223,7 @@ function App() {
   });
   const [preselectedTourId, setPreselectedTourId] = useState(() => {
     const h = window.location.hash.slice(2) || "";
-    return h.startsWith("request/") ? h.slice(8) : null;
+    return h.startsWith("request/") ? h.slice(8).split("?")[0].split("&")[0] : null;
   });
   React.useEffect(() => {
     const onHash = () => {
@@ -13251,7 +13251,7 @@ function App() {
       } else if (h.startsWith("request/")) {
         setPage("request");
         setActiveTourId(null);
-        setPreselectedTourId(h.slice(8));
+        setPreselectedTourId(h.slice(8).split("?")[0].split("&")[0]);
       } else if (h === "request") {
         setPage("request");
         setActiveTourId(null);
