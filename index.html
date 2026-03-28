@@ -90,7 +90,7 @@ const _fbConfig = {
 };
 try {
   firebase.initializeApp(_fbConfig);
-  _fb = firebase.database();
+  _fb = firebase.database(); window._fb = _fb;
   _fbAuth = firebase.auth();
   _fbStorage = firebase.storage();
 } catch (e) {/* Firebase unavailable — app still works via localStorage */}
