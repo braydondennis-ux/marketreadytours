@@ -4737,7 +4737,8 @@ function InviteCampaignTab(_ref15) {
       }
       const updatedContacts = contacts.map(c => c.status === "pending" ? {...c, status: "invited", campaignId, invitedAt: new Date().toISOString()} : c);
       setContacts(updatedContacts);
-      onUpdateTour({...tour, campaignContacts: updatedContacts, mrtCampaignId: campaignId});
+      // Only update campaign fields, never overwrite full tour
+      await _fb.ref("mrt_tours/" + tour.id).update({campaignContacts: updatedContacts, mrtCampaignId: campaignId});
       setLaunchStatus("\u2705 Campaign launched! " + firstSent + " of " + pending.length + " first emails sent. Follow-ups send automatically at 8am on Days 2, 5, 8, and 12.");
       setTimeout(() => setLaunchStatus(""), 10000);
     } catch (e) {
