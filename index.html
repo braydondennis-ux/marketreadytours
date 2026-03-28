@@ -4513,17 +4513,31 @@ function InviteCampaignTab(_ref15) {
   }, [tour.id]);
   useEffect(() => {
     if (!_fb || !tour.id) return;
-    const ref = _fb.ref("mrt_campaigns").orderByChild("tourId").equalTo(tour.id);
-    const handler = snap => {
-      const data = snap.val();
-      if (!data) { setActiveCampaign(null); return; }
-      const campaigns = Object.entries(data).map(([id, c]) => ({id, ...c}));
-      const active = campaigns.find(c => c.status === "active") || campaigns.sort((a,b) => (b.launchedAt||0)-(a.launchedAt||0))[0];
-      setActiveCampaign(active || null);
-    };
-    ref.on("value", handler);
-    return () => ref.off("value", handler);
-  }, [tour.id]);
+    // Use mrtCampaignId directly if available - avoids shallow query issue
+    const campId = tour.mrtCampaignId;
+    if (campId) {
+      const ref = _fb.ref("mrt_campaigns/" + campId);
+      const handler = snap => {
+        const data = snap.val();
+        if (!data) { setActiveCampaign(null); return; }
+        setActiveCampaign({id: campId, ...data});
+      };
+      ref.on("value", handler);
+      return () => ref.off("value", handler);
+    } else {
+      // Fallback to query
+      const ref = _fb.ref("mrt_campaigns").orderByChild("tourId").equalTo(tour.id);
+      const handler = snap => {
+        const data = snap.val();
+        if (!data) { setActiveCampaign(null); return; }
+        const campaigns = Object.entries(data).map(([id, c]) => ({id, ...c}));
+        const active = campaigns.find(c => c.status === "active") || campaigns.sort((a,b) => (b.launchedAt||0)-(a.launchedAt||0))[0];
+        setActiveCampaign(active || null);
+      };
+      ref.on("value", handler);
+      return () => ref.off("value", handler);
+    }
+  }, [tour.id, tour.mrtCampaignId]);
   useEffect(() => {
     getInstantlyKey().then(k => {
       setHasApiKey(!!k);
