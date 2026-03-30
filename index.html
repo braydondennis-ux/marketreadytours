@@ -6182,7 +6182,7 @@ function TourDetailPage(_ref19) {
     const allRecipients = [];
     const seen = new Set();
     // Listing agents from approved requests
-    tourReqs.filter(r => r.type === "listing-request").forEach(r => {
+    tourReqs.filter(r => !r.type || r.type === "listing-request").forEach(r => {
       if (r.agentEmail && !seen.has(r.agentEmail)) {
         seen.add(r.agentEmail);
         allRecipients.push({
