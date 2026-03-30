@@ -90,7 +90,7 @@ const _fbConfig = {
 };
 try {
   firebase.initializeApp(_fbConfig);
-  _fb = firebase.database(); window._fb = _fb;
+  _fb = firebase.database();
   _fbAuth = firebase.auth();
   _fbStorage = firebase.storage();
 } catch (e) {/* Firebase unavailable — app still works via localStorage */}
@@ -144,7 +144,7 @@ const SQUARE_LINKS = {
   half: "https://square.link/u/7wF91jvQ",
   split: "https://square.link/u/ZqkeM21q"
 };
-const SEND_EMAIL_URL = "https://us-central1-marketready-tours.cloudfunctions.net/sendEmail";
+const SEND_EMAIL_URL = "https://sendemail-wraz5q2v2a-uc.a.run.app";
 const sendCFEmail = async (to, subject, message, html) => {
   if (!to || !isValidEmail(to)) {
     console.warn("sendCFEmail: invalid recipient", to);
@@ -1646,10 +1646,7 @@ function RatingPage(_ref7) {
       color: B.gray,
       marginTop: 2
     }
-  }, "Listed by ", listing.agent, listing.agentPhone || listing.agentEmail ? /*#__PURE__*/React.createElement("span", {style:{marginLeft:8,display:"inline-flex",gap:6,verticalAlign:"middle"}},
-      listing.agentPhone && /*#__PURE__*/React.createElement("a", {href:"tel:"+listing.agentPhone, title:listing.agentPhone, style:{display:"inline-flex",alignItems:"center",justifyContent:"center",width:22,height:22,borderRadius:"50%",background:"#E8F5E9",color:"#2D6A4F",textDecoration:"none",fontSize:12}}, "📞"),
-      listing.agentEmail && /*#__PURE__*/React.createElement("a", {href:"mailto:"+listing.agentEmail, title:listing.agentEmail, style:{display:"inline-flex",alignItems:"center",justifyContent:"center",width:22,height:22,borderRadius:"50%",background:"#EFF6FF",color:"#1E40AF",textDecoration:"none",fontSize:12}}, "✉️")
-    ) : null)), /*#__PURE__*/React.createElement("div", {
+  }, "Listed by ", listing.agent)), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8
@@ -3939,7 +3936,7 @@ function AddListingForm(_ref12) {
       return (_inputRef$current = inputRef.current) === null || _inputRef$current === void 0 ? void 0 : _inputRef$current.focus();
     }, 100);
   };
-  const fieldLabels = [["beds", "Beds"], ["baths", "Baths"], ["sqft", "Sq Ft"], ["dom", "Days on Market"], ["price", "List Price ($)"], ["agent", "Listing Agent Name"], ["gateCode", "Gate Code (if any)"]];
+  const fieldLabels = [["beds", "Beds"], ["baths", "Baths"], ["sqft", "Sq Ft"], ["dom", "Days on Market"], ["price", "List Price ($)"], ["agent", "Listing Agent Name"]];
   const fieldMaxLen = {
     beds: 4,
     baths: 4,
@@ -4414,7 +4411,6 @@ const getInstantlyKey = async () => {
     return null;
   }
 };
-const INSTANTLY_PROXY_URL = "https://instantlyproxy-wraz5q2v2a-uc.a.run.app";
 const instantlyAPI = async function (endpoint) {
   let method = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "GET";
   let body = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
@@ -4429,7 +4425,7 @@ const instantlyAPI = async function (endpoint) {
     }
   };
   if (body) opts.body = JSON.stringify(body);
-  const res = await fetchWithTimeout(INSTANTLY_PROXY_URL, {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({endpoint,method,body,apiKey:key})},30000);
+  const res = await fetchWithTimeout("https://api.instantly.ai/api/v2/".concat(endpoint), opts, 20000);
   if (!res.ok) {
     const t = await res.text().catch(() => "");
     if (res.status === 401) throw new Error("Invalid Instantly API key. Please check your key in Settings.");
@@ -4447,17 +4443,10 @@ const buildCampaignEmails = tour => {
   }) : "TBD";
   const addLink = window.location.origin + window.location.pathname + "#/request/" + tour.id;
   const notInterestedLink = window.location.origin + window.location.pathname + "#/not-interested?tour=" + tour.id + "&email={{email}}";
-  const TRACK_URL = "https://us-central1-marketready-tours.cloudfunctions.net/trackEmail";
-  const btnHtml = (addUrl, niUrl, campId, emailDay, contactEmail) => {
-    const ce = encodeURIComponent(contactEmail || "{{email}}");
-    const trackedAdd = campId ? TRACK_URL+"?cid="+campId+"&eid="+emailDay+"&type=click&action=add&email="+ce+"&dest="+encodeURIComponent(addUrl) : addUrl;
-    const trackedNi = campId ? TRACK_URL+"?cid="+campId+"&eid="+emailDay+"&type=click&action=ni&email="+ce+"&dest="+encodeURIComponent(niUrl) : niUrl;
-    return "\n<div style=\"text-align:center;margin:28px 0\">\n<a href=\"".concat(trackedAdd, "\" style=\"display:inline-block;background:#C9A55A;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:700;font-size:16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin-bottom:12px\">\uD83C\uDFE1 Add My Listing to This Tour</a><br/>\n<a href=\"").concat(trackedNi, "\" style=\"display:inline-block;background:#F0EDE8;color:#8A8078;text-decoration:none;padding:10px 24px;border-radius:10px;font-weight:600;font-size:13px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin-top:8px\">Not Interested In This Tour</a>\n</div>");
-  };
+  const btnHtml = (addUrl, niUrl) => "\n<div style=\"text-align:center;margin:28px 0\">\n<a href=\"".concat(addUrl, "\" style=\"display:inline-block;background:#C9A55A;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:700;font-size:16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin-bottom:12px\">\uD83C\uDFE1 Add My Listing to This Tour</a><br/>\n<a href=\"").concat(niUrl, "\" style=\"display:inline-block;background:#F0EDE8;color:#8A8078;text-decoration:none;padding:10px 24px;border-radius:10px;font-weight:600;font-size:13px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin-top:8px\">Not Interested In This Tour</a>\n</div>");
   const header = "<div style=\"background:#0D0D0D;padding:22px 28px\"><p style=\"margin:0;font-family:Georgia,serif;font-size:22px;font-weight:900;color:#fff;letter-spacing:1px\">Market<span style=\"color:#C9A55A\">Ready</span> <span style=\"font-weight:300;font-size:18px;letter-spacing:3px\">Tours</span></p></div><div style=\"background:#C9A55A;height:4px\"></div>";
-  const unsubLink = window.location.origin + window.location.pathname + "#/not-interested?tour=" + tour.id + "&email={{email}}";
-  const footer = "<div style=\"background:#0D0D0D;padding:16px 20px;text-align:center;margin-top:24px\"><a href=\"https://www.marketreadytours.com\" style=\"color:rgba(255,255,255,.7);font-size:12px;text-decoration:none\">marketreadytours.com</a><br/><a href=\"" + unsubLink + "\" style=\"color:rgba(255,255,255,.4);font-size:10px;text-decoration:none;margin-top:6px;display:inline-block\">Unsubscribe from this tour</a></div>";
-  const wrap = (body, campId, emailDay, contactEmail) => { const ce = encodeURIComponent(contactEmail||'{{email}}'); const pixel = campId ? '<img src="'+TRACK_URL+'?cid='+campId+'&eid='+emailDay+'&type=open&email='+ce+'" width="1" height="1" style="display:none">' : ''; return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head><body style=\"margin:0;background:#F0EDE8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif\"><div style=\"max-width:600px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.12)\">".concat(header, "<div style=\"padding:28px 24px\">").concat(body, "</div>").concat(footer+pixel, "</div></body></html>"); };
+  const footer = "<div style=\"background:#0D0D0D;padding:16px 20px;text-align:center;margin-top:24px\"><a href=\"https://www.marketreadytours.com\" style=\"color:rgba(255,255,255,.7);font-size:12px;text-decoration:none\">marketreadytours.com</a></div>";
+  const wrap = body => "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head><body style=\"margin:0;background:#F0EDE8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif\"><div style=\"max-width:600px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.12)\">".concat(header, "<div style=\"padding:28px 24px\">").concat(body, "</div>").concat(footer, "</div></body></html>");
   const addLinkWithParams = (email, address) => {
     const base = addLink;
     const params = new URLSearchParams();
@@ -4469,22 +4458,21 @@ const buildCampaignEmails = tour => {
   // For Instantly we use {{firstName}}, {{email}}, custom vars
   const addLinkDynamic = addLink + "?email={{email}}&address={{propertyAddress}}&phone={{phone}}";
   const niLinkDynamic = notInterestedLink;
-  const campId = tour.mrtCampaignId || "";
   return [{
     subject: "".concat(tour.emoji, " You're Invited \u2014 ").concat(tour.name, " Home Tour"),
-    body: wrap("<h2 style=\"color:#0D0D0D;font-family:Georgia,serif;margin:0 0 8px\">Hi {{firstName}},</h2>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">I wanted to personally reach out about an exciting opportunity for your listing at <strong>{{propertyAddress}}</strong>.</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">We're hosting the <strong>".concat(tour.emoji, " ").concat(tour.name, "</strong> home tour on <strong>").concat(tourDate, "</strong> \u2014 a curated event where licensed real estate agents in your area tour and evaluate local listings together.</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">Your listing gets in front of serious, motivated agents who know your market \u2014 and you receive <strong>instant, expert feedback</strong> the moment each agent tours your home.</p>\n<div style=\"background:#EFF6FF;border-radius:10px;padding:16px 20px;margin:20px 0\">\n<p style=\"margin:0;font-weight:700;color:#1E40AF;font-size:14px\">Why agents love MarketReady Tours:</p>\n<p style=\"margin:8px 0 0;color:#374151;font-size:13px;line-height:1.7\">\u2705 Real-time ratings from professional agents<br/>\u2705 Expert peer feedback on pricing, presentation & showability<br/>\u2705 One-touch summary emailed directly to you after the tour<br/>\u2705 Efficient, organized and agent-tested process</p>\n</div>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 20px\">Spots are <strong>limited to 8 homes</strong> per tour. I'd love to feature your listing.</p>\n").concat(btnHtml(addLinkDynamic, niLinkDynamic, campId, 0, "{{email}}")
+    body: wrap("<h2 style=\"color:#0D0D0D;font-family:Georgia,serif;margin:0 0 8px\">Hi {{firstName}},</h2>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">I wanted to personally reach out about an exciting opportunity for your listing at <strong>{{propertyAddress}}</strong>.</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">We're hosting the <strong>".concat(tour.emoji, " ").concat(tour.name, "</strong> home tour on <strong>").concat(tourDate, "</strong> \u2014 a curated event where licensed real estate agents in your area tour and evaluate local listings together.</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">Your listing gets in front of serious, motivated agents who know your market \u2014 and you receive <strong>instant, expert feedback</strong> the moment each agent tours your home.</p>\n<div style=\"background:#EFF6FF;border-radius:10px;padding:16px 20px;margin:20px 0\">\n<p style=\"margin:0;font-weight:700;color:#1E40AF;font-size:14px\">Why agents love MarketReady Tours:</p>\n<p style=\"margin:8px 0 0;color:#374151;font-size:13px;line-height:1.7\">\u2705 Real-time ratings from professional agents<br/>\u2705 Expert peer feedback on pricing, presentation & showability<br/>\u2705 One-touch summary emailed directly to you after the tour<br/>\u2705 Efficient, organized and agent-tested process</p>\n</div>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 20px\">Spots are <strong>limited to 8 homes</strong> per tour. I'd love to feature your listing.</p>\n").concat(btnHtml(addLinkDynamic, niLinkDynamic)))
   }, {
     subject: "Re: ".concat(tour.emoji, " ").concat(tour.name, " \u2014 Have You Seen the Feedback Agents Leave?"),
-    body: wrap("<h2 style=\"color:#0D0D0D;font-family:Georgia,serif;margin:0 0 8px\">Hi {{firstName}},</h2>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">Just following up on our invite for the <strong>".concat(tour.emoji, " ").concat(tour.name, "</strong> tour on <strong>").concat(tourDate, "</strong>.</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">What makes this different from a standard showing is the <strong>quality of feedback</strong>. Every agent on the tour rates your home across 10 categories \u2014 curb appeal, kitchen, bedrooms, pricing, showability and more.</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">You don't have to chase anyone down. The moment an agent submits their rating, <strong>you receive it instantly by email</strong>. After the tour, you get a complete consolidated summary \u2014 all feedback from all agents in one clean report.</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 20px\">This is feedback that normally costs thousands of dollars in staging consultations \u2014 and it comes directly from agents actively working your neighborhood.</p>\n").concat(btnHtml(addLinkDynamic, niLinkDynamic, campId, 2, "{{email}}")
+    body: wrap("<h2 style=\"color:#0D0D0D;font-family:Georgia,serif;margin:0 0 8px\">Hi {{firstName}},</h2>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">Just following up on our invite for the <strong>".concat(tour.emoji, " ").concat(tour.name, "</strong> tour on <strong>").concat(tourDate, "</strong>.</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">What makes this different from a standard showing is the <strong>quality of feedback</strong>. Every agent on the tour rates your home across 10 categories \u2014 curb appeal, kitchen, bedrooms, pricing, showability and more.</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">You don't have to chase anyone down. The moment an agent submits their rating, <strong>you receive it instantly by email</strong>. After the tour, you get a complete consolidated summary \u2014 all feedback from all agents in one clean report.</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 20px\">This is feedback that normally costs thousands of dollars in staging consultations \u2014 and it comes directly from agents actively working your neighborhood.</p>\n").concat(btnHtml(addLinkDynamic, niLinkDynamic)))
   }, {
     subject: "".concat(tour.emoji, " The Agents On This Tour Know Your Market"),
-    body: wrap("<h2 style=\"color:#0D0D0D;font-family:Georgia,serif;margin:0 0 8px\">Hi {{firstName}},</h2>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">I wanted to share one more thing about the <strong>".concat(tour.emoji, " ").concat(tour.name, "</strong> tour on <strong>").concat(tourDate, "</strong>.</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">The agents on this tour aren't random. They're <strong>local professionals who specialize in this area</strong> \u2014 people whose opinions on pricing, presentation and marketability carry real weight.</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">When 6\u20138 agents all say your kitchen is the standout feature, or that the price needs adjusting, that's data you can act on with confidence. It's community intelligence you simply can't get any other way.</p>\n<div style=\"background:#FFF7ED;border-left:4px solid #C9A55A;padding:14px 18px;margin:20px 0;border-radius:0 8px 8px 0\">\n<p style=\"margin:0;color:#92400E;font-size:14px;line-height:1.6\"><em>\"This tour gave me more useful feedback in one afternoon than I'd gotten in three weeks of showings.\"</em><br/><strong>\u2014 MarketReady Tours Participant</strong></p>\n</div>\n").concat(btnHtml(addLinkDynamic, niLinkDynamic, campId, 5, "{{email}}")
+    body: wrap("<h2 style=\"color:#0D0D0D;font-family:Georgia,serif;margin:0 0 8px\">Hi {{firstName}},</h2>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">I wanted to share one more thing about the <strong>".concat(tour.emoji, " ").concat(tour.name, "</strong> tour on <strong>").concat(tourDate, "</strong>.</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">The agents on this tour aren't random. They're <strong>local professionals who specialize in this area</strong> \u2014 people whose opinions on pricing, presentation and marketability carry real weight.</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">When 6\u20138 agents all say your kitchen is the standout feature, or that the price needs adjusting, that's data you can act on with confidence. It's community intelligence you simply can't get any other way.</p>\n<div style=\"background:#FFF7ED;border-left:4px solid #C9A55A;padding:14px 18px;margin:20px 0;border-radius:0 8px 8px 0\">\n<p style=\"margin:0;color:#92400E;font-size:14px;line-height:1.6\"><em>\"This tour gave me more useful feedback in one afternoon than I'd gotten in three weeks of showings.\"</em><br/><strong>\u2014 MarketReady Tours Participant</strong></p>\n</div>\n").concat(btnHtml(addLinkDynamic, niLinkDynamic)))
   }, {
     subject: "Still Time \u2014 ".concat(tour.emoji, " ").concat(tour.name, " (").concat(tourDate, ")"),
-    body: wrap("<h2 style=\"color:#0D0D0D;font-family:Georgia,serif;margin:0 0 8px\">Hi {{firstName}},</h2>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">We still have a spot open on the <strong>".concat(tour.emoji, " ").concat(tour.name, "</strong> tour on <strong>").concat(tourDate, "</strong>, and I wanted to make sure you had the chance to claim it.</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">Here's what the process looks like from your end:</p>\n<p style=\"color:#374151;font-size:13px;line-height:1.9;margin:0 0 16px\">\n<strong>1.</strong> Submit your listing using the button below \u2014 takes 2 minutes<br/>\n<strong>2.</strong> We confirm your spot and send you the tour details<br/>\n<strong>3.</strong> On tour day, agents visit your home and rate it in real time<br/>\n<strong>4.</strong> You receive individual ratings as they come in, then a full summary after<br/>\n<strong>5.</strong> Done \u2014 actionable feedback, zero extra work from you\n</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 20px\">It's one of the most efficient, impactful things you can do for your listing right now.</p>\n").concat(btnHtml(addLinkDynamic, niLinkDynamic, campId, 8, "{{email}}")
+    body: wrap("<h2 style=\"color:#0D0D0D;font-family:Georgia,serif;margin:0 0 8px\">Hi {{firstName}},</h2>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">We still have a spot open on the <strong>".concat(tour.emoji, " ").concat(tour.name, "</strong> tour on <strong>").concat(tourDate, "</strong>, and I wanted to make sure you had the chance to claim it.</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">Here's what the process looks like from your end:</p>\n<p style=\"color:#374151;font-size:13px;line-height:1.9;margin:0 0 16px\">\n<strong>1.</strong> Submit your listing using the button below \u2014 takes 2 minutes<br/>\n<strong>2.</strong> We confirm your spot and send you the tour details<br/>\n<strong>3.</strong> On tour day, agents visit your home and rate it in real time<br/>\n<strong>4.</strong> You receive individual ratings as they come in, then a full summary after<br/>\n<strong>5.</strong> Done \u2014 actionable feedback, zero extra work from you\n</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 20px\">It's one of the most efficient, impactful things you can do for your listing right now.</p>\n").concat(btnHtml(addLinkDynamic, niLinkDynamic)))
   }, {
     subject: "Last Chance \u2014 ".concat(tour.emoji, " ").concat(tour.name, " Closes Soon"),
-    body: wrap("<h2 style=\"color:#0D0D0D;font-family:Georgia,serif;margin:0 0 8px\">Hi {{firstName}},</h2>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">This is my final note about the <strong>".concat(tour.emoji, " ").concat(tour.name, "</strong> home tour on <strong>").concat(tourDate, "</strong>.</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">We're closing submissions soon to finalize the route and send it to all participating agents. If your listing at <strong>{{propertyAddress}}</strong> isn't on it, this opportunity passes.</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">The MarketReady Tours process is designed to be <strong>painless, efficient and impactful</strong> \u2014 and every agent who's participated has asked to be included on future tours.</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 20px\">If the timing works, I'd genuinely love to see your listing on this tour. If not, no hard feelings \u2014 we run tours regularly and I'll be in touch about the next one.</p>\n").concat(btnHtml(addLinkDynamic, niLinkDynamic, campId, 12, "{{email}}")
+    body: wrap("<h2 style=\"color:#0D0D0D;font-family:Georgia,serif;margin:0 0 8px\">Hi {{firstName}},</h2>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">This is my final note about the <strong>".concat(tour.emoji, " ").concat(tour.name, "</strong> home tour on <strong>").concat(tourDate, "</strong>.</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">We're closing submissions soon to finalize the route and send it to all participating agents. If your listing at <strong>{{propertyAddress}}</strong> isn't on it, this opportunity passes.</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 16px\">The MarketReady Tours process is designed to be <strong>painless, efficient and impactful</strong> \u2014 and every agent who's participated has asked to be included on future tours.</p>\n<p style=\"color:#374151;line-height:1.7;margin:0 0 20px\">If the timing works, I'd genuinely love to see your listing on this tour. If not, no hard feelings \u2014 we run tours regularly and I'll be in touch about the next one.</p>\n").concat(btnHtml(addLinkDynamic, niLinkDynamic)))
   }];
 };
 /* ── INVITE CAMPAIGN TAB ── */
@@ -4506,45 +4494,7 @@ function InviteCampaignTab(_ref15) {
   const [savingKey, setSavingKey] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(false);
   const [checkingKey, setCheckingKey] = useState(true);
-  const [activeCampaign, setActiveCampaign] = useState(null);
   const fileRef = useRef(null);
-  const refreshCampaign = React.useCallback(() => {
-    if (!_fb || !tour.id) return;
-    _fb.ref("mrt_campaigns").orderByChild("tourId").equalTo(tour.id).once("value").then(snap => {
-      const data = snap.val();
-      if (!data) { setActiveCampaign(null); return; }
-      const campaigns = Object.entries(data).map(([id, c]) => ({id, ...c}));
-      const active = campaigns.find(c => c.status === "active") || campaigns.sort((a,b) => (b.launchedAt||0)-(a.launchedAt||0))[0];
-      setActiveCampaign(active || null);
-    });
-  }, [tour.id]);
-  useEffect(() => {
-    if (!_fb || !tour.id) return;
-    // Use mrtCampaignId directly if available - avoids shallow query issue
-    const campId = tour.mrtCampaignId;
-    if (campId) {
-      const ref = _fb.ref("mrt_campaigns/" + campId);
-      const handler = snap => {
-        const data = snap.val();
-        if (!data) { setActiveCampaign(null); return; }
-        setActiveCampaign({id: campId, ...data});
-      };
-      ref.on("value", handler);
-      return () => ref.off("value", handler);
-    } else {
-      // Fallback to query
-      const ref = _fb.ref("mrt_campaigns").orderByChild("tourId").equalTo(tour.id);
-      const handler = snap => {
-        const data = snap.val();
-        if (!data) { setActiveCampaign(null); return; }
-        const campaigns = Object.entries(data).map(([id, c]) => ({id, ...c}));
-        const active = campaigns.find(c => c.status === "active") || campaigns.sort((a,b) => (b.launchedAt||0)-(a.launchedAt||0))[0];
-        setActiveCampaign(active || null);
-      };
-      ref.on("value", handler);
-      return () => ref.off("value", handler);
-    }
-  }, [tour.id, tour.mrtCampaignId]);
   useEffect(() => {
     getInstantlyKey().then(k => {
       setHasApiKey(!!k);
@@ -4694,16 +4644,22 @@ function InviteCampaignTab(_ref15) {
   const launchCampaign = async () => {
     const pending = contacts.filter(c => c.status === "pending");
     if (pending.length === 0) {
-      setLaunchStatus("\u274c No pending contacts to invite.");
+      setLaunchStatus("❌ No pending contacts to invite.");
       setTimeout(() => setLaunchStatus(""), 4000);
       return;
     }
+    if (!hasApiKey) {
+      setLaunchStatus("❌ Please save your Instantly API key first.");
+      setTimeout(() => setLaunchStatus(""), 4000);
+      return;
+    }
+    // ── TOUR PROXIMITY CHECK ──
     const SEQUENCE_DAYS = [0, 2, 5, 8, 12];
     const tourMs = tour.date ? new Date(tour.date + "T12:00:00").getTime() : null;
     const daysUntil = tourMs ? Math.floor((tourMs - Date.now()) / (1000 * 60 * 60 * 24)) : null;
     if (daysUntil !== null) {
       if (daysUntil < 2) {
-        setLaunchStatus("\u274c Tour is in " + daysUntil + (daysUntil === 1 ? " day" : " days") + " \u2014 not enough time to launch a campaign. Consider calling contacts directly.");
+        setLaunchStatus("❌ Tour is in " + daysUntil + (daysUntil === 1 ? " day" : " days") + " — not enough time to launch a campaign. Consider calling contacts directly.");
         setTimeout(() => setLaunchStatus(""), 7000);
         return;
       }
@@ -4711,115 +4667,100 @@ function InviteCampaignTab(_ref15) {
       const emailsThatMiss = SEQUENCE_DAYS.length - emailsThatFit;
       if (emailsThatMiss > 0) {
         const skippedDays = SEQUENCE_DAYS.filter(d => d >= daysUntil);
-        const msg = "\u26A0\uFE0F Only " + emailsThatFit + " of 5 emails will send before the tour (" + daysUntil + " days away). Days " + skippedDays.join(", ") + " will be missed.";
+        const msg = emailsThatFit === 1 ? "\u26A0\uFE0F Only 1 of 5 emails will send before the tour (".concat(daysUntil, " days away). The remaining ").concat(emailsThatMiss, " emails will fire after the tour. Consider a direct call instead.") : "\u26A0\uFE0F Only ".concat(emailsThatFit, " of 5 emails will send before the tour (").concat(daysUntil, " days away). Emails on Day").concat(skippedDays.length > 1 ? "s" : "", " ").concat(skippedDays.join(", "), " will be missed.");
         if (!window.confirm(msg + "\n\nLaunch anyway with " + emailsThatFit + " email" + (emailsThatFit !== 1 ? "s" : "") + "?")) return;
       } else {
-        if (!window.confirm("Launch campaign for " + pending.length + " contact" + (pending.length !== 1 ? "s" : "") + "?\n\nAll 5 emails will send before the tour date (" + daysUntil + " days away).")) return;
+        if (!window.confirm("Launch campaign for ".concat(pending.length, " contact").concat(pending.length !== 1 ? "s" : "", "?\n\nAll 5 emails will send before the tour date (").concat(daysUntil, " days away)."))) return;
       }
     } else {
-      if (!window.confirm("Launch campaign for " + pending.length + " contact" + (pending.length !== 1 ? "s" : "") + "?\n\nThis will start the 5-email sequence.")) return;
+      if (!window.confirm("Launch campaign for ".concat(pending.length, " contact").concat(pending.length !== 1 ? "s" : "", "?\n\nThis will start the 5-email sequence in Instantly."))) return;
     }
     setLaunching(true);
-    setLaunchStatus("Checking for existing campaigns...");
-    try {
-      const existingSnap = await _fb.ref("mrt_campaigns").orderByChild("tourId").equalTo(tour.id).once("value");
-      const existing = existingSnap.val();
-      if (existing) {
-        const active = Object.values(existing).find(c => c.status === "active");
-        if (active) {
-          if (!window.confirm("An active campaign already exists for this tour. Launch a new one anyway?")) {
-            setLaunching(false);
-            setLaunchStatus("");
-            return;
-          }
-        }
-      }
-    } catch(e) { console.warn("Could not check existing campaigns:", e.message); }
-    setLaunchStatus("Launching campaign...");
+    setLaunchStatus("Creating campaign in Instantly...");
     try {
       const templates = emailTemplates || buildCampaignEmails(tour);
-      const campaignId = uid("camp");
-      const contactsObj = {};
-      pending.forEach(c => {
-        const key = (c.id || c.email).replace(/[.#$[\]]/g, "_");
-        contactsObj[key] = {...c, status: "invited", invitedAt: new Date().toISOString(), emailsSent: {}};
+      // Create campaign
+      const campaign = await instantlyAPI("campaigns", "POST", {
+        name: "".concat(tour.emoji, " ").concat(tour.name, " \u2014 ").concat(tour.date),
+        subject: templates[0].subject,
+        body: templates[0].body
       });
-      await _fb.ref("mrt_campaigns/" + campaignId).set({
-        tourId: tour.id,
-        tourName: (tour.emoji || "") + " " + tour.name,
-        tourDate: tour.date,
-        launchedAt: Date.now(),
-        launchedBy: currentUser ? currentUser.email : "",
-        status: "active",
-        emailTemplates: templates,
-        contacts: contactsObj
+      const campaignId = campaign.id;
+      setLaunchStatus("Adding contacts...");
+      // Add leads to campaign
+      const leads = pending.map(c => ({
+        email: c.email,
+        first_name: c.firstName,
+        last_name: c.lastName,
+        personalization: "",
+        variables: {
+          propertyAddress: c.address || "",
+          phone: c.phone || ""
+        }
+      }));
+      await instantlyAPI("campaigns/".concat(campaignId, "/leads"), "POST", {
+        leads
       });
-      setLaunchStatus("Sending first emails...");
-      let firstSent = 0;
-      for (const c of pending) {
-        const firstName = c.firstName || c.email.split("@")[0];
-        const subject = (templates[0].subject || "").replace(/\{\{firstName\}\}/gi, firstName).replace(/\{\{propertyAddress\}\}/gi, c.address || "");
-        const html = (templates[0].body || "").replace(/\{\{firstName\}\}/gi, firstName).replace(/\{\{propertyAddress\}\}/gi, c.address || "");
-        try {
-          await fetchWithTimeout(SEND_EMAIL_URL, {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:c.email,subject,message:subject||" ",html})}, 15000);
-          await _fb.ref("mrt_campaigns/" + campaignId + "/contacts/" + (c.id||c.email).replace(/[.#$[\]]/g,"_") + "/emailsSent/0").set(Date.now());
-          firstSent++;
-        } catch(emailErr) { console.warn("First email failed:", c.email, emailErr.message); }
+      // Add follow-up emails (2-5)
+      for (let i = 1; i < templates.length; i++) {
+        const delays = [0, 2, 5, 8, 12];
+        await instantlyAPI("campaigns/".concat(campaignId, "/sequences"), "POST", {
+          subject: templates[i].subject,
+          body: templates[i].body,
+          delay_days: delays[i]
+        });
       }
-      const updatedContacts = contacts.map(c => c.status === "pending" ? {...c, status: "invited", campaignId, invitedAt: new Date().toISOString()} : c);
+      // Activate campaign
+      await instantlyAPI("campaigns/".concat(campaignId, "/activate"), "POST", {});
+      // Update contact statuses
+      const updatedContacts = contacts.map(c => c.status === "pending" ? {
+        ...c,
+        status: "invited",
+        campaignId,
+        invitedAt: new Date().toISOString()
+      } : c);
       setContacts(updatedContacts);
-      // Only update campaign fields, never overwrite full tour
-      await _fb.ref("mrt_tours/" + tour.id).update({campaignContacts: updatedContacts, mrtCampaignId: campaignId});
-      setLaunchStatus("\u2705 Campaign launched! " + firstSent + " of " + pending.length + " first emails sent. Follow-ups send automatically at 8am on Days 2, 5, 8, and 12.");
-      setTimeout(() => setLaunchStatus(""), 10000);
+      onUpdateTour({
+        ...tour,
+        campaignContacts: updatedContacts,
+        instantlyCampaignId: campaignId
+      });
+      setLaunchStatus("\u2705 Campaign launched! ".concat(pending.length, " contacts added to the 5-email sequence."));
+      setTimeout(() => setLaunchStatus(""), 6000);
     } catch (e) {
-      setLaunchStatus("\u274c " + e.message);
+      setLaunchStatus("❌ " + e.message);
     }
     setLaunching(false);
   };
-  const removeFromCampaign = async (contactId, campaignId) => {
+  const removeFromInstantly = async (email, campaignId) => {
     if (!campaignId) return;
     try {
-      const key = (contactId || "").replace(/[.#$[\]]/g, "_");
-      await _fb.ref("mrt_campaigns/" + campaignId + "/contacts/" + key + "/status").set("removed");
-    } catch (e) { console.warn("Could not remove from campaign:", e.message); }
+      await instantlyAPI("campaigns/".concat(campaignId, "/leads/remove"), "POST", {
+        leads: [{
+          email
+        }]
+      });
+    } catch (e) {
+      console.warn("Could not remove from Instantly:", e.message);
+    }
   };
   const statusColors = {
     pending: "#E5E7EB",
     invited: "#BFDBFE",
-    contacted: "#BFDBFE",
     registered: "#BBF7D0",
-    converted: "#BBF7D0",
-    not_interested: "#FECACA",
-    unsubscribed: "#FECACA",
-    error: "#FED7AA"
+    not_interested: "#FECACA"
   };
   const statusLabels = {
     pending: "⬜ Pending",
     invited: "📧 Invited",
-    contacted: "📧 Emailed",
     registered: "✅ Registered",
-    converted: "🏠 Applied",
-    not_interested: "🚫 Not Interested",
-    unsubscribed: "🚫 Unsubscribed",
-    error: "⚠️ Error"
+    not_interested: "🚫 Not Interested"
   };
-  const liveContacts = React.useMemo(() => {
-    if (!activeCampaign || !activeCampaign.contacts) return contacts;
-    const fbContacts = Object.values(activeCampaign.contacts);
-    return contacts.map(c => {
-      const key = (c.id || c.email).replace(/[.#$@[\]]/g, "_");
-      const fbContact = activeCampaign.contacts[key] || fbContacts.find(fc => fc.email === c.email);
-      if (!fbContact) return c;
-      const emailsSent = fbContact.emailsSent ? Object.keys(fbContact.emailsSent).length : 0;
-      return {...c, status: fbContact.status || c.status, emailsSent, lastEmailDay: fbContact.lastEmailDay};
-    });
-  }, [contacts, activeCampaign]);
   const counts = {
-    pending: liveContacts.filter(c => c.status === "pending").length,
-    invited: liveContacts.filter(c => ["invited","contacted"].includes(c.status)).length,
-    registered: liveContacts.filter(c => ["registered","converted"].includes(c.status)).length,
-    not_interested: liveContacts.filter(c => ["not_interested","unsubscribed"].includes(c.status)).length
+    pending: contacts.filter(c => c.status === "pending").length,
+    invited: contacts.filter(c => c.status === "invited").length,
+    registered: contacts.filter(c => c.status === "registered").length,
+    not_interested: contacts.filter(c => c.status === "not_interested").length
   };
   if (checkingKey) return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -4832,99 +4773,86 @@ function InviteCampaignTab(_ref15) {
     style: {
       padding: 16
     }
-  },   activeCampaign && /*#__PURE__*/React.createElement("div", {
-    style: {background:"#fff",borderRadius:14,padding:16,marginBottom:14,boxShadow:"0 2px 8px rgba(0,0,0,.06)"}
-  },
-  /*#__PURE__*/React.createElement("div", {style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}},
-    /*#__PURE__*/React.createElement("div", {style:{fontWeight:700,fontSize:13,color:B.primary}}, "📊 Campaign Dashboard"),
-    /*#__PURE__*/React.createElement("div", {style:{display:"flex",alignItems:"center",gap:6}},
-      /*#__PURE__*/React.createElement("div", {style:{width:8,height:8,borderRadius:"50%",background:activeCampaign.status==="active"?"#10B981":"#9CA3AF"}}),
-      /*#__PURE__*/React.createElement("span", {style:{fontSize:11,color:B.gray,fontWeight:600}}, activeCampaign.status==="active"?"Active":activeCampaign.status==="complete"?"Complete":"Paused")
-    )
-  ),
-  /*#__PURE__*/React.createElement("div", {style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:12}},
-    [
-      {label:"Emailed", val: activeCampaign.contacts ? Object.values(activeCampaign.contacts).filter(c=>c.emailsSent&&Object.keys(c.emailsSent).length>0).length : 0, color:"#BFDBFE"},
-      {label:"Converted", val: activeCampaign.contacts ? Object.values(activeCampaign.contacts).filter(c=>c.status==="converted").length : 0, color:"#BBF7D0"},
-      {label:"Unsub", val: activeCampaign.contacts ? Object.values(activeCampaign.contacts).filter(c=>c.status==="unsubscribed").length : 0, color:"#FECACA"},
-      {label:"Errors", val: activeCampaign.contacts ? Object.values(activeCampaign.contacts).filter(c=>c.status==="error").length : 0, color:"#FED7AA"}
-    ].map(({label,val,color}) => /*#__PURE__*/React.createElement("div", {key:label, style:{background:color,borderRadius:8,padding:"8px 4px",textAlign:"center"}},
-      /*#__PURE__*/React.createElement("div", {style:{fontSize:16,fontWeight:800,color:B.primary}}, val),
-      /*#__PURE__*/React.createElement("div", {style:{fontSize:10,color:B.gray,fontWeight:600}}, label)
-    )),
-    /*#__PURE__*/React.createElement("div", {style:{marginTop:12,borderTop:"1px solid #F0EDE8",paddingTop:10}},
-      /*#__PURE__*/React.createElement("div", {style:{fontWeight:700,fontSize:12,color:B.primary,marginBottom:8}}, "Email Performance"),
-      /*#__PURE__*/React.createElement("div", {style:{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr",gap:4,fontSize:10,color:B.gray,fontWeight:600,marginBottom:4,padding:"0 4px"}},
-        /*#__PURE__*/React.createElement("span", null, "Email"),
-        /*#__PURE__*/React.createElement("span", {style:{textAlign:"center"}}, "Sent"),
-        /*#__PURE__*/React.createElement("span", {style:{textAlign:"center"}}, "Opened"),
-        /*#__PURE__*/React.createElement("span", {style:{textAlign:"center"}}, "Clicked")
-      ),
-      [0,2,5,8,12].map((day,i) => {
-        const t = activeCampaign.tracking && activeCampaign.tracking[day];
-        const sent = activeCampaign.contacts ? Object.values(activeCampaign.contacts).filter(c=>c.emailsSent&&c.emailsSent[String(day)]).length : 0;
-        const opens = t && t.open_count ? t.open_count : 0;
-        const clicks = t && t.click_count ? t.click_count : 0;
-        const labels = ["Intro","Follow-up 1","Follow-up 2","Follow-up 3","Final"];
-        const openRate = sent > 0 ? Math.round(opens/sent*100) : 0;
-        const clickRate = sent > 0 ? Math.round(clicks/sent*100) : 0;
-        return /*#__PURE__*/React.createElement("div", {key:day, style:{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr",gap:4,padding:"5px 4px",borderRadius:6,background:i%2===0?"#F9FAFB":"#fff",alignItems:"center"}},
-          /*#__PURE__*/React.createElement("span", {style:{fontSize:11,color:B.dark,fontWeight:500}}, "Day "+day+" - "+labels[i]),
-          /*#__PURE__*/React.createElement("span", {style:{fontSize:11,textAlign:"center",color:sent>0?B.dark:B.gray}}, sent||"-"),
-          /*#__PURE__*/React.createElement("span", {style:{fontSize:11,textAlign:"center",color:opens>0?"#059669":B.gray}}, opens>0?opens+" ("+openRate+"%)":"-"),
-          /*#__PURE__*/React.createElement("span", {style:{fontSize:11,textAlign:"center",color:clicks>0?"#2563EB":B.gray}}, clicks>0?clicks+" ("+clickRate+"%)":"-")
-        );
-      }),
-      /*#__PURE__*/React.createElement("p", {style:{fontSize:10,color:B.gray,margin:"8px 0 0",fontStyle:"italic"}}, "Note: Apple Mail may inflate open rates.")
-    ),
-    {label:"_dummy",val:null,color:"transparent"
-    ].map(({label,val,color}) => /*#__PURE__*/React.createElement("div", {key:label, style:{background:color,borderRadius:8,padding:"8px 4px",textAlign:"center"}},
-      /*#__PURE__*/React.createElement("div", {style:{fontSize:16,fontWeight:800,color:B.primary}}, val),
-      /*#__PURE__*/React.createElement("div", {style:{fontSize:10,color:B.gray,fontWeight:600}}, label)
-    ))
-  ),
-  activeCampaign.lastRun && /*#__PURE__*/React.createElement("div", {style:{fontSize:11,color:B.gray,textAlign:"center",marginBottom:8}},
-    "Last run: " + activeCampaign.lastRun.date + " · Step " + (activeCampaign.lastRun.stepIndex+1) + " of 5 · " + activeCampaign.lastRun.sent + " sent"
-  ),
-  activeCampaign.status === "active" && activeCampaign.launchedAt && /*#__PURE__*/React.createElement("div", {style:{background:"#F0FDF4",border:"1.5px solid #86EFAC",borderRadius:10,padding:"10px 14px",marginBottom:10}},
-    /*#__PURE__*/React.createElement("div", {style:{fontWeight:700,fontSize:12,color:"#065F46",marginBottom:6}}, "Email Schedule"),
-    /*#__PURE__*/React.createElement("div", {style:{display:"flex",flexDirection:"column",gap:4}},
-      [0,2,5,8,12].map((day,i) => {
-        const launchMidnight = new Date(new Date(activeCampaign.launchedAt).toLocaleDateString("en-CA",{timeZone:"America/Phoenix"}) + "T08:00:00-07:00");
-        const sendDate = new Date(launchMidnight); sendDate.setDate(sendDate.getDate()+day);
-        const now = new Date();
-        const isPast = sendDate < now;
-        const isToday = sendDate.toDateString() === now.toDateString();
-        const dateStr = sendDate.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
-        const labels = ["1 - Intro","2 - Follow-up","3 - Follow-up","4 - Follow-up","5 - Final"];
-        return /*#__PURE__*/React.createElement("div",{key:day,style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 8px",borderRadius:6,background:isToday?"#DCFCE7":isPast?"#F9FAFB":"#fff"}},
-          /*#__PURE__*/React.createElement("span",{style:{fontSize:11,color:isPast?"#9CA3AF":B.dark,fontWeight:isToday?700:500}}, "Email "+labels[i]),
-          /*#__PURE__*/React.createElement("span",{style:{fontSize:11,color:isToday?"#065F46":isPast?"#9CA3AF":B.gray,fontWeight:isToday?700:400}},
-            isToday ? "Today @ 8:00 AM" : isPast ? "Sent "+dateStr : dateStr+" @ 8am"
-          )
-        );
-      })
-    )
-  ),
-  activeCampaign.status === "active" && /*#__PURE__*/React.createElement("button", {
+  }, isSuperAdmin && !hasApiKey && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#F5EDD8",
+      border: "1px solid #FCD34D",
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 700,
+      fontSize: 13,
+      color: "#7A5A28",
+      marginBottom: 8
+    }
+  }, "\u26A0\uFE0F Instantly API Key Required"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12,
+      color: "#7A5A28",
+      marginBottom: 10,
+      lineHeight: 1.5
+    }
+  }, "Enter your Instantly.ai API key to enable campaign launching. This is stored securely and shared across all tours."), /*#__PURE__*/React.createElement("input", {
+    value: apiKeyInput,
+    onChange: e => setApiKeyInput(e.target.value),
+    placeholder: "sk-instantly-...",
+    type: "password",
+    style: {
+      width: "100%",
+      border: "1.5px solid #FCD34D",
+      borderRadius: 8,
+      padding: "10px 12px",
+      fontSize: 13,
+      outline: "none",
+      marginBottom: 8
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: saveApiKey,
+    disabled: savingKey || !apiKeyInput.trim(),
+    style: {
+      width: "100%",
+      background: B.gold,
+      color: "#fff",
+      border: "none",
+      borderRadius: 8,
+      padding: "10px 0",
+      fontWeight: 700,
+      fontSize: 13,
+      cursor: "pointer"
+    }
+  }, savingKey ? "Saving..." : "Save API Key")), isSuperAdmin && hasApiKey && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#E8F0EC",
+      border: "1px solid #A0C8B0",
+      borderRadius: 10,
+      padding: "10px 14px",
+      marginBottom: 12,
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      color: "#2D5A40",
+      fontWeight: 600
+    }
+  }, "\u2705 Instantly API Connected"), /*#__PURE__*/React.createElement("button", {
     onClick: async () => {
-      if (!window.confirm("Pause this campaign? No more emails will send until resumed.")) return;
-      await _fb.ref("mrt_campaigns/" + activeCampaign.id + "/status").set("paused");
+      if (confirm("Replace API key?")) setHasApiKey(false);
     },
-    style:{width:"100%",background:"#FEF3C7",color:"#92400E",border:"1.5px solid #FCD34D",borderRadius:8,padding:"8px 0",fontWeight:700,fontSize:12,cursor:"pointer"}
-  }, "⏸ Pause Campaign"),
-  activeCampaign.status === "paused" && /*#__PURE__*/React.createElement("button", {
-    onClick: async () => {
-      if (!window.confirm("Resume this campaign?")) return;
-      await _fb.ref("mrt_campaigns/" + activeCampaign.id + "/status").set("active");
-    },
-    style:{width:"100%",background:"#D1FAE5",color:"#065F46",border:"1.5px solid #6EE7B7",borderRadius:8,padding:"8px 0",fontWeight:700,fontSize:12,cursor:"pointer"}
-  }, "▶️ Resume Campaign"),
-  /*#__PURE__*/React.createElement("button", {
-    onClick: refreshCampaign,
-    style:{width:"100%",background:"#F0F9FF",color:"#0369A1",border:"1.5px solid #BAE6FD",borderRadius:8,padding:"8px 0",fontWeight:700,fontSize:12,cursor:"pointer",marginTop:4}
-  }, "Refresh Stats")
-  ), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "none",
+      border: "none",
+      color: "#2D5A40",
+      fontSize: 11,
+      cursor: "pointer",
+      textDecoration: "underline"
+    }
+  }, "Change Key")), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "grid",
       gridTemplateColumns: "repeat(4,1fr)",
@@ -5104,17 +5032,17 @@ function InviteCampaignTab(_ref15) {
     const tooClose = daysUntil !== null && daysUntil < 2;
     return /*#__PURE__*/React.createElement("button", {
       onClick: launchCampaign,
-      disabled: launching || tooClose,
+      disabled: launching || !hasApiKey || tooClose,
       style: {
         width: "100%",
-        background: launching || tooClose ? "#9CA3AF" : "#2D6A4F",
+        background: launching || !hasApiKey || tooClose ? "#9CA3AF" : "#2D6A4F",
         color: "#fff",
         border: "none",
         borderRadius: 10,
         padding: "13px 0",
         fontWeight: 700,
         fontSize: 15,
-        cursor: launching || tooClose ? "default" : "pointer",
+        cursor: launching || !hasApiKey || tooClose ? "default" : "pointer",
         marginBottom: 8,
         display: "flex",
         alignItems: "center",
@@ -5216,26 +5144,6 @@ function InviteCampaignTab(_ref15) {
       whiteSpace: "nowrap"
     }
   }, statusLabels[c.status] || c.status), /*#__PURE__*/React.createElement("button", {
-    onClick: async () => {
-      const updated = contacts.map(x => x.id === c.id ? {...x, status: "pending", emailsSent: 0, lastEmailDay: null} : x);
-      setContacts(updated);
-      onUpdateTour({...tour, campaignContacts: updated});
-      // Also reset in Firebase campaign if exists
-      if (activeCampaign && activeCampaign.id) {
-        const key = (c.id || c.email).replace(/[.#$@[\]]/g, "_");
-        await _fb.ref("mrt_campaigns/" + activeCampaign.id + "/contacts/" + key + "/status").set("pending").catch(()=>{});
-        await _fb.ref("mrt_campaigns/" + activeCampaign.id + "/contacts/" + key + "/emailsSent").remove().catch(()=>{});
-      }
-    },
-    style: {
-      background: "none",
-      border: "none",
-      color: "#2D6A4F",
-      fontSize: 10,
-      cursor: "pointer",
-      padding: "0 4px"
-    }
-  }, "Reset"), /*#__PURE__*/React.createElement("button", {
     onClick: () => removeContact(c.id),
     style: {
       background: "none",
@@ -5460,17 +5368,6 @@ function NotInterestedPage(_ref17) {
           email,
           confirmedAt: new Date().toISOString()
         });
-        try {
-          const campaignsSnap = await _fb.ref("mrt_campaigns").orderByChild("tourId").equalTo(tourId).once("value");
-          const campaigns = campaignsSnap.val();
-          if (campaigns) {
-            for (const [campId, camp] of Object.entries(campaigns)) {
-              if (camp.status !== "active") continue;
-              const contactKey = email.replace(/[.#$@[\]]/g, "_");
-              await _fb.ref("mrt_campaigns/" + campId + "/contacts/" + contactKey + "/status").set("unsubscribed");
-            }
-          }
-        } catch(e) { console.warn("Could not unsubscribe from campaign:", e.message); }
       } catch (e) {}
     }
     setStatus("confirmed");
@@ -6182,7 +6079,7 @@ function TourDetailPage(_ref19) {
     const allRecipients = [];
     const seen = new Set();
     // Listing agents from approved requests
-    tourReqs.filter(r => !r.type || r.type === "listing-request").forEach(r => {
+    tourReqs.filter(r => r.type === "listing-request").forEach(r => {
       if (r.agentEmail && !seen.has(r.agentEmail)) {
         seen.add(r.agentEmail);
         allRecipients.push({
@@ -6209,7 +6106,7 @@ function TourDetailPage(_ref19) {
     }
     setSendingRoute(true);
     const sorted = [...adminListings].sort((a, b) => a.order - b.order);
-    const routeText = sorted.map((l, i) => "Stop #".concat(i + 1, ": ").concat(l.address, ", ").concat(l.city).concat(l.gateCode ? "\n   \uD83D\uDD11 Gate Code: " + l.gateCode : "")).join("\n");
+    const routeText = sorted.map((l, i) => "Stop #".concat(i + 1, ": ").concat(l.address, ", ").concat(l.city)).join("\n");
     const mapsUrl = "https://www.google.com/maps/dir/" + sorted.map(l => encodeURIComponent(l.address + " " + l.city)).join("/");
     let sent = 0;
     let failed = 0;
@@ -7183,7 +7080,7 @@ function TourDetailPage(_ref19) {
       flexDirection: "column",
       gap: 8
     }
-  }, [["address", "Address"], ["city", "City"], ["agent", "Listing Agent"], ["agentEmail", "Agent Email"], ["price", "List Price"], ["beds", "Beds"], ["baths", "Baths"], ["sqft", "Sq Ft"], ["dom", "Days on Market"], ["gateCode", "Gate Code"]].map(_ref21 => {
+  }, [["address", "Address"], ["city", "City"], ["agent", "Listing Agent"], ["agentEmail", "Agent Email"], ["price", "List Price"], ["beds", "Beds"], ["baths", "Baths"], ["sqft", "Sq Ft"], ["dom", "Days on Market"]].map(_ref21 => {
     let [f, label] = _ref21;
     return /*#__PURE__*/React.createElement("div", {
       key: f
@@ -7602,20 +7499,14 @@ function TourDetailPage(_ref19) {
   }, /*#__PURE__*/React.createElement("button", {
     onClick: onBack,
     style: {
-      background: "rgba(255,255,255,0.15)",
-      border: "1.5px solid rgba(255,255,255,0.3)",
+      background: "none",
+      border: "none",
       color: "#fff",
       cursor: "pointer",
-      fontSize: 16,
-      fontWeight: 700,
-      flexShrink: 0,
-      borderRadius: 8,
-      padding: "6px 12px",
-      display: "flex",
-      alignItems: "center",
-      gap: 6
+      fontSize: 22,
+      flexShrink: 0
     }
-  }, "\u2190 Back"), /*#__PURE__*/React.createElement("div", {
+  }, "\u2190"), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1
     }
@@ -8487,7 +8378,7 @@ function TourDetailPage(_ref19) {
         color: B.dark,
         fontWeight: 600
       }
-    }, listing.agent), " \xB7 Listing Agent", (listing.agentPhone || listing.agentEmail) ? /*#__PURE__*/React.createElement("span", {style:{marginLeft:8,display:"inline-flex",gap:5,verticalAlign:"middle"}}, listing.agentPhone && /*#__PURE__*/React.createElement("a", {href:"tel:"+listing.agentPhone,title:listing.agentPhone,onClick:e=>e.stopPropagation(),style:{display:"inline-flex",alignItems:"center",justifyContent:"center",width:20,height:20,borderRadius:"50%",background:"#E8F5E9",color:"#2D6A4F",textDecoration:"none",fontSize:11}}, "📞"), listing.agentEmail && /*#__PURE__*/React.createElement("a", {href:"mailto:"+listing.agentEmail,title:listing.agentEmail,onClick:e=>e.stopPropagation(),style:{display:"inline-flex",alignItems:"center",justifyContent:"center",width:20,height:20,borderRadius:"50%",background:"#EFF6FF",color:"#1E40AF",textDecoration:"none",fontSize:11}}, "✉️")) : null), /*#__PURE__*/React.createElement("div", {
+    }, listing.agent), " \xB7 Listing Agent"), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         gap: 8
@@ -9471,7 +9362,7 @@ function ToursDashboard(_ref26) {
     window._openMRTTour = function (tourId) {
       var _document$getElementB;
       setActiveTourId(tourId);
-      window.history.pushState({page: 'tour', tourId}, '', '#/tour/' + tourId);
+      window.location.hash = "/tour/" + tourId;
       (_document$getElementB = document.getElementById("cal-modal")) === null || _document$getElementB === void 0 || _document$getElementB.remove();
     };
   }, [tours]);
@@ -11048,7 +10939,6 @@ function RequestListingPage(_ref31) {
     sqft: "",
     dom: "",
     price: "",
-    gateCode: "",
     notes: ""
   });
   const [addrConfirmed, setAddrConfirmed] = useState(!!paramAddress);
@@ -11148,8 +11038,7 @@ function RequestListingPage(_ref31) {
       notes: safeNotes,
       photos: photos.length ? photos : ["https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop"],
       order: 0,
-      type: tourSignUp ? "tour-signup" : "listing-request",
-      gateCode: sanitize(fields.gateCode || "")
+      type: tourSignUp ? "tour-signup" : "listing-request"
     };
     try {
       await fetchWithTimeout(LISTING_REQUEST_FORMSPREE, {
@@ -11175,18 +11064,6 @@ function RequestListingPage(_ref31) {
       await sendCFEmail(fields.agentEmail, tourSignUp ? "Tour Sign Up Confirmation — MarketReady Tours" : "We received your listing request — MarketReady Tours", "Hi ".concat(fields.agentName, ",\n\nThank you for submitting your listing at ").concat(fields.address, "!\n\nWe've received your request for the ").concat(requestData.tourName, " tour and will review it shortly. You'll receive an email letting you know whether your listing has been approved or denied.\n\nIf you have any questions, reply to marketreadytours@gmail.com.\n\n\u2014 MarketReady Tours\nmarketreadytours.com"));
       onSubmit(requestData);
       sendSMS(tourSignUp ? "New Tour Sign Up: ".concat(fields.agentName, " for ").concat(requestData.tourName) : "New Listing: ".concat(fields.address, " by ").concat(fields.agentName, " for ").concat(requestData.tourName));
-      // Mark contact as converted in any active campaign for this tour - stop follow-up emails
-      try {
-        const campSnap = await _fb.ref("mrt_campaigns").orderByChild("tourId").equalTo(fields.tourId).once("value");
-        const camps = campSnap.val();
-        if (camps) {
-          const contactKey = fields.agentEmail.trim().toLowerCase().replace(/[.#$[\]]/g, "_");
-          for (const [campId, camp] of Object.entries(camps)) {
-            if (camp.status !== "active") continue;
-            await _fb.ref("mrt_campaigns/" + campId + "/contacts/" + contactKey + "/status").set("converted");
-          }
-        }
-      } catch(e) { console.warn("Could not mark campaign contact as converted:", e.message); }
       setDone(true);
     } catch (e) {
       setError("Submission failed. Please try again.");
@@ -11547,7 +11424,7 @@ function RequestListingPage(_ref31) {
       gap: 10,
       marginBottom: 10
     }
-  }, [["beds", "Beds"], ["baths", "Baths"], ["sqft", "Sq Ft"], ["dom", "Days on Market"], ["price", "List Price ($)"], ["gateCode", "Gate Code (if gated community)"]].map(_ref33 => {
+  }, [["beds", "Beds"], ["baths", "Baths"], ["sqft", "Sq Ft"], ["dom", "Days on Market"], ["price", "List Price ($)"]].map(_ref33 => {
     let [f, ph] = _ref33;
     return /*#__PURE__*/React.createElement("input", {
       key: f,
@@ -13316,7 +13193,7 @@ function App() {
   });
   const [preselectedTourId, setPreselectedTourId] = useState(() => {
     const h = window.location.hash.slice(2) || "";
-    return h.startsWith("request/") ? h.slice(8).split("?")[0].split("&")[0] : null;
+    return h.startsWith("request/") ? h.slice(8) : null;
   });
   React.useEffect(() => {
     const onHash = () => {
@@ -13344,7 +13221,7 @@ function App() {
       } else if (h.startsWith("request/")) {
         setPage("request");
         setActiveTourId(null);
-        setPreselectedTourId(h.slice(8).split("?")[0].split("&")[0]);
+        setPreselectedTourId(h.slice(8));
       } else if (h === "request") {
         setPage("request");
         setActiveTourId(null);
@@ -13372,8 +13249,6 @@ function App() {
       }
     };
     window.addEventListener("hashchange", onHash);
-    // Browser back button support
-    window.addEventListener("popstate", onHash);
     const initHash = window.location.hash.slice(2) || "";
     if (!initHash || initHash === "/") window.location.hash = "/";
     return () => window.removeEventListener("hashchange", onHash);
