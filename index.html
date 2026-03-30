@@ -4411,26 +4411,24 @@ const getInstantlyKey = async () => {
     return null;
   }
 };
+const INSTANTLY_PROXY_URL = "https://instantlyproxy-wraz5q2v2a-uc.a.run.app";
 const instantlyAPI = async function (endpoint) {
   let method = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "GET";
   let body = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
   let apiKey = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : null;
   const key = apiKey || (await getInstantlyKey());
   if (!key) throw new Error("No Instantly API key configured. Please add it in the Campaign tab.");
-  const opts = {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer ".concat(key)
-    }
-  };
-  if (body) opts.body = JSON.stringify(body);
-  const res = await fetchWithTimeout("https://api.instantly.ai/api/v2/".concat(endpoint), opts, 20000);
+  const res = await fetchWithTimeout(INSTANTLY_PROXY_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ endpoint, method, body, apiKey: key })
+  }, 30000);
   if (!res.ok) {
     const t = await res.text().catch(() => "");
+    let data; try { data = JSON.parse(t); } catch { data = {}; }
     if (res.status === 401) throw new Error("Invalid Instantly API key. Please check your key in Settings.");
     if (res.status === 429) throw new Error("Instantly rate limit hit. Please wait a moment and try again.");
-    throw new Error("Instantly API error ".concat(res.status, ": ").concat(t.slice(0, 200)));
+    throw new Error("Instantly API error " + res.status + ": " + (data.error || t.slice(0, 200)));
   }
   return res.json();
 };
@@ -7007,7 +7005,7 @@ function TourDetailPage(_ref19) {
       fontSize: 11,
       color: B.gray
     }
-  }, "$", Number(l.price).toLocaleString(), " \xB7 ", l.agent, l.agentEmail ? " \xB7 ".concat(l.agentEmail) : "")), /*#__PURE__*/React.createElement("div", {
+  }, "$", Number(l.price).toLocaleString(), " \xB7 ", l.agent, l.agentEmail ? /*#__PURE__*/React.createElement("a", {href: "mailto:" + l.agentEmail, style: {color: "#1B3A6B", textDecoration: "none", fontWeight: 500, marginLeft: 4}}, "\u2709\uFE0F") : null, l.agentPhone ? /*#__PURE__*/React.createElement("a", {href: "tel:" + l.agentPhone, style: {color: "#1B3A6B", textDecoration: "none", fontWeight: 500, marginLeft: 4}}, "\uD83D\uDCDE " + l.agentPhone) : null)), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -11711,6 +11709,7 @@ function ListingRequestsAdmin(_ref34) {
         price: req.price,
         agent: req.agentName,
         agentEmail: req.agentEmail || "",
+        agentPhone: req.agentPhone || "",
         photos: req.photos,
         order: (tour.listings || []).length + 1
       };
