@@ -4851,6 +4851,36 @@ function InviteCampaignTab(_ref15) {
     ].map(({label,val,color}) => /*#__PURE__*/React.createElement("div", {key:label, style:{background:color,borderRadius:8,padding:"8px 4px",textAlign:"center"}},
       /*#__PURE__*/React.createElement("div", {style:{fontSize:16,fontWeight:800,color:B.primary}}, val),
       /*#__PURE__*/React.createElement("div", {style:{fontSize:10,color:B.gray,fontWeight:600}}, label)
+    )),
+    /*#__PURE__*/React.createElement("div", {style:{marginTop:12,borderTop:"1px solid #F0EDE8",paddingTop:10}},
+      /*#__PURE__*/React.createElement("div", {style:{fontWeight:700,fontSize:12,color:B.primary,marginBottom:8}}, "Email Performance"),
+      /*#__PURE__*/React.createElement("div", {style:{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr",gap:4,fontSize:10,color:B.gray,fontWeight:600,marginBottom:4,padding:"0 4px"}},
+        /*#__PURE__*/React.createElement("span", null, "Email"),
+        /*#__PURE__*/React.createElement("span", {style:{textAlign:"center"}}, "Sent"),
+        /*#__PURE__*/React.createElement("span", {style:{textAlign:"center"}}, "Opened"),
+        /*#__PURE__*/React.createElement("span", {style:{textAlign:"center"}}, "Clicked")
+      ),
+      [0,2,5,8,12].map((day,i) => {
+        const t = activeCampaign.tracking && activeCampaign.tracking[day];
+        const sent = activeCampaign.contacts ? Object.values(activeCampaign.contacts).filter(c=>c.emailsSent&&c.emailsSent[String(day)]).length : 0;
+        const opens = t && t.open_count ? t.open_count : 0;
+        const clicks = t && t.click_count ? t.click_count : 0;
+        const labels = ["Intro","Follow-up 1","Follow-up 2","Follow-up 3","Final"];
+        const openRate = sent > 0 ? Math.round(opens/sent*100) : 0;
+        const clickRate = sent > 0 ? Math.round(clicks/sent*100) : 0;
+        return /*#__PURE__*/React.createElement("div", {key:day, style:{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr",gap:4,padding:"5px 4px",borderRadius:6,background:i%2===0?"#F9FAFB":"#fff",alignItems:"center"}},
+          /*#__PURE__*/React.createElement("span", {style:{fontSize:11,color:B.dark,fontWeight:500}}, "Day "+day+" - "+labels[i]),
+          /*#__PURE__*/React.createElement("span", {style:{fontSize:11,textAlign:"center",color:sent>0?B.dark:B.gray}}, sent||"-"),
+          /*#__PURE__*/React.createElement("span", {style:{fontSize:11,textAlign:"center",color:opens>0?"#059669":B.gray}}, opens>0?opens+" ("+openRate+"%)":"-"),
+          /*#__PURE__*/React.createElement("span", {style:{fontSize:11,textAlign:"center",color:clicks>0?"#2563EB":B.gray}}, clicks>0?clicks+" ("+clickRate+"%)":"-")
+        );
+      }),
+      /*#__PURE__*/React.createElement("p", {style:{fontSize:10,color:B.gray,margin:"8px 0 0",fontStyle:"italic"}}, "Note: Apple Mail may inflate open rates.")
+    ),
+    {label:"_dummy",val:null,color:"transparent"
+    ].map(({label,val,color}) => /*#__PURE__*/React.createElement("div", {key:label, style:{background:color,borderRadius:8,padding:"8px 4px",textAlign:"center"}},
+      /*#__PURE__*/React.createElement("div", {style:{fontSize:16,fontWeight:800,color:B.primary}}, val),
+      /*#__PURE__*/React.createElement("div", {style:{fontSize:10,color:B.gray,fontWeight:600}}, label)
     ))
   ),
   activeCampaign.lastRun && /*#__PURE__*/React.createElement("div", {style:{fontSize:11,color:B.gray,textAlign:"center",marginBottom:8}},
