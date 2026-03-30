@@ -93,6 +93,8 @@ try {
   _fb = firebase.database();
   _fbAuth = firebase.auth();
   _fbStorage = firebase.storage();
+  window._fb = _fb;
+  window._fbAuth = _fbAuth;
 } catch (e) {/* Firebase unavailable — app still works via localStorage */}
 
 /* Create a Firebase Auth user via secondary app (so current admin stays signed in) */
@@ -6048,6 +6050,24 @@ function TourDetailPage(_ref19) {
     newTime: "",
     note: ""
   });
+  const syncAgentContacts = async () => {
+    if (!_fb || !listingRequests) { showToast("Not ready — try again in a moment", "warn"); return; }
+    const approvedReqs = listingRequests.filter(r => r.tourId === tour.id && r.status === "approved");
+    const listings = tour.listings || [];
+    let updated = false;
+    const newListings = listings.map(l => {
+      if (l.agentEmail && l.agentPhone) return l;
+      const req = approvedReqs.find(r => r.address && l.address && r.address.toLowerCase().trim() === l.address.toLowerCase().trim());
+      if (!req) return l;
+      const patch = {...l};
+      if (!l.agentEmail && req.agentEmail) { patch.agentEmail = req.agentEmail; updated = true; }
+      if (!l.agentPhone && req.agentPhone) { patch.agentPhone = req.agentPhone; updated = true; }
+      return patch;
+    });
+    if (!updated) { showToast("All listings already have contact info ✅", "success"); return; }
+    onUpdateTour({...tour, listings: newListings});
+    showToast("✅ Agent contacts synced!", "success", 2500);
+  };
   const sendRoute = async () => {
     if (!canSend("sendRoute_" + tour.id, 5000)) {
       showToast("Please wait a moment before sending again.", "warn");
@@ -7022,6 +7042,7 @@ function TourDetailPage(_ref19) {
           city: l.city || "",
           agent: l.agent || "",
           agentEmail: l.agentEmail || "",
+          agentPhone: l.agentPhone || "",
           price: l.price || "",
           beds: l.beds || "",
           baths: l.baths || "",
@@ -7078,7 +7099,7 @@ function TourDetailPage(_ref19) {
       flexDirection: "column",
       gap: 8
     }
-  }, [["address", "Address"], ["city", "City"], ["agent", "Listing Agent"], ["agentEmail", "Agent Email"], ["price", "List Price"], ["beds", "Beds"], ["baths", "Baths"], ["sqft", "Sq Ft"], ["dom", "Days on Market"]].map(_ref21 => {
+  }, [["address", "Address"], ["city", "City"], ["agent", "Listing Agent"], ["agentEmail", "Agent Email"], ["agentPhone", "Agent Phone"], ["price", "List Price"], ["beds", "Beds"], ["baths", "Baths"], ["sqft", "Sq Ft"], ["dom", "Days on Market"]].map(_ref21 => {
     let [f, label] = _ref21;
     return /*#__PURE__*/React.createElement("div", {
       key: f
@@ -7222,6 +7243,25 @@ function TourDetailPage(_ref19) {
       gap: 8
     }
   }, optimizing ? "⏳ Optimizing..." : "🗺️ Optimize Driving Route"), adminListings.length >= 1 && /*#__PURE__*/React.createElement("button", {
+    onClick: syncAgentContacts,
+    className: "btn-hover",
+    style: {
+      width: "100%",
+      background: "#0D9488",
+      color: "#fff",
+      border: "none",
+      borderRadius: 12,
+      padding: "12px 0",
+      fontWeight: 700,
+      fontSize: 15,
+      cursor: "pointer",
+      marginTop: 10,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8
+    }
+  }, "📋 Sync Agent Contacts from Requests"), adminListings.length >= 1 && /*#__PURE__*/React.createElement("button", {
     onClick: sendRoute,
     disabled: sendingRoute,
     className: "btn-hover",
