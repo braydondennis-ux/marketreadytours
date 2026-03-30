@@ -8418,7 +8418,7 @@ function TourDetailPage(_ref19) {
         color: B.dark,
         fontWeight: 600
       }
-    }, listing.agent), " \xB7 Listing Agent"), /*#__PURE__*/React.createElement("div", {
+    }, listing.agent), " \xB7 Listing Agent", listing.agentEmail ? /*#__PURE__*/React.createElement("a", {href: "mailto:" + listing.agentEmail, style: {color: "#1B3A6B", textDecoration: "none", marginLeft: 6, fontWeight: 500}}, "\u2709\uFE0F") : null, listing.agentPhone ? /*#__PURE__*/React.createElement("a", {href: "tel:" + listing.agentPhone, style: {color: "#1B3A6B", textDecoration: "none", marginLeft: 6, fontWeight: 500}}, "\uD83D\uDCDE " + listing.agentPhone) : null), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         gap: 8
