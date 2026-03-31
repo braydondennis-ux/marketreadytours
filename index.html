@@ -7581,7 +7581,14 @@ function TourDetailPage(_ref19) {
       marginTop: 12
     }
   }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => setShowQR(true),
+    onClick: () => {
+      const shareUrl = "https://marketreadytours.com/t/" + tour.id;
+      if (navigator.share) {
+        navigator.share({ title: (tour.emoji || "\uD83C\uDFE1") + " " + tour.name, url: shareUrl });
+      } else {
+        navigator.clipboard.writeText(shareUrl).then(() => showToast("\uD83D\uDD17 Share link copied!", "success", 2500));
+      }
+    },
     style: {
       flex: 1,
       background: "rgba(255,255,255,.15)",
@@ -7596,21 +7603,12 @@ function TourDetailPage(_ref19) {
       gap: 3
     }
   }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 22
-    }
-  }, "\u2B1C"), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 12,
-      fontWeight: 700
-    }
-  }, "QR Code"), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 11,
-      opacity: .7,
-      lineHeight: 1.2
-    }
-  }, "Share Link")), /*#__PURE__*/React.createElement("button", {
+    style: { fontSize: 22 }
+  }, "\uD83D\uDD17"), /*#__PURE__*/React.createElement("span", {
+    style: { fontSize: 12, fontWeight: 700 }
+  }, "Share Tour"), /*#__PURE__*/React.createElement("span", {
+    style: { fontSize: 11, opacity: .7, lineHeight: 1.2 }
+  }, "Copy Link")), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowInvite(true),
     style: {
       flex: 1,
