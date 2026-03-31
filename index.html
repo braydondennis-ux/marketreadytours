@@ -13460,6 +13460,24 @@ function App() {
   useEffect(() => {
     if (!fbLoaded || tours.length === 0) return;
     fbWrite("mrt_tours", tours);
+    // Write public preview for each tour (used by share worker for OG meta)
+    if (_fb) {
+      const previews = {};
+      tours.forEach(t => {
+        if (!t || !t.id) return;
+        const listings = t.listings || [];
+        const photo = listings[0]?.photos?.[0] || listings[0]?.photo || null;
+        previews[t.id.replace(/[.#$[\]]/g,"_")] = {
+          name: t.name || "",
+          emoji: t.emoji || "🏡",
+          date: t.date || "",
+          color: t.color || "#C9A55A",
+          listingCount: listings.length,
+          photo: (photo && photo.startsWith("http")) ? photo : null
+        };
+      });
+      _fb.ref("mrt_tour_previews").set(previews);
+    }
   }, [tours, fbLoaded]);
   useEffect(() => {
     if (!fbLoaded) return;
