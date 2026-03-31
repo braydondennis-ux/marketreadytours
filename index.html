@@ -4434,6 +4434,7 @@ const instantlyAPI = async function (endpoint) {
   }
   return res.json();
 };
+const TRACK_URL = "https://us-central1-marketready-tours.cloudfunctions.net/trackEmail";
 const buildCampaignEmails = tour => {
   const tourDate = tour.date ? new Date(tour.date + "T12:00:00").toLocaleDateString("en-US", {
     weekday: "long",
@@ -4446,7 +4447,7 @@ const buildCampaignEmails = tour => {
   const btnHtml = (addUrl, niUrl) => "\n<div style=\"text-align:center;margin:28px 0\">\n<a href=\"".concat(addUrl, "\" style=\"display:inline-block;background:#C9A55A;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:700;font-size:16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin-bottom:12px\">\uD83C\uDFE1 Add My Listing to This Tour</a><br/>\n<a href=\"").concat(niUrl, "\" style=\"display:inline-block;background:#F0EDE8;color:#8A8078;text-decoration:none;padding:10px 24px;border-radius:10px;font-weight:600;font-size:13px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin-top:8px\">Not Interested In This Tour</a>\n</div>");
   const header = "<div style=\"background:#0D0D0D;padding:22px 28px\"><p style=\"margin:0;font-family:Georgia,serif;font-size:22px;font-weight:900;color:#fff;letter-spacing:1px\">Market<span style=\"color:#C9A55A\">Ready</span> <span style=\"font-weight:300;font-size:18px;letter-spacing:3px\">Tours</span></p></div><div style=\"background:#C9A55A;height:4px\"></div>";
   const footer = "<div style=\"background:#0D0D0D;padding:16px 20px;text-align:center;margin-top:24px\"><a href=\"https://www.marketreadytours.com\" style=\"color:rgba(255,255,255,.7);font-size:12px;text-decoration:none\">marketreadytours.com</a></div>";
-  const wrap = body => "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head><body style=\"margin:0;background:#F0EDE8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif\"><div style=\"max-width:600px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.12)\">".concat(header, "<div style=\"padding:28px 24px\">").concat(body, "</div>").concat(footer, "</div></body></html>");
+  const wrap = (body, campId, emailDay, contactEmail) => { const pixel = campId ? '<img src="' + TRACK_URL + '?cid=' + campId + '&eid=' + emailDay + '&type=open&email=' + encodeURIComponent(contactEmail || "{{email}}") + '" width="1" height="1" style="display:none" alt=""/>' : ""; return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head><body style=\"margin:0;background:#F0EDE8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif\"><div style=\"max-width:600px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.12)\">".concat(header, "<div style=\"padding:28px 24px\">").concat(body, "</div>").concat(footer + pixel, "</div></body></html>"); };
   const addLinkWithParams = (email, address) => {
     const base = addLink;
     const params = new URLSearchParams();
@@ -5143,7 +5144,11 @@ function InviteCampaignTab(_ref15) {
       fontWeight: 700,
       whiteSpace: "nowrap"
     }
-  }, statusLabels[c.status] || c.status), /*#__PURE__*/React.createElement("button", {
+  }, statusLabels[c.status] || c.status), c.opened ? /*#__PURE__*/React.createElement("span", {
+    style: {background: "#D1FAE5", color: "#065F46", borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap"}
+  }, "\uD83D\uDC41 Opened") : c.emailsSent && Object.keys(c.emailsSent).length > 0 ? /*#__PURE__*/React.createElement("span", {
+    style: {background: "#FEF3C7", color: "#92400E", borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap"}
+  }, "\uD83D\uDCEC Not Opened") : null, /*#__PURE__*/React.createElement("button", {
     onClick: () => removeContact(c.id),
     style: {
       background: "none",
@@ -13473,7 +13478,8 @@ function App() {
           date: t.date || "",
           color: t.color || "#C9A55A",
           listingCount: listings.length,
-          photo: (photo && photo.startsWith("http")) ? photo : null
+          // Only use photos without auth tokens (public URLs only)
+          photo: (photo && photo.startsWith("http") && !photo.includes("token=") && !photo.includes("firebasestorage")) ? photo : null
         };
       });
       _fb.ref("mrt_tour_previews").set(previews);
