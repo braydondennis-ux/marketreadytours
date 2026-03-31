@@ -13228,7 +13228,10 @@ function App() {
   const [page, setPage] = useState(() => {
     const h = window.location.hash.slice(2) || "";
     if (h.startsWith("request/")) return "request";
+    if (h === "request") return "request";
+    if (h === "tour-signup") return "tour-signup";
     if (h.startsWith("not-interested")) return "not-interested";
+    if (h.startsWith("tour/")) return "dashboard";
     return "dashboard";
   });
   const [activeTourId, setActiveTourId] = useState(() => {
