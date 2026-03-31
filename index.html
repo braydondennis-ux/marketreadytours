@@ -622,7 +622,7 @@ function QRModal(_ref4) {
     if (ref.current && window.QRCode) {
       ref.current.innerHTML = "";
       new window.QRCode(ref.current, {
-        text: window.location.href,
+        text: "https://marketreadytourshare.braydondennis.workers.dev/t/" + tour.id,
         width: 220,
         height: 220,
         colorDark: tour.color,
