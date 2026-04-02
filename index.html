@@ -13494,7 +13494,7 @@ function App() {
           color: t.color || "#C9A55A",
           listingCount: listings.length,
           // Only use photos without auth tokens (public URLs only)
-          photo: (photo && photo.startsWith("http") && !photo.includes("token=") && !photo.includes("firebasestorage")) ? photo : null
+          photo: (photo && photo.startsWith("http")) ? photo : null
         };
       });
       _fb.ref("mrt_tour_previews").set(previews);
