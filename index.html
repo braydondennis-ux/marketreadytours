@@ -9389,7 +9389,7 @@ function ToursDashboard(_ref26) {
     onClearTourId
   } = _ref26;
   const [filterDate, setFilterDate] = useState("upcoming");
-  const [showRequestForm, setShowRequestForm] = useState(false);
+  const [showRequestForm, setShowRequestForm] = useState(() => window.location.hash.slice(2) === "request-tour");
   const requestFormRef = React.useRef(null);
   const [activeTourId, setActiveTourId] = useState(initialTourId || null);
   // If tours load after initial render and we have a deep-linked ID, keep it set
@@ -11105,6 +11105,15 @@ function RequestListingPage(_ref31) {
         sendCFEmail(subAdminEmail, tourSignUp ? "New Tour Sign Up \u2014 ".concat(requestData.tourName) : "New Listing Request \u2014 ".concat(fields.address), notifyMsg).catch(() => {});
       }
       await sendCFEmail(fields.agentEmail, tourSignUp ? "Tour Sign Up Confirmation — MarketReady Tours" : "We received your listing request — MarketReady Tours", "Hi ".concat(fields.agentName, ",\n\nThank you for submitting your listing at ").concat(fields.address, "!\n\nWe've received your request for the ").concat(requestData.tourName, " tour and will review it shortly. You'll receive an email letting you know whether your listing has been approved or denied.\n\nIf you have any questions, reply to marketreadytours@gmail.com.\n\n\u2014 MarketReady Tours\nmarketreadytours.com"));
+      // Write directly to Firebase REST API (works without auth for public submissions)
+      try {
+        const reqKey = requestData.id.replace(/[.#$[\]]/g, "_");
+        await fetch("https://marketready-tours-default-rtdb.firebaseio.com/mrt_listing_requests/" + reqKey + ".json", {
+          method: "PUT",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify(requestData)
+        });
+      } catch(e) { /* fallback to onSubmit state update */ }
       onSubmit(requestData);
       sendSMS(tourSignUp ? "New Tour Sign Up: ".concat(fields.agentName, " for ").concat(requestData.tourName) : "New Listing: ".concat(fields.address, " by ").concat(fields.agentName, " for ").concat(requestData.tourName));
       setDone(true);
@@ -13230,6 +13239,7 @@ function App() {
     if (h.startsWith("request/")) return "request";
     if (h === "request") return "request";
     if (h === "tour-signup") return "tour-signup";
+    if (h === "request-tour") return "dashboard";
     if (h.startsWith("not-interested")) return "not-interested";
     if (h.startsWith("tour/")) return "dashboard";
     return "dashboard";
@@ -13259,6 +13269,10 @@ function App() {
         setPreselectedTourId(null);
       } else if (h === "tour-signup") {
         setPage("tour-signup");
+        setActiveTourId(null);
+        setPreselectedTourId(null);
+      } else if (h === "request-tour") {
+        setPage("dashboard");
         setActiveTourId(null);
         setPreselectedTourId(null);
       } else if (h.startsWith("not-interested")) {
