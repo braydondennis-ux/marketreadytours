@@ -2224,9 +2224,19 @@ function SummaryDashboard(_ref9) {
       marginBottom: 12
     }
   }, "\uD83D\uDCCA"), /*#__PURE__*/React.createElement("p", null, "No ratings submitted yet.", /*#__PURE__*/React.createElement("br", null), "Ratings will appear here as attendees submit them.")), hasAny && listings.map(listing => {
-    var _tour$ratings4;
-    const r = ((_tour$ratings4 = tour.ratings) === null || _tour$ratings4 === void 0 ? void 0 : _tour$ratings4[listing.id]) || {};
-    const avg = avgRating(r);
+    const _rSubs=(tour.ratingSubmissions||{})[listing.id];
+    const _allSubs=Array.isArray(_rSubs)?_rSubs:Object.values(_rSubs||{});
+    let r;
+    if(_allSubs.length>1){
+      const _kk=['curbAppeal','landscape','cleanliness','flooring','paint','showability','price','kitchen','bedrooms','windows'];
+      r={};
+      _kk.forEach(k=>{const vv=_allSubs.map(s=>Number(s[k])||0).filter(v=>v>0);r[k]=vv.length?vv.reduce((a,b)=>a+b,0)/vv.length:0;});
+    } else {
+      var _tour$ratings4;
+      r=((_tour$ratings4=tour.ratings)===null||_tour$ratings4===void 0?void 0:_tour$ratings4[listing.id])||{};
+    }
+    const _rCount=_allSubs.length;
+    const avg=avgRating(r);
     if (!avg) return null;
     return /*#__PURE__*/React.createElement("div", {
       key: listing.id,
@@ -2251,7 +2261,11 @@ function SummaryDashboard(_ref9) {
         fontSize: 13,
         fontWeight: 700
       }
-    }, listing.address), /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement("div", null,
+        /*#__PURE__*/React.createElement("div",{style:{color:"#fff",fontFamily:"Georgia,serif",fontSize:13,fontWeight:700}},listing.address),
+        _rCount>1&&/*#__PURE__*/React.createElement("div",{style:{color:"rgba(255,255,255,.7)",fontSize:11,marginTop:2}},
+          "\u2205 avg of ",_rCount," agent ratings")
+      ), /*#__PURE__*/React.createElement("div", {
       style: {
         background: "rgba(255,255,255,.2)",
         borderRadius: 8,
@@ -6048,6 +6062,7 @@ function TourDetailPage(_ref19) {
   const [sendingRoute, setSendingRoute] = useState(false);
   const [sendingFollowUp, setSendingFollowUp] = useState(false);
   const [sendingCancel, setSendingCancel] = useState(false);
+  const [sendingSellerReport, setSendingSellerReport] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelMsg, setCancelMsg] = useState({
     type: "cancel",
@@ -6072,6 +6087,86 @@ function TourDetailPage(_ref19) {
     if (!updated) { showToast("All listings already have contact info ✅", "success"); return; }
     onUpdateTour({...tour, listings: newListings});
     showToast("✅ Agent contacts synced!", "success", 2500);
+  };
+  const sendSellerReport = async () => {
+    if (!canSend("sellerReport_"+tour.id, 5000)) { showToast("Please wait before sending again.", "warn"); return; }
+    const listings = [...(tour.listings||[])].sort((a,b)=>a.order-b.order).filter(l=>l.agentEmail);
+    if (listings.length === 0) { showToast("No listings with agent emails found. Add agent emails in Manage.", "warn"); return; }
+    setSendingSellerReport(true);
+    let sent=0, failed=0;
+    for (const l of listings) {
+      const subs_raw = (tour.ratingSubmissions||{})[l.id];
+      const subs = Array.isArray(subs_raw)?subs_raw:Object.values(subs_raw||{});
+      if (subs.length === 0) continue;
+      const CATS = [
+        {key:"curbAppeal",label:"Curb Appeal"},{key:"landscape",label:"Landscape"},
+        {key:"cleanliness",label:"Cleanliness"},{key:"flooring",label:"Flooring"},
+        {key:"paint",label:"Paint"},{key:"showability",label:"Showability"},
+        {key:"price",label:"Price"},{key:"kitchen",label:"Kitchen"},
+        {key:"bedrooms",label:"Bedrooms"},{key:"windows",label:"Windows"}
+      ];
+      // Compute averages across all raters
+      const avgs = {};
+      CATS.forEach(cat => {
+        const vals = subs.map(s=>Number(s[cat.key])||0).filter(v=>v>0);
+        avgs[cat.key] = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+      });
+      const overallAvg = Object.values(avgs).filter(v=>v>0).reduce((a,b)=>a+b,0)/Object.values(avgs).filter(v=>v>0).length || 0;
+      // Collect qualitative feedback
+      const suggestions = subs.map(s=>s.suggestions).filter(Boolean).join(" | ");
+      const priceNotes = subs.map(s=>s.sugPrice||s.pricedRight?"Priced Correctly":s.sugPrice).filter(Boolean);
+      const goldBar = (avg) => {
+        const filled = Math.round(avg);
+        return "★".repeat(filled) + "☆".repeat(5-filled) + " ("+avg.toFixed(1)+"/5)";
+      };
+      const catRows = CATS.map(cat => avgs[cat.key]>0 ?
+        "<tr><td style='padding:7px 14px;font-size:13px;color:#374151;border-bottom:1px solid #F0EDE8'>"+cat.label+"</td>"+
+        "<td style='padding:7px 14px;text-align:right;font-size:14px;font-weight:700;color:#C9A55A;border-bottom:1px solid #F0EDE8'>"+goldBar(avgs[cat.key])+"</td></tr>"
+      : "").join("");
+      const tourDateFmt = tour.date ? new Date(tour.date+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"}) : tour.date;
+      const subjectLine = "\uD83C\uDFE1 Peer Agent Feedback — "+l.address+" ("+tour.emoji+" "+tour.name+")";
+      const html = "<div style='font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;max-width:620px;margin:0 auto;background:#fff'>"+
+        "<div style='background:#0D0D0D;padding:22px 28px'>"+
+          "<p style='margin:0;font-family:Georgia,serif;font-size:24px;font-weight:900;color:#fff;letter-spacing:1px'>Market<span style='color:#C9A55A'>Ready</span> <span style='font-weight:300;font-size:20px;letter-spacing:3px'>Tours</span></p>"+
+        "</div>"+
+        "<div style='background:#C9A55A;height:4px'></div>"+
+        "<div style='padding:28px'>"+
+          "<h2 style='margin:0 0 4px;font-family:Georgia,serif;font-size:22px;color:#0D0D0D'>\uD83D\uDCCB Peer Agent Feedback Report</h2>"+
+          "<p style='margin:0 0 20px;font-size:14px;color:#8A8078'>"+tour.emoji+" "+tour.name+" \xB7 "+tourDateFmt+"</p>"+
+          "<div style='background:#F7F4EF;border-radius:10px;padding:16px 20px;margin-bottom:20px;border-left:4px solid #C9A55A'>"+
+            "<div style='font-size:15px;font-weight:700;color:#0D0D0D'>"+l.address+"</div>"+
+            "<div style='font-size:13px;color:#8A8078;margin-top:4px'>"+l.city+" \xB7 $"+Number(l.price).toLocaleString()+" \xB7 "+subs.length+" agent"+(subs.length!==1?"s":"")+" toured &amp; rated</div>"+
+          "</div>"+
+          "<div style='background:#FFF8EC;border-radius:10px;padding:16px 20px;margin-bottom:24px;text-align:center'>"+
+            "<div style='font-size:13px;color:#8A8078;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px'>Overall Score</div>"+
+            "<div style='font-size:42px;font-weight:900;color:#C9A55A;font-family:Georgia,serif'>"+overallAvg.toFixed(1)+"</div>"+
+            "<div style='font-size:13px;color:#8A8078'>out of 5.0 \xB7 from "+subs.length+" peer agent"+(subs.length!==1?"s":"")+"</div>"+
+          "</div>"+
+          "<table style='width:100%;border-collapse:collapse;margin-bottom:24px'>"+
+            "<tr><th style='text-align:left;padding:8px 14px;font-size:11px;color:#8A8078;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #F0EDE8'>Category</th>"+
+            "<th style='text-align:right;padding:8px 14px;font-size:11px;color:#8A8078;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #F0EDE8'>Avg Rating</th></tr>"+
+            catRows+"</table>"+
+          (suggestions ? "<div style='margin-bottom:20px;background:#F7F4EF;border-radius:8px;padding:16px'>"+
+            "<div style='font-size:11px;color:#8A8078;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px'>Agent Suggestions</div>"+
+            "<p style='margin:0;font-size:14px;color:#374151;line-height:1.7'>"+suggestions+"</p>"+
+          "</div>" : "")+
+          (priceNotes.length ? "<div style='margin-bottom:20px;background:#F0F9F4;border-radius:8px;padding:16px;border-left:4px solid #2D6A4F'>"+
+            "<div style='font-size:11px;color:#2D6A4F;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px'>Price Feedback</div>"+
+            "<p style='margin:0;font-size:14px;color:#374151;font-weight:600'>"+priceNotes[0]+"</p>"+
+          "</div>" : "")+
+          "<div style='background:#0D0D0D;border-radius:10px;padding:16px 20px;margin-top:8px'>"+
+            "<p style='margin:0;font-size:12px;color:rgba(255,255,255,.6);line-height:1.6'>This report was generated by <strong style='color:#C9A55A'>MarketReady Tours</strong>. All feedback is provided by licensed real estate agents who personally toured this property. Ratings reflect professional peer opinions and are intended to help sellers make data-driven decisions.</p>"+
+          "</div>"+
+        "</div>"+
+      "</div>";
+      try {
+        const ok = await sendCFEmail(l.agentEmail, subjectLine, html, html);
+        if (ok) sent++; else failed++;
+      } catch(e) { failed++; }
+    }
+    setSendingSellerReport(false);
+    if (sent+failed === 0) { showToast("No listings have ratings yet — send the post-tour follow-up first.", "warn", 5000); return; }
+    showToast(sent>0?"\uD83D\uDCCA Seller report sent to "+sent+" listing agent"+(sent!==1?"s":"")+"!"+(failed>0?" ("+failed+" failed)":""):"\u26A0\uFE0F All sends failed — check agent emails.", sent>0?"success":"error", 5000);
   };
   const sendRoute = async () => {
     if (!canSend("sendRoute_" + tour.id, 5000)) {
@@ -7054,7 +7149,8 @@ function TourDetailPage(_ref19) {
           beds: l.beds || "",
           baths: l.baths || "",
           sqft: l.sqft || "",
-          dom: l.dom || ""
+          dom: l.dom || "",
+          priceReduced: l.priceReduced || false
         });
       }
     },
@@ -7160,7 +7256,11 @@ function TourDetailPage(_ref19) {
       fontSize: 13,
       cursor: "pointer"
     }
-  }, "Save Changes")), /*#__PURE__*/React.createElement("textarea", {
+  }, "Save Changes"),
+  /*#__PURE__*/React.createElement("label",{style:{display:"flex",alignItems:"center",gap:10,cursor:"pointer",padding:"8px 10px",marginTop:6,background:editFields.priceReduced?"#FFF7F0":"#F7F4EF",borderRadius:8,border:"1.5px solid "+(editFields.priceReduced?"#F97316":"#D8D0C8")}},
+    /*#__PURE__*/React.createElement("input",{type:"checkbox",checked:!!editFields.priceReduced,onChange:e=>setEditFields(ef=>({...ef,priceReduced:e.target.checked})),style:{width:18,height:18,accentColor:"#F97316",cursor:"pointer"}}),
+    /*#__PURE__*/React.createElement("span",{style:{fontSize:13,fontWeight:700,color:editFields.priceReduced?"#C2410C":B.gray}},"\uD83D\uDD3B Price Reduced")
+  )), /*#__PURE__*/React.createElement("textarea", {
     placeholder: "Private admin note...",
     rows: 2,
     maxLength: 500,
@@ -7308,7 +7408,29 @@ function TourDetailPage(_ref19) {
       justifyContent: "center",
       gap: 8
     }
-  }, sendingFollowUp ? "⏳ Sending..." : "📊 Send Post-Tour Follow-Up"), /*#__PURE__*/React.createElement("button", {
+  }, sendingFollowUp ? "⏳ Sending..." : "📊 Send Post-Tour Follow-Up"),
+  /*#__PURE__*/React.createElement("button", {
+    onClick: sendSellerReport,
+    disabled: sendingSellerReport,
+    className: "btn-hover",
+    style: {
+      width: "100%",
+      background: sendingSellerReport ? "#9CA3AF" : "#059669",
+      color: "#fff",
+      border: "none",
+      borderRadius: 12,
+      padding: "14px 0",
+      fontWeight: 700,
+      fontSize: 16,
+      cursor: sendingSellerReport ? "default" : "pointer",
+      marginTop: 10,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8
+    }
+  }, sendingSellerReport ? "⏳ Sending..." : "🏠 Send Seller Report"),
+  /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowCancelModal(true),
     className: "btn-hover",
     style: {
@@ -7591,8 +7713,8 @@ function TourDetailPage(_ref19) {
     },
     style: {
       flex: 1,
-      background: "rgba(255,255,255,.15)",
-      border: "1px solid rgba(255,255,255,.3)",
+      background: "#C9A55A",
+      border: "2px solid rgba(255,255,255,.5)",
       color: "#fff",
       borderRadius: 10,
       padding: "12px 4px",
@@ -7600,15 +7722,16 @@ function TourDetailPage(_ref19) {
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      gap: 3
+      gap: 3,
+      boxShadow: "0 2px 8px rgba(0,0,0,.2)"
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: { fontSize: 22 }
   }, "\uD83D\uDD17"), /*#__PURE__*/React.createElement("span", {
     style: { fontSize: 12, fontWeight: 700 }
   }, "Share Tour"), /*#__PURE__*/React.createElement("span", {
-    style: { fontSize: 11, opacity: .7, lineHeight: 1.2 }
-  }, "Copy Link")), /*#__PURE__*/React.createElement("button", {
+    style: { fontSize: 11, opacity: .9, lineHeight: 1.2 }
+  }, "Facebook · Text")), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowInvite(true),
     style: {
       flex: 1,
@@ -7731,7 +7854,13 @@ function TourDetailPage(_ref19) {
       color: "rgba(255,255,255,.7)",
       fontSize: 12
     }
-  }, "\u2B50 ", favCount, " fav \xB7 \u2705 ", ratedCount, " rated"))), /*#__PURE__*/React.createElement("div", {
+  }, "\u2B50 ", favCount, " fav \xB7 \u2705 ", ratedCount, " rated"),
+  sorted.length>=2 && /*#__PURE__*/React.createElement("a",{
+    href:"https://www.google.com/maps/dir/"+sorted.map(l=>encodeURIComponent((l.address||"")+" "+(l.city||""))).join("/"),
+    target:"_blank",rel:"noreferrer",
+    style:{background:"rgba(255,255,255,.2)",color:"#fff",borderRadius:7,padding:"3px 9px",fontSize:11,fontWeight:700,textDecoration:"none",whiteSpace:"nowrap",border:"1px solid rgba(255,255,255,.3)"}
+  },"\uD83D\uDDFA\uFE0F All Stops")
+)), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,
@@ -8387,16 +8516,24 @@ function TourDetailPage(_ref19) {
         marginBottom: 12,
         flexWrap: "wrap"
       }
-    }, ["\uD83D\uDECF ".concat(listing.beds, " bd"), "\uD83D\uDEBF ".concat(listing.baths, " ba"), "\uD83D\uDCD0 ".concat(listing.sqft.toLocaleString(), " sqft"), "\uD83D\uDCC5 ".concat(listing.dom, " DOM")].map((t, i) => /*#__PURE__*/React.createElement("span", {
-      key: i,
-      style: {
-        background: B.lightGray,
-        borderRadius: 6,
-        padding: "4px 9px",
-        color: B.dark,
-        fontWeight: 500
-      }
-    }, t))), note && /*#__PURE__*/React.createElement("div", {
+    }, (() => {
+      const _ppsf = listing.sqft > 0 ? Math.round(listing.price / listing.sqft) : 0;
+      const _dom = Number(listing.dom) || 0;
+      const _chips = [
+        {t:"\uD83D\uDECF ".concat(listing.beds," bd"), bg:B.lightGray, c:B.dark},
+        {t:"\uD83D\uDEBF ".concat(listing.baths," ba"), bg:B.lightGray, c:B.dark},
+        {t:"\uD83D\uDCD0 ".concat(listing.sqft.toLocaleString()," sqft"), bg:B.lightGray, c:B.dark},
+        {t:"\uD83D\uDCC5 ".concat(_dom," DOM"),
+          bg:_dom>60?"#FEE2E2":_dom>30?"#FEF3C7":B.lightGray,
+          c:_dom>60?"#9B1C1C":_dom>30?"#92400E":B.dark},
+        ...(_ppsf>0?[{t:"$".concat(_ppsf.toLocaleString(),"/sqft"),bg:"#EFF6FF",c:"#1B3A6B"}]:[]),
+        ...(listing.priceReduced?[{t:"\uD83D\uDD3B Reduced",bg:"#FFF7F0",c:"#C2410C"}]:[]),
+      ];
+      return _chips.map((chip,i) => /*#__PURE__*/React.createElement("span",{
+        key:i,
+        style:{background:chip.bg,borderRadius:6,padding:"4px 9px",color:chip.c,fontWeight:600,fontSize:12}
+      },chip.t));
+    })()), note && /*#__PURE__*/React.createElement("div", {
       style: {
         background: "#F5EDD8",
         border: "1px solid #D4B896",
@@ -8406,11 +8543,15 @@ function TourDetailPage(_ref19) {
         fontSize: 12,
         color: "#7A5A28"
       }
-    }, "\uD83D\uDCDD ", /*#__PURE__*/React.createElement("strong", null, "Agent Note:"), " ", note), isRated && /*#__PURE__*/React.createElement("div", {
-      style: {
-        marginBottom: 12
-      }
-    }, starBar(avg, tour.color)), /*#__PURE__*/React.createElement("div", {
+    }, "\uD83D\uDCDD ", /*#__PURE__*/React.createElement("strong", null, "Agent Note:"), " ", note), isRated && /*#__PURE__*/React.createElement(React.Fragment, null,
+      /*#__PURE__*/React.createElement("div", {style:{marginBottom:4}}, starBar(avg, tour.color)),
+      (() => {
+        const _rs = (tour.ratingSubmissions||{})[listing.id];
+        const _n = Array.isArray(_rs)?_rs.length:Object.keys(_rs||{}).length;
+        return _n > 0 ? /*#__PURE__*/React.createElement("div",{style:{fontSize:11,color:B.gray,marginBottom:10,fontWeight:600}},
+          "\uD83D\uDC65 ",_n===1?"1 agent rated":_n+" agents rated") : null;
+      })()
+    ), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 12,
         color: B.gray,
@@ -10159,6 +10300,13 @@ function ToursDashboard(_ref26) {
   }, isAdmin ? 'Tap "+ New Tour" to create one.' : "Check with your admin for the schedule.")), filtered.map(tour => {
     const ratedCount = Object.keys(tour.ratings || {}).length;
     const favCount = Object.values(tour.favorites || {}).filter(Boolean).length;
+    const _tMs=tour.date?new Date(tour.date+"T00:00:00").getTime():null;
+    const _dAway=_tMs!==null?Math.round((_tMs-new Date().setHours(0,0,0,0))/86400000):null;
+    const _badge=_dAway===0?{l:"\uD83D\uDD34 LIVE TODAY",bg:"#DC2626"}
+      :_dAway===1?{l:"\uD83D\uDCC5 Tomorrow",bg:"#D97706"}
+      :_dAway!==null&&_dAway>0&&_dAway<=6?{l:"\uD83D\uDD52 In "+_dAway+" days",bg:"rgba(0,0,0,.3)"}
+      :_dAway!==null&&_dAway<0?{l:"\u2705 Completed",bg:"rgba(0,0,0,.2)"}
+      :null;
     return /*#__PURE__*/React.createElement("div", {
       key: tour.id,
       className: "card-hover",
@@ -10166,7 +10314,7 @@ function ToursDashboard(_ref26) {
         background: "#fff",
         borderRadius: 18,
         overflow: "hidden",
-        boxShadow: "0 4px 24px rgba(0,0,0,.10)",
+        boxShadow: _dAway===0?"0 0 0 3px #DC2626,0 6px 28px rgba(220,38,38,.25)":"0 4px 24px rgba(0,0,0,.10)",
         border: "1px solid rgba(0,0,0,.05)"
       }
     }, /*#__PURE__*/React.createElement("div", {
@@ -10190,7 +10338,9 @@ function ToursDashboard(_ref26) {
     }, /*#__PURE__*/React.createElement(TourIcon, {
       emoji: tour.emoji,
       size: 30
-    })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    })), /*#__PURE__*/React.createElement("div", null,
+      _badge&&/*#__PURE__*/React.createElement("div",{style:{display:"inline-block",background:_badge.bg,color:"#fff",fontSize:10,fontWeight:800,borderRadius:5,padding:"2px 8px",marginBottom:4,letterSpacing:.5,textTransform:"uppercase"}},_badge.l),
+      /*#__PURE__*/React.createElement("div", {
       style: {
         color: "#fff",
         fontFamily: "Georgia,serif",
@@ -10241,34 +10391,21 @@ function ToursDashboard(_ref26) {
         fontWeight: 700,
         color: "#FCA5A5"
       }
-    }, "\u2764\uFE0F ", favCount)))), isAdmin && /*#__PURE__*/React.createElement("button", {
-      onClick: e => {
-        e.stopPropagation();
-        setConfirmDelete(tour.id);
-      },
-      style: {
-        background: "#9B1C1C",
-        border: "none",
-        color: "#fff",
-        borderRadius: 10,
-        padding: "8px 12px",
-        cursor: "pointer",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 2,
-        flexShrink: 0
-      }
-    }, /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 20
-      }
-    }, "\uD83D\uDDD1\uFE0F"), /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 11,
-        fontWeight: 700
-      }
-    }, "Delete"))), (tour.listings || []).length > 0 && /*#__PURE__*/React.createElement("div", {
+    }, "\u2764\uFE0F ", favCount)))), isAdmin && /*#__PURE__*/React.createElement("div",{style:{display:"flex",flexDirection:"column",gap:5,flexShrink:0}},
+      /*#__PURE__*/React.createElement("button",{
+        onClick:e=>{
+          e.stopPropagation();
+          const _c={...tour,id:uid("tour"),name:tour.name+" (Copy)",ratings:{},ratingSubmissions:{},favorites:{},notes:{},campaignContacts:[],createdBy:(currentUser&&currentUser.email)||SUPER_ADMIN_EMAIL};
+          setTours(prev=>[...prev,_c]);
+          showToast("\uD83D\uDDC2\uFE0F Tour duplicated! Tap to update date.","success",3500);
+        },
+        style:{background:B.gold,border:"none",color:"#fff",borderRadius:10,padding:"6px 10px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}
+      },/*#__PURE__*/React.createElement("span",{style:{fontSize:18}},"\uD83D\uDDC2\uFE0F"),/*#__PURE__*/React.createElement("span",{style:{fontSize:10,fontWeight:800}},"Copy")),
+      /*#__PURE__*/React.createElement("button",{
+        onClick:e=>{e.stopPropagation();setConfirmDelete(tour.id);},
+        style:{background:"#9B1C1C",border:"none",color:"#fff",borderRadius:10,padding:"6px 10px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}
+      },/*#__PURE__*/React.createElement("span",{style:{fontSize:18}},"\uD83D\uDDD1\uFE0F"),/*#__PURE__*/React.createElement("span",{style:{fontSize:10,fontWeight:800}},"Delete"))
+    )), (tour.listings || []).length > 0 && /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         overflowX: "auto",
