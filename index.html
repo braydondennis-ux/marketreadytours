@@ -6123,50 +6123,30 @@ function TourDetailPage(_ref19) {
       showToast("No listings to send.", "warn");
       return;
     }
-    let tourReqs = (listingRequests || []).filter(r => r.tourId === tour.id && r.status === "approved");
-    if (tourReqs.length === 0) {
-      const seen = new Set();
-      tourReqs = (tour.listings || []).filter(l => l.agentEmail).reduce((acc, l) => {
-        if (!seen.has(l.agentEmail)) {
-          seen.add(l.agentEmail);
-          acc.push({
-            agentName: l.agent,
-            agentEmail: l.agentEmail,
-            status: "approved",
-            type: "listing-request",
-            tourId: tour.id
-          });
-        }
-        return acc;
-      }, []);
-    }
-    const signups = (listingRequests || []).filter(r => r.tourId === tour.id && r.type === "tour-signup" && r.status === "approved");
-    const allRecipients = [];
     const seen = new Set();
-    // Listing agents from approved requests
-    tourReqs.filter(r => r.type === "listing-request").forEach(r => {
-      if (r.agentEmail && !seen.has(r.agentEmail)) {
-        seen.add(r.agentEmail);
-        allRecipients.push({
-          name: r.agentName,
-          email: r.agentEmail,
-          type: "agent"
-        });
+    const allRecipients = [];
+    const addRecip = (email, name, type) => {
+      if (email && isValidEmail(email) && !seen.has(email.toLowerCase())) {
+        seen.add(email.toLowerCase());
+        allRecipients.push({ name: name || email.split("@")[0], email, type });
       }
+    };
+    // 1. All approved listing requests for this tour (any type)
+    (listingRequests || [])
+      .filter(r => r.tourId === tour.id && r.status === "approved")
+      .forEach(r => {
+        addRecip(r.agentEmail, r.agentName, r.type === "tour-signup" ? "attendee" : "agent");
+      });
+    // 2. Fallback: agent emails saved directly on listing objects
+    (tour.listings || []).forEach(l => {
+      addRecip(l.agentEmail, l.agent, "agent");
     });
-    // Tour signup attendees
-    signups.forEach(r => {
-      if (r.agentEmail && !seen.has(r.agentEmail)) {
-        seen.add(r.agentEmail);
-        allRecipients.push({
-          name: r.agentName,
-          email: r.agentEmail,
-          type: "attendee"
-        });
-      }
-    });
+    // 3. Always include the sub-admin who owns this tour
+    if (currentUser && currentUser.email) {
+      addRecip(currentUser.email, currentUser.name || "Tour Admin", "admin");
+    }
     if (allRecipients.length === 0) {
-      showToast("No approved attendees or listing agents found for this tour.", "warn");
+      showToast("No recipients found. Make sure listings have agent emails or requests are approved.", "warn", 6000);
       return;
     }
     setSendingRoute(true);
