@@ -10921,87 +10921,37 @@ function TeamPage(_ref28) {
       cursor: "pointer"
     }
   }, "Save")))) : /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: "14px 16px",
-      display: "flex",
-      alignItems: "center",
-      gap: 14
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: "".concat(B.primary, "18"),
-      borderRadius: "50%",
-      width: 42,
-      height: 42,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: 18,
-      flexShrink: 0
-    }
-  }, "\uD83D\uDC64"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontWeight: 700,
-      fontSize: 14,
-      color: B.dark
-    }
-  }, u.name), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 12,
-      color: B.gray
-    }
-  }, u.email, " \xB7 Sub-Admin")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 8
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
-      setEditId(u.id);
-      setEditDraft({
-        name: u.name
-      });
+    style: { padding: "14px 16px" }
+  },
+    /*#__PURE__*/React.createElement("div", {
+      style: { display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }
     },
-    style: {
-      background: B.lightGray,
-      border: "none",
-      borderRadius: 8,
-      padding: "7px 12px",
-      cursor: "pointer",
-      fontSize: 13,
-      fontWeight: 600,
-      color: B.primary
-    }
-  }, "Edit"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => sendCredentials(u),
-    disabled: !!credSending[u.id],
-    style: {
-      background: credSending[u.id] ? "#F0EDE8" : "#EFF6FF",
-      border: "none",
-      borderRadius: 8,
-      padding: "7px 12px",
-      cursor: credSending[u.id] ? "default" : "pointer",
-      fontSize: 13,
-      fontWeight: 700,
-      color: credSending[u.id] ? B.gray : "#1B3A6B"
-    }
-  }, credSending[u.id] ? "\u23F3..." : "\uD83D\uDCE7 Resend"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setConfirmDel(u.id),
-    style: {
-      background: "#FEE2E2",
-      border: "none",
-      borderRadius: 8,
-      padding: "7px 12px",
-      cursor: "pointer",
-      fontSize: 13,
-      fontWeight: 700,
-      color: "#9B1C1C"
-    }
-  }, "Remove"))))), /*#__PURE__*/React.createElement("div", {
+      /*#__PURE__*/React.createElement("div", {
+        style: { background: B.primary+"18", borderRadius: "50%", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flexShrink: 0 }
+      }, "\uD83D\uDC64"),
+      /*#__PURE__*/React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+        /*#__PURE__*/React.createElement("div", { style: { fontWeight: 700, fontSize: 14, color: B.dark, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, u.name),
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: B.gray, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, u.email)
+      )
+    ),
+    /*#__PURE__*/React.createElement("div", {
+      style: { display: "flex", gap: 6 }
+    },
+      /*#__PURE__*/React.createElement("button", {
+        onClick: () => { setEditId(u.id); setEditDraft({ name: u.name }); },
+        style: { flex: 1, background: B.lightGray, border: "none", borderRadius: 8, padding: "8px 0", cursor: "pointer", fontSize: 12, fontWeight: 700, color: B.primary }
+      }, "\u270F\uFE0F Edit"),
+      /*#__PURE__*/React.createElement("button", {
+        onClick: () => sendCredentials(u),
+        disabled: !!credSending[u.id],
+        style: { flex: 2, background: credSending[u.id] ? "#F0EDE8" : "#1B3A6B", border: "none", borderRadius: 8, padding: "8px 0", cursor: credSending[u.id] ? "default" : "pointer", fontSize: 12, fontWeight: 700, color: credSending[u.id] ? B.gray : "#fff" }
+      }, credSending[u.id] ? "\u23F3 Sending..." : "\uD83D\uDCE7 Resend Login"),
+      /*#__PURE__*/React.createElement("button", {
+        onClick: () => setConfirmDel(u.id),
+        style: { flex: 1, background: "#FEE2E2", border: "none", borderRadius: 8, padding: "8px 0", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#9B1C1C" }
+      }, "\uD83D\uDDD1\uFE0F")
+    )
+  ), /*#__PURE__*/React.createElement("div", {
     style: {
       background: "#fff",
       borderRadius: 14,
