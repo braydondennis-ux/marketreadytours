@@ -4695,12 +4695,12 @@ function InviteCampaignTab(_ref15) {
       if (emailsThatMiss > 0) {
         const skippedDays = SEQUENCE_DAYS.filter(d => d >= daysUntil);
         const msg = emailsThatFit === 1 ? "\u26A0\uFE0F Only 1 of 5 emails will send before the tour (".concat(daysUntil, " days away). The remaining ").concat(emailsThatMiss, " emails will fire after the tour. Consider a direct call instead.") : "\u26A0\uFE0F Only ".concat(emailsThatFit, " of 5 emails will send before the tour (").concat(daysUntil, " days away). Emails on Day").concat(skippedDays.length > 1 ? "s" : "", " ").concat(skippedDays.join(", "), " will be missed.");
-        if (!window.confirm(msg + "\n\nLaunch anyway with " + emailsThatFit + " email" + (emailsThatFit !== 1 ? "s" : "") + "?")) return;
+        if (!window.confirm(msg + "\n\nLaunch anyway with " + emailsThatFit + " email" + (emailsThatFit !== 1 ? "s" : "") + "?")) { showToast(msg, "warn", 8000); return; }
       } else {
-        if (!window.confirm("Launch campaign for ".concat(pending.length, " contact").concat(pending.length !== 1 ? "s" : "", "?\n\nAll 5 emails will send before the tour date (").concat(daysUntil, " days away)."))) return;
+        showToast("\uD83D\uDE80 Launching campaign for " + pending.length + " contact" + (pending.length !== 1 ? "s" : "") + "...", "info", 2500);
       }
     } else {
-      if (!window.confirm("Launch campaign for ".concat(pending.length, " contact").concat(pending.length !== 1 ? "s" : "", "?\n\nThis will start the 5-email sequence in Instantly."))) return;
+      showToast("\uD83D\uDE80 Launching campaign for " + pending.length + " contact" + (pending.length !== 1 ? "s" : "") + "...", "info", 2500);
     }
     setLaunching(true);
     setLaunchStatus("Creating campaign in Instantly...");
@@ -8627,24 +8627,6 @@ const INITIAL_SPONSORS = [{
   url: "https://www.marketreadytours.com",
   logo: window.MRT_LOGO_DATA,
   tagline: "Tour. Rate. Decide."
-}, {
-  id: "sp-2",
-  name: "Nike",
-  url: "https://www.nike.com",
-  logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Logo_NIKE.svg/1200px-Logo_NIKE.svg.png",
-  tagline: "Just Do It"
-}, {
-  id: "sp-3",
-  name: "Coca-Cola",
-  url: "https://www.coca-cola.com",
-  logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Coca-Cola_logo.svg/1200px-Coca-Cola_logo.svg.png",
-  tagline: "Open Happiness"
-}, {
-  id: "sp-4",
-  name: "Starbucks",
-  url: "https://www.starbucks.com",
-  logo: "https://upload.wikimedia.org/wikipedia/en/thumb/d/d3/Starbucks_Corporation_Logo_2011.svg/1200px-Starbucks_Corporation_Logo_2011.svg.png",
-  tagline: "It starts with you"
 }];
 function SponsorsPage(_ref22) {
   let {
