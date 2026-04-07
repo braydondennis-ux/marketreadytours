@@ -1566,7 +1566,7 @@ function RatingPage(_ref7) {
       setShowGallery(true);
     }
   }, /*#__PURE__*/React.createElement("img", {
-    src: (listing.photos || [])[0],
+    src: (listing.photos || [])[0] || "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop",
     alt: listing.address,
     style: {
       width: "100%",
@@ -2076,7 +2076,7 @@ function RankingPage(_ref8) {
       position: "relative"
     }
   }, /*#__PURE__*/React.createElement("img", {
-    src: (listing.photos || [])[0],
+    src: (listing.photos || [])[0] || "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop",
     alt: "",
     style: {
       width: "100%",
@@ -6301,23 +6301,20 @@ function TourDetailPage(_ref19) {
       showToast("Please wait a moment before sending again.", "warn");
       return;
     }
-    let tourReqs = (listingRequests || []).filter(r => r.tourId === tour.id && r.status === "approved");
-    if (tourReqs.length === 0) {
-      const seen = new Set();
-      tourReqs = (tour.listings || []).filter(l => l.agentEmail).reduce((acc, l) => {
-        if (!seen.has(l.agentEmail)) {
-          seen.add(l.agentEmail);
-          acc.push({
-            agentName: l.agent,
-            agentEmail: l.agentEmail,
-            status: "approved",
-            type: "listing-request",
-            tourId: tour.id
-          });
-        }
-        return acc;
-      }, []);
-    }
+    // Robust recipient list — same logic as sendRoute
+    const _crSeen = new Set();
+    const _crRecips = [];
+    const _addCR = (email, name) => {
+      if (email && isValidEmail(email) && !_crSeen.has(email.toLowerCase())) {
+        _crSeen.add(email.toLowerCase());
+        _crRecips.push({ name: name || email.split("@")[0], email });
+      }
+    };
+    (listingRequests || []).filter(r => r.tourId === tour.id && r.status === "approved")
+      .forEach(r => _addCR(r.agentEmail, r.agentName));
+    (tour.listings || []).forEach(l => _addCR(l.agentEmail, l.agent));
+    if (currentUser && currentUser.email) _addCR(currentUser.email, currentUser.name);
+    let tourReqs = _crRecips.map(r => ({ agentEmail: r.email, agentName: r.name, type: "listing-request" }));
     if (tourReqs.length === 0) {
       showToast("No agent emails found for this tour.", "warn");
       return;
@@ -8346,7 +8343,7 @@ adminListings.length >= 1 && /*#__PURE__*/React.createElement("button", {
         position: "relative"
       }
     }, /*#__PURE__*/React.createElement("img", {
-      src: (listing.photos || [])[0],
+      src: (listing.photos || [])[0] || "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop",
       alt: listing.address,
       style: {
         width: "100%",
@@ -10444,7 +10441,7 @@ function ToursDashboard(_ref26) {
           position: "relative"
         }
       }, /*#__PURE__*/React.createElement("img", {
-        src: (l.photos || [])[0],
+        src: (l.photos || [])[0] || "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop",
         alt: "",
         style: {
           width: 64,
