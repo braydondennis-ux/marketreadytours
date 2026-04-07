@@ -1241,6 +1241,7 @@ function RatingPage(_ref7) {
   const [done, setDone] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const fileRef = useRef(null);
+  const [photoHint, setPhotoHint] = React.useState(true);
   // Code gate — unlocked once per tour per session
   const sessionKey = "mrt_unlocked_" + tour.id;
   const [codeUnlocked, setCodeUnlocked] = useState(() => !!sessionStorage.getItem(sessionKey));
@@ -1495,7 +1496,10 @@ function RatingPage(_ref7) {
     style: {
       color: B.primary
     }
-  }, listing.agent), ".", /*#__PURE__*/React.createElement("br", null), "Returning to tour..."));
+  }, listing.agent), ".", /*#__PURE__*/React.createElement("br", null), "Returning to tour..."),
+    tour.code && /*#__PURE__*/React.createElement("div",{style:{background:"#F7F4EF",borderRadius:10,padding:"10px 14px",marginTop:8,fontSize:12,color:B.gray}},
+      "Tour code for next stop: ",/*#__PURE__*/React.createElement("strong",{style:{color:B.primary,letterSpacing:3,fontSize:15}},tour.code)
+    )));
   const allPhotos = [...(listing.photos || []), ...photos.map(p => p.url)];
   return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -7324,7 +7328,42 @@ function TourDetailPage(_ref19) {
       justifyContent: "center",
       gap: 8
     }
-  }, "📋 Sync Agent Contacts from Requests"), adminListings.length >= 1 && /*#__PURE__*/React.createElement("button", {
+  }, "📋 Sync Agent Contacts from Requests"), adminListings.length >= 1 && (() => {
+    const _unratedListings = adminListings.filter(l => {
+      const r = (tour.ratings||{})[l.id];
+      return !r || !Object.values(r).some(v=>v>0);
+    });
+    const _unratedWithEmail = _unratedListings.filter(l=>l.agentEmail);
+    return _unratedWithEmail.length > 0 ? /*#__PURE__*/React.createElement("button", {
+      onClick: async () => {
+        if (!canSend("remindUnrated_"+tour.id, 10000)) { showToast("Please wait before sending again.","warn"); return; }
+        let sent=0;
+        for(const l of _unratedWithEmail) {
+          const rateUrl = window.location.origin+window.location.pathname+"#/tour/"+tour.id;
+          await sendCFEmail(l.agentEmail,
+            "\uD83C\uDFE0 Reminder: Rate "+l.address+" ("+tour.emoji+" "+tour.name+")",
+            "Hi "+l.agent+",\n\nJust a quick reminder to submit your rating for:\n\n"+l.address+", "+l.city+"\n\nYour feedback helps the listing agent and makes our tour data more valuable for everyone.\n\nRate now: "+rateUrl+"\nTour code: "+tour.code+"\n\n\u2014 MarketReady Tours\nmarketreadytours.com"
+          );
+          sent++;
+        }
+        showToast("\uD83D\uDD14 Reminder sent to "+sent+" unrated listing agent"+(sent!==1?"s":"")+"!","success",4000);
+      },
+      className: "btn-hover",
+      style:{width:"100%",background:"#D97706",color:"#fff",border:"none",borderRadius:12,padding:"14px 0",fontWeight:700,fontSize:16,cursor:"pointer",marginTop:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}
+    }, "\uD83D\uDD14 Remind Unrated Agents ("+_unratedWithEmail.length+")") : null;
+  })(),
+  /*#__PURE__*/React.createElement("div", {style:{marginTop:12}},
+  /*#__PURE__*/React.createElement("label",{style:{display:"block",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,color:B.gray,marginBottom:6}},"\uD83D\uDCCC Tour Note (visible to all attendees)"),
+  /*#__PURE__*/React.createElement("textarea",{
+    value: tour.tourNote||"",
+    onChange: e => onUpdateTour({...tour, tourNote: e.target.value}),
+    placeholder: "e.g. Meet at Stop #1 at 9am sharp. Water provided.",
+    rows: 2,
+    maxLength: 300,
+    style:{width:"100%",border:"1.5px solid #D8D0C8",borderRadius:8,padding:"8px 10px",fontSize:13,resize:"vertical",outline:"none",background:"#fff",fontFamily:"inherit"}
+  })
+),
+adminListings.length >= 1 && /*#__PURE__*/React.createElement("button", {
     onClick: sendRoute,
     disabled: sendingRoute,
     className: "btn-hover",
@@ -7800,7 +7839,7 @@ function TourDetailPage(_ref19) {
     weekday: "short",
     month: "short",
     day: "numeric"
-  }), " \xB7 \uD83D\uDD52 ", tour.time, " \xB7 \uD83D\uDCCD ", sorted.length, " stops"), /*#__PURE__*/React.createElement("div", {
+  }), " \xB7 \uD83D\uDD52 ", tour.time, " \xB7 \uD83D\uDCCD ", sorted.length, " stop", sorted.length !== 1 ? "s" : ""), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 10
@@ -7810,9 +7849,24 @@ function TourDetailPage(_ref19) {
       color: "rgba(255,255,255,.7)",
       fontSize: 12
     }
-  }, "\u2B50 ", favCount, " fav \xB7 \u2705 ", ratedCount, " rated"),
+  }, (() => {
+    const _allRatings = sorted.filter(l=>(tour.ratings||{})[l.id]&&Object.values((tour.ratings||{})[l.id]).some(v=>v>0));
+    const _tourAvgAll = _allRatings.length>0?_allRatings.reduce((s,l)=>{const r=(tour.ratings||{})[l.id]||{};const v=Object.values(r).filter(v=>v>0);return s+v.reduce((a,b)=>a+b,0)/(v.length||1);},0)/_allRatings.length:0;
+    const _unrated = sorted.length - ratedCount;
+    return /*#__PURE__*/React.createElement(React.Fragment,null,
+      /*#__PURE__*/React.createElement("span",{style:{color:"rgba(255,255,255,.7)",fontSize:12}},
+        "\u2B50 ",favCount," fav \xB7 \u2705 ",ratedCount," rated",
+        _unrated>0&&_allRatings.length>0?" \xB7 \uD83D\uDD51 "+_unrated+" unrated":null,
+        _tourAvgAll>0?" \xB7 \u2205 "+_tourAvgAll.toFixed(1)+" tour avg":null
+      )
+    );
+  })(),
   sorted.length>=2&&/*#__PURE__*/React.createElement("a",{href:"https://www.google.com/maps/dir/"+sorted.map(l=>encodeURIComponent((l.address||"")+" "+(l.city||""))).join("/"),target:"_blank",rel:"noreferrer",style:{background:"rgba(255,255,255,.2)",color:"#fff",borderRadius:7,padding:"3px 9px",fontSize:11,fontWeight:700,textDecoration:"none",whiteSpace:"nowrap",border:"1px solid rgba(255,255,255,.3)"}},"\uD83D\uDDFA\uFE0F All Stops")
-)), /*#__PURE__*/React.createElement("div", {
+)),
+  tour.tourNote && /*#__PURE__*/React.createElement("div", {
+    style: {background:"rgba(255,255,255,.12)",border:"1px solid rgba(255,255,255,.25)",borderRadius:8,padding:"8px 12px",marginTop:8,fontSize:13,color:"rgba(255,255,255,.9)",lineHeight:1.5}
+  }, "\uD83D\uDCCC ", tour.tourNote),
+  /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,
@@ -8550,7 +8604,23 @@ function TourDetailPage(_ref19) {
         fontSize: 13,
         boxShadow: "0 3px 10px rgba(27,58,107,.25)"
       }
-    }, isRated ? "✓ Re-Rate" : "Rate Home ★"))));
+    }, isRated ? "\u2713 Re-Rate" : "Rate Home \u2605")),
+      isRated && /*#__PURE__*/React.createElement("button", {
+        className: "btn-hover",
+        onClick: () => setSubpage("summary"),
+        style: {
+          flex: 1,
+          background: "#F7F4EF",
+          color: B.primary,
+          border: "1.5px solid #D8D0C8",
+          borderRadius: 10,
+          padding: "10px 0",
+          fontWeight: 700,
+          cursor: "pointer",
+          fontSize: 13
+        }
+      }, "\uD83D\uDCCA Summary")
+    )));
   })));
 }
 /* ── SPONSORS PAGE ── */
@@ -10337,7 +10407,11 @@ function ToursDashboard(_ref26) {
         fontWeight: 700,
         color: "#FCA5A5"
       }
-    }, "\u2764\uFE0F ", favCount)))), isAdmin && /*#__PURE__*/React.createElement("div",{style:{display:"flex",flexDirection:"column",gap:5,flexShrink:0}},
+    }, "\u2764\uFE0F ", favCount),
+    (tour.sponsors||[]).filter(s=>s.paid||s.paymentStatus==="paid").length>0 && /*#__PURE__*/React.createElement("span",{
+      style:{background:"rgba(201,165,90,.3)",borderRadius:6,padding:"3px 10px",fontSize:12,fontWeight:700,color:"#F0D98A"}
+    },"\uD83D\uDCB0 ",(tour.sponsors||[]).filter(s=>s.paid||s.paymentStatus==="paid").length," sponsor",(tour.sponsors||[]).filter(s=>s.paid||s.paymentStatus==="paid").length!==1?"s":"")
+    )), isAdmin && /*#__PURE__*/React.createElement("div",{style:{display:"flex",flexDirection:"column",gap:5,flexShrink:0}},
       /*#__PURE__*/React.createElement("button",{
         onClick:e=>{e.stopPropagation();const _c={...tour,id:uid("tour"),name:tour.name+" (Copy)",ratings:{},ratingSubmissions:{},favorites:{},notes:{},campaignContacts:[],createdBy:(currentUser&&currentUser.email)||SUPER_ADMIN_EMAIL};setTours(prev=>[...prev,_c]);showToast("\uD83D\uDDC2\uFE0F Tour duplicated! Tap to update date.","success",3500);},
         style:{background:B.gold,border:"none",color:"#fff",borderRadius:10,padding:"6px 10px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}
@@ -10413,25 +10487,55 @@ function ToursDashboard(_ref26) {
       style: {
         padding: "14px 18px"
       }
-    }, /*#__PURE__*/React.createElement("button", {
-      className: "btn-hover",
-      onClick: () => {
-        setActiveTourId(tour.id);
-        window.location.hash = "/tour/" + tour.id;
-      },
-      style: {
-        width: "100%",
-        background: tour.color,
-        color: "#fff",
-        border: "none",
-        borderRadius: 12,
-        padding: "13px 0",
-        fontWeight: 700,
-        fontSize: 15,
-        cursor: "pointer",
-        boxShadow: "0 4px 14px ".concat(tour.color, "66")
-      }
-    }, "Open Tour \u2192")));
+    }, /*#__PURE__*/React.createElement("div", {style:{padding:"0 0 4px"}},
+      (() => {
+        // Overall tour avg rating
+        const _ratedListings = (tour.listings||[]).filter(l=>(tour.ratings||{})[l.id] && Object.values((tour.ratings||{})[l.id]).some(v=>v>0));
+        const _tourAvg = _ratedListings.length > 0 ? _ratedListings.reduce((sum,l)=>{
+          const r=(tour.ratings||{})[l.id]||{}; const vals=Object.values(r).filter(v=>v>0);
+          return sum+(vals.reduce((a,b)=>a+b,0)/(vals.length||1));
+        },0)/_ratedListings.length : 0;
+        return _tourAvg > 0 ? /*#__PURE__*/React.createElement("div",{
+          style:{display:"flex",alignItems:"center",gap:6,marginBottom:10,padding:"6px 12px",background:"#FFF8EC",borderRadius:8,border:"1px solid #F0DFA0"}
+        },
+          /*#__PURE__*/React.createElement("span",{style:{fontSize:13,color:B.gold,fontWeight:800}},"★ "+_tourAvg.toFixed(1)),
+          /*#__PURE__*/React.createElement("span",{style:{fontSize:12,color:B.gray}},"avg across "+_ratedListings.length+" rated listing"+(+_ratedListings.length!==1?"s":""))
+        ) : null;
+      })(),
+      /*#__PURE__*/React.createElement("div",{style:{display:"flex",gap:8}},
+        /*#__PURE__*/React.createElement("a", {
+          href: (() => {
+            const _d = new Date((tour.date||"")+"T12:00:00");
+            const _tp = (tour.time||"").match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if(_tp){let h=parseInt(_tp[1]);const m=parseInt(_tp[2]);if(_tp[3].toUpperCase()==="PM"&&h!==12)h+=12;if(_tp[3].toUpperCase()==="AM"&&h===12)h=0;_d.setHours(h,m,0);}
+            const _end=new Date(_d.getTime()+3*60*60*1000);
+            const _fmt=d=>d.toISOString().replace(/[-:]/g,"").replace(/\.\d{3}/,"");
+            return "https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent((tour.emoji||"\uD83C\uDFE1")+" "+tour.name+" \u2014 MarketReady Tours")+"&dates="+_fmt(_d)+"/"+_fmt(_end)+"&details="+encodeURIComponent("MarketReady Tours\nmarketreadytours.com")+"&location="+encodeURIComponent(((tour.listings||[])[0]||{}).address||"");
+          })(),
+          target:"_blank", rel:"noreferrer",
+          style:{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:"#EFF6FF",color:"#1B3A6B",border:"1.5px solid #BFDBFE",borderRadius:10,padding:"10px 0",fontWeight:700,fontSize:13,textDecoration:"none"}
+        }, "\uD83D\uDCC5 Add to Calendar"),
+        /*#__PURE__*/React.createElement("button", {
+          className: "btn-hover",
+          onClick: () => {
+            setActiveTourId(tour.id);
+            window.location.hash = "/tour/" + tour.id;
+          },
+          style: {
+            flex:2,
+            background: tour.color,
+            color: "#fff",
+            border: "none",
+            borderRadius: 10,
+            padding: "10px 0",
+            fontWeight: 700,
+            fontSize: 15,
+            cursor: "pointer",
+            boxShadow: "0 4px 14px ".concat(tour.color, "66")
+          }
+        }, "Open Tour \u2192")
+      )
+    )));
   }), showRequestForm && /*#__PURE__*/React.createElement(RequestATourInlineForm, {
     ref: requestFormRef,
     onClose: () => setShowRequestForm(false),
