@@ -4644,6 +4644,10 @@ function InviteCampaignTab(_ref15) {
       ...tour,
       campaignContacts: updated
     });
+    // Also remove from Instantly so no more emails fire
+    const _c = contacts.find(c => c.email.toLowerCase() === email.toLowerCase());
+    const _campId = (_c && _c.campaignId) || tour.instantlyCampaignId;
+    if (_campId) removeFromInstantly(email, _campId);
   };
   const markRegistered = email => {
     const updated = contacts.map(c => c.email.toLowerCase() === email.toLowerCase() ? {
@@ -4655,6 +4659,10 @@ function InviteCampaignTab(_ref15) {
       ...tour,
       campaignContacts: updated
     });
+    // Remove from Instantly — they've registered, stop the campaign
+    const _rc = contacts.find(c => c.email.toLowerCase() === email.toLowerCase());
+    const _rCampId = (_rc && _rc.campaignId) || tour.instantlyCampaignId;
+    if (_rCampId) removeFromInstantly(email, _rCampId);
   };
   const launchCampaign = async () => {
     const pending = contacts.filter(c => c.status === "pending");
@@ -5389,6 +5397,28 @@ function NotInterestedPage(_ref17) {
         });
       } catch (e) {}
     }
+    // Remove from Instantly campaign so no more emails are sent
+    try {
+      const _niTour = tours.find(t => t.id === tourId);
+      const _niContact = (_niTour && _niTour.campaignContacts || []).find(c => (c.email||"").toLowerCase() === email.toLowerCase());
+      const _niCampId = (_niContact && _niContact.campaignId) || (_niTour && _niTour.instantlyCampaignId);
+      if (_niCampId && email) {
+        await instantlyAPI("campaigns/".concat(_niCampId, "/leads/remove"), "POST", { leads: [{ email }] });
+      }
+    } catch (e) { /* Instantly removal failed silently — Firebase flag still stops Cloud Function emails */ }
+    // Also write unsubscribed status to mrt_campaigns for Cloud Function campaigns
+    try {
+      if (_fb && tourId && email) {
+        const _campsSnap = await _fb.ref("mrt_campaigns").once("value");
+        const _camps = _campsSnap.val() || {};
+        for (const [cid, camp] of Object.entries(_camps)) {
+          if (camp.tourId === tourId && camp.status === "active") {
+            const _ck = email.replace(/[.#$[\]]/g, "_");
+            await _fb.ref("mrt_campaigns/".concat(cid, "/contacts/").concat(_ck, "/status")).set("unsubscribed");
+          }
+        }
+      }
+    } catch (e) {}
     setStatus("confirmed");
   };
   const handleChangedMind = () => {
@@ -11159,6 +11189,29 @@ function RequestListingPage(_ref31) {
       } catch(e) { /* fallback to onSubmit state update */ }
       onSubmit(requestData);
       sendSMS(tourSignUp ? "New Tour Sign Up: ".concat(fields.agentName, " for ").concat(requestData.tourName) : "New Listing: ".concat(fields.address, " by ").concat(fields.agentName, " for ").concat(requestData.tourName));
+      // Remove agent from Instantly campaign — they've converted, stop sending emails
+      try {
+        const _subTour = (tours||[]).find(t => t.id === fields.tourId);
+        const _subEmail = fields.agentEmail;
+        const _subContact = (_subTour && _subTour.campaignContacts || []).find(c => (c.email||"").toLowerCase() === _subEmail.toLowerCase());
+        const _subCampId = (_subContact && _subContact.campaignId) || (_subTour && _subTour.instantlyCampaignId);
+        if (_subCampId && _subEmail) {
+          await instantlyAPI("campaigns/".concat(_subCampId, "/leads/remove"), "POST", { leads: [{ email: _subEmail }] });
+        }
+      } catch (e) {}
+      // Mark converted in mrt_campaigns for Cloud Function campaigns
+      try {
+        if (_fb && fields.tourId && fields.agentEmail) {
+          const _campsSnap2 = await _fb.ref("mrt_campaigns").once("value");
+          const _camps2 = _campsSnap2.val() || {};
+          for (const [cid, camp] of Object.entries(_camps2)) {
+            if (camp.tourId === fields.tourId && camp.status === "active") {
+              const _ck2 = fields.agentEmail.replace(/[.#$[\]]/g, "_");
+              await _fb.ref("mrt_campaigns/".concat(cid, "/contacts/").concat(_ck2, "/status")).set("converted");
+            }
+          }
+        }
+      } catch (e) {}
       setDone(true);
     } catch (e) {
       setError("Submission failed. Please try again.");
