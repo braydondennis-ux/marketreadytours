@@ -9,8 +9,8 @@
 <title>MarketReady Tours — #1 Real Estate Home Tours App</title>
 <meta name="description" content="Tour. Rate. Decide. Browse curated home tours, RSVP, preview homes with peers, and submit real-time feedback."/>
 <meta property="og:type" content="website"/>
-<meta property="og:title" content="MarketReady Tours — Curated Home Tours for Real Estate Agents"/>
-<meta property="og:description" content="Get expert feedback from top local agents. Join a MarketReady Tour — rate homes, connect with peers, and grow your business."/>
+<meta property="og:title" content="MarketReady Tours — #1 Real Estate Home Tours App"/>
+<meta property="og:description" content="Tour. Rate. Decide. Browse curated home tours, RSVP, and submit real-time feedback."/>
 <meta property="og:image" content="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200&h=630&fit=crop"/>
 <meta property="og:image:width" content="1200"/>
 <meta property="og:image:height" content="630"/>
@@ -93,8 +93,6 @@ try {
   _fb = firebase.database();
   _fbAuth = firebase.auth();
   _fbStorage = firebase.storage();
-  window._fb = _fb;
-  window._fbAuth = _fbAuth;
 } catch (e) {/* Firebase unavailable — app still works via localStorage */}
 
 /* Create a Firebase Auth user via secondary app (so current admin stays signed in) */
@@ -622,7 +620,7 @@ function QRModal(_ref4) {
     if (ref.current && window.QRCode) {
       ref.current.innerHTML = "";
       new window.QRCode(ref.current, {
-        text: "https://marketreadytourshare.braydondennis.workers.dev/t/" + tour.id,
+        text: window.location.href,
         width: 220,
         height: 220,
         colorDark: tour.color,
@@ -2224,19 +2222,9 @@ function SummaryDashboard(_ref9) {
       marginBottom: 12
     }
   }, "\uD83D\uDCCA"), /*#__PURE__*/React.createElement("p", null, "No ratings submitted yet.", /*#__PURE__*/React.createElement("br", null), "Ratings will appear here as attendees submit them.")), hasAny && listings.map(listing => {
-    const _rSubs=(tour.ratingSubmissions||{})[listing.id];
-    const _allSubs=Array.isArray(_rSubs)?_rSubs:Object.values(_rSubs||{});
-    let r;
-    if(_allSubs.length>1){
-      const _kk=['curbAppeal','landscape','cleanliness','flooring','paint','showability','price','kitchen','bedrooms','windows'];
-      r={};
-      _kk.forEach(k=>{const vv=_allSubs.map(s=>Number(s[k])||0).filter(v=>v>0);r[k]=vv.length?vv.reduce((a,b)=>a+b,0)/vv.length:0;});
-    } else {
-      var _tour$ratings4;
-      r=((_tour$ratings4=tour.ratings)===null||_tour$ratings4===void 0?void 0:_tour$ratings4[listing.id])||{};
-    }
-    const _rCount=_allSubs.length;
-    const avg=avgRating(r);
+    var _tour$ratings4;
+    const r = ((_tour$ratings4 = tour.ratings) === null || _tour$ratings4 === void 0 ? void 0 : _tour$ratings4[listing.id]) || {};
+    const avg = avgRating(r);
     if (!avg) return null;
     return /*#__PURE__*/React.createElement("div", {
       key: listing.id,
@@ -2261,11 +2249,7 @@ function SummaryDashboard(_ref9) {
         fontSize: 13,
         fontWeight: 700
       }
-    }, /*#__PURE__*/React.createElement("div", null,
-        /*#__PURE__*/React.createElement("div",{style:{color:"#fff",fontFamily:"Georgia,serif",fontSize:13,fontWeight:700}},listing.address),
-        _rCount>1&&/*#__PURE__*/React.createElement("div",{style:{color:"rgba(255,255,255,.7)",fontSize:11,marginTop:2}},
-          "\u2205 avg of ",_rCount," agent ratings")
-      ), /*#__PURE__*/React.createElement("div", {
+    }, listing.address), /*#__PURE__*/React.createElement("div", {
       style: {
         background: "rgba(255,255,255,.2)",
         borderRadius: 8,
@@ -4427,28 +4411,29 @@ const getInstantlyKey = async () => {
     return null;
   }
 };
-const INSTANTLY_PROXY_URL = "https://instantlyproxy-wraz5q2v2a-uc.a.run.app";
 const instantlyAPI = async function (endpoint) {
   let method = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "GET";
   let body = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
   let apiKey = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : null;
   const key = apiKey || (await getInstantlyKey());
   if (!key) throw new Error("No Instantly API key configured. Please add it in the Campaign tab.");
-  const res = await fetchWithTimeout(INSTANTLY_PROXY_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ endpoint, method, body, apiKey: key })
-  }, 30000);
+  const opts = {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer ".concat(key)
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetchWithTimeout("https://api.instantly.ai/api/v2/".concat(endpoint), opts, 20000);
   if (!res.ok) {
     const t = await res.text().catch(() => "");
-    let data; try { data = JSON.parse(t); } catch { data = {}; }
     if (res.status === 401) throw new Error("Invalid Instantly API key. Please check your key in Settings.");
     if (res.status === 429) throw new Error("Instantly rate limit hit. Please wait a moment and try again.");
-    throw new Error("Instantly API error " + res.status + ": " + (data.error || t.slice(0, 200)));
+    throw new Error("Instantly API error ".concat(res.status, ": ").concat(t.slice(0, 200)));
   }
   return res.json();
 };
-const TRACK_URL = "https://trackemail-wraz5q2v2a-uc.a.run.app";
 const buildCampaignEmails = tour => {
   const tourDate = tour.date ? new Date(tour.date + "T12:00:00").toLocaleDateString("en-US", {
     weekday: "long",
@@ -4461,7 +4446,7 @@ const buildCampaignEmails = tour => {
   const btnHtml = (addUrl, niUrl) => "\n<div style=\"text-align:center;margin:28px 0\">\n<a href=\"".concat(addUrl, "\" style=\"display:inline-block;background:#C9A55A;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:700;font-size:16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin-bottom:12px\">\uD83C\uDFE1 Add My Listing to This Tour</a><br/>\n<a href=\"").concat(niUrl, "\" style=\"display:inline-block;background:#F0EDE8;color:#8A8078;text-decoration:none;padding:10px 24px;border-radius:10px;font-weight:600;font-size:13px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin-top:8px\">Not Interested In This Tour</a>\n</div>");
   const header = "<div style=\"background:#0D0D0D;padding:22px 28px\"><p style=\"margin:0;font-family:Georgia,serif;font-size:22px;font-weight:900;color:#fff;letter-spacing:1px\">Market<span style=\"color:#C9A55A\">Ready</span> <span style=\"font-weight:300;font-size:18px;letter-spacing:3px\">Tours</span></p></div><div style=\"background:#C9A55A;height:4px\"></div>";
   const footer = "<div style=\"background:#0D0D0D;padding:16px 20px;text-align:center;margin-top:24px\"><a href=\"https://www.marketreadytours.com\" style=\"color:rgba(255,255,255,.7);font-size:12px;text-decoration:none\">marketreadytours.com</a></div>";
-  const wrap = (body, campId, emailDay, contactEmail) => { const pixel = campId ? '<img src="' + TRACK_URL + '?cid=' + campId + '&eid=' + emailDay + '&type=open&email=' + encodeURIComponent(contactEmail || "{{email}}") + '" width="1" height="1" style="display:none" alt=""/>' : ""; return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head><body style=\"margin:0;background:#F0EDE8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif\"><div style=\"max-width:600px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.12)\">".concat(header, "<div style=\"padding:28px 24px\">").concat(body, "</div>").concat(footer + pixel, "</div></body></html>"); };
+  const wrap = body => "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head><body style=\"margin:0;background:#F0EDE8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif\"><div style=\"max-width:600px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.12)\">".concat(header, "<div style=\"padding:28px 24px\">").concat(body, "</div>").concat(footer, "</div></body></html>");
   const addLinkWithParams = (email, address) => {
     const base = addLink;
     const params = new URLSearchParams();
@@ -5158,11 +5143,7 @@ function InviteCampaignTab(_ref15) {
       fontWeight: 700,
       whiteSpace: "nowrap"
     }
-  }, statusLabels[c.status] || c.status), c.opened ? /*#__PURE__*/React.createElement("span", {
-    style: {background: "#D1FAE5", color: "#065F46", borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap"}
-  }, "\uD83D\uDC41 Opened") : c.emailsSent && Object.keys(c.emailsSent).length > 0 ? /*#__PURE__*/React.createElement("span", {
-    style: {background: "#FEF3C7", color: "#92400E", borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap"}
-  }, "\uD83D\uDCEC Not Opened") : null, /*#__PURE__*/React.createElement("button", {
+  }, statusLabels[c.status] || c.status), /*#__PURE__*/React.createElement("button", {
     onClick: () => removeContact(c.id),
     style: {
       background: "none",
@@ -6062,7 +6043,6 @@ function TourDetailPage(_ref19) {
   const [sendingRoute, setSendingRoute] = useState(false);
   const [sendingFollowUp, setSendingFollowUp] = useState(false);
   const [sendingCancel, setSendingCancel] = useState(false);
-  const [sendingSellerReport, setSendingSellerReport] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelMsg, setCancelMsg] = useState({
     type: "cancel",
@@ -6070,104 +6050,6 @@ function TourDetailPage(_ref19) {
     newTime: "",
     note: ""
   });
-  const syncAgentContacts = async () => {
-    if (!_fb || !listingRequests) { showToast("Not ready — try again in a moment", "warn"); return; }
-    const approvedReqs = listingRequests.filter(r => r.tourId === tour.id && r.status === "approved");
-    const listings = tour.listings || [];
-    let updated = false;
-    const newListings = listings.map(l => {
-      if (l.agentEmail && l.agentPhone) return l;
-      const req = approvedReqs.find(r => r.address && l.address && r.address.toLowerCase().trim() === l.address.toLowerCase().trim());
-      if (!req) return l;
-      const patch = {...l};
-      if (!l.agentEmail && req.agentEmail) { patch.agentEmail = req.agentEmail; updated = true; }
-      if (!l.agentPhone && req.agentPhone) { patch.agentPhone = req.agentPhone; updated = true; }
-      return patch;
-    });
-    if (!updated) { showToast("All listings already have contact info ✅", "success"); return; }
-    onUpdateTour({...tour, listings: newListings});
-    showToast("✅ Agent contacts synced!", "success", 2500);
-  };
-  const sendSellerReport = async () => {
-    if (!canSend("sellerReport_"+tour.id, 5000)) { showToast("Please wait before sending again.", "warn"); return; }
-    const listings = [...(tour.listings||[])].sort((a,b)=>a.order-b.order).filter(l=>l.agentEmail);
-    if (listings.length === 0) { showToast("No listings with agent emails found. Add agent emails in Manage.", "warn"); return; }
-    setSendingSellerReport(true);
-    let sent=0, failed=0;
-    for (const l of listings) {
-      const subs_raw = (tour.ratingSubmissions||{})[l.id];
-      const subs = Array.isArray(subs_raw)?subs_raw:Object.values(subs_raw||{});
-      if (subs.length === 0) continue;
-      const CATS = [
-        {key:"curbAppeal",label:"Curb Appeal"},{key:"landscape",label:"Landscape"},
-        {key:"cleanliness",label:"Cleanliness"},{key:"flooring",label:"Flooring"},
-        {key:"paint",label:"Paint"},{key:"showability",label:"Showability"},
-        {key:"price",label:"Price"},{key:"kitchen",label:"Kitchen"},
-        {key:"bedrooms",label:"Bedrooms"},{key:"windows",label:"Windows"}
-      ];
-      // Compute averages across all raters
-      const avgs = {};
-      CATS.forEach(cat => {
-        const vals = subs.map(s=>Number(s[cat.key])||0).filter(v=>v>0);
-        avgs[cat.key] = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
-      });
-      const overallAvg = Object.values(avgs).filter(v=>v>0).reduce((a,b)=>a+b,0)/Object.values(avgs).filter(v=>v>0).length || 0;
-      // Collect qualitative feedback
-      const suggestions = subs.map(s=>s.suggestions).filter(Boolean).join(" | ");
-      const priceNotes = subs.map(s=>s.sugPrice||s.pricedRight?"Priced Correctly":s.sugPrice).filter(Boolean);
-      const goldBar = (avg) => {
-        const filled = Math.round(avg);
-        return "★".repeat(filled) + "☆".repeat(5-filled) + " ("+avg.toFixed(1)+"/5)";
-      };
-      const catRows = CATS.map(cat => avgs[cat.key]>0 ?
-        "<tr><td style='padding:7px 14px;font-size:13px;color:#374151;border-bottom:1px solid #F0EDE8'>"+cat.label+"</td>"+
-        "<td style='padding:7px 14px;text-align:right;font-size:14px;font-weight:700;color:#C9A55A;border-bottom:1px solid #F0EDE8'>"+goldBar(avgs[cat.key])+"</td></tr>"
-      : "").join("");
-      const tourDateFmt = tour.date ? new Date(tour.date+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"}) : tour.date;
-      const subjectLine = "\uD83C\uDFE1 Peer Agent Feedback — "+l.address+" ("+tour.emoji+" "+tour.name+")";
-      const html = "<div style='font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;max-width:620px;margin:0 auto;background:#fff'>"+
-        "<div style='background:#0D0D0D;padding:22px 28px'>"+
-          "<p style='margin:0;font-family:Georgia,serif;font-size:24px;font-weight:900;color:#fff;letter-spacing:1px'>Market<span style='color:#C9A55A'>Ready</span> <span style='font-weight:300;font-size:20px;letter-spacing:3px'>Tours</span></p>"+
-        "</div>"+
-        "<div style='background:#C9A55A;height:4px'></div>"+
-        "<div style='padding:28px'>"+
-          "<h2 style='margin:0 0 4px;font-family:Georgia,serif;font-size:22px;color:#0D0D0D'>\uD83D\uDCCB Peer Agent Feedback Report</h2>"+
-          "<p style='margin:0 0 20px;font-size:14px;color:#8A8078'>"+tour.emoji+" "+tour.name+" \xB7 "+tourDateFmt+"</p>"+
-          "<div style='background:#F7F4EF;border-radius:10px;padding:16px 20px;margin-bottom:20px;border-left:4px solid #C9A55A'>"+
-            "<div style='font-size:15px;font-weight:700;color:#0D0D0D'>"+l.address+"</div>"+
-            "<div style='font-size:13px;color:#8A8078;margin-top:4px'>"+l.city+" \xB7 $"+Number(l.price).toLocaleString()+" \xB7 "+subs.length+" agent"+(subs.length!==1?"s":"")+" toured &amp; rated</div>"+
-          "</div>"+
-          "<div style='background:#FFF8EC;border-radius:10px;padding:16px 20px;margin-bottom:24px;text-align:center'>"+
-            "<div style='font-size:13px;color:#8A8078;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px'>Overall Score</div>"+
-            "<div style='font-size:42px;font-weight:900;color:#C9A55A;font-family:Georgia,serif'>"+overallAvg.toFixed(1)+"</div>"+
-            "<div style='font-size:13px;color:#8A8078'>out of 5.0 \xB7 from "+subs.length+" peer agent"+(subs.length!==1?"s":"")+"</div>"+
-          "</div>"+
-          "<table style='width:100%;border-collapse:collapse;margin-bottom:24px'>"+
-            "<tr><th style='text-align:left;padding:8px 14px;font-size:11px;color:#8A8078;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #F0EDE8'>Category</th>"+
-            "<th style='text-align:right;padding:8px 14px;font-size:11px;color:#8A8078;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #F0EDE8'>Avg Rating</th></tr>"+
-            catRows+"</table>"+
-          (suggestions ? "<div style='margin-bottom:20px;background:#F7F4EF;border-radius:8px;padding:16px'>"+
-            "<div style='font-size:11px;color:#8A8078;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px'>Agent Suggestions</div>"+
-            "<p style='margin:0;font-size:14px;color:#374151;line-height:1.7'>"+suggestions+"</p>"+
-          "</div>" : "")+
-          (priceNotes.length ? "<div style='margin-bottom:20px;background:#F0F9F4;border-radius:8px;padding:16px;border-left:4px solid #2D6A4F'>"+
-            "<div style='font-size:11px;color:#2D6A4F;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px'>Price Feedback</div>"+
-            "<p style='margin:0;font-size:14px;color:#374151;font-weight:600'>"+priceNotes[0]+"</p>"+
-          "</div>" : "")+
-          "<div style='background:#0D0D0D;border-radius:10px;padding:16px 20px;margin-top:8px'>"+
-            "<p style='margin:0;font-size:12px;color:rgba(255,255,255,.6);line-height:1.6'>This report was generated by <strong style='color:#C9A55A'>MarketReady Tours</strong>. All feedback is provided by licensed real estate agents who personally toured this property. Ratings reflect professional peer opinions and are intended to help sellers make data-driven decisions.</p>"+
-          "</div>"+
-        "</div>"+
-      "</div>";
-      try {
-        const ok = await sendCFEmail(l.agentEmail, subjectLine, html, html);
-        if (ok) sent++; else failed++;
-      } catch(e) { failed++; }
-    }
-    setSendingSellerReport(false);
-    if (sent+failed === 0) { showToast("No listings have ratings yet — send the post-tour follow-up first.", "warn", 5000); return; }
-    showToast(sent>0?"\uD83D\uDCCA Seller report sent to "+sent+" listing agent"+(sent!==1?"s":"")+"!"+(failed>0?" ("+failed+" failed)":""):"\u26A0\uFE0F All sends failed — check agent emails.", sent>0?"success":"error", 5000);
-  };
   const sendRoute = async () => {
     if (!canSend("sendRoute_" + tour.id, 5000)) {
       showToast("Please wait a moment before sending again.", "warn");
@@ -6187,7 +6069,6 @@ function TourDetailPage(_ref19) {
             agentName: l.agent,
             agentEmail: l.agentEmail,
             status: "approved",
-            type: "listing-request",
             tourId: tour.id
           });
         }
@@ -6351,7 +6232,6 @@ function TourDetailPage(_ref19) {
             agentName: l.agent,
             agentEmail: l.agentEmail,
             status: "approved",
-            type: "listing-request",
             tourId: tour.id
           });
         }
@@ -7127,7 +7007,7 @@ function TourDetailPage(_ref19) {
       fontSize: 11,
       color: B.gray
     }
-  }, "$", Number(l.price).toLocaleString(), " \xB7 ", l.agent, l.agentEmail ? /*#__PURE__*/React.createElement("a", {href: "mailto:" + l.agentEmail, style: {color: "#1B3A6B", textDecoration: "none", fontWeight: 500, marginLeft: 4}}, "\u2709\uFE0F") : null, l.agentPhone ? /*#__PURE__*/React.createElement("a", {href: "tel:" + l.agentPhone, style: {color: "#1B3A6B", textDecoration: "none", fontWeight: 500, marginLeft: 4}}, "\uD83D\uDCDE " + l.agentPhone) : null)), /*#__PURE__*/React.createElement("div", {
+  }, "$", Number(l.price).toLocaleString(), " \xB7 ", l.agent, l.agentEmail ? " \xB7 ".concat(l.agentEmail) : "")), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -7144,13 +7024,11 @@ function TourDetailPage(_ref19) {
           city: l.city || "",
           agent: l.agent || "",
           agentEmail: l.agentEmail || "",
-          agentPhone: l.agentPhone || "",
           price: l.price || "",
           beds: l.beds || "",
           baths: l.baths || "",
           sqft: l.sqft || "",
-          dom: l.dom || "",
-          priceReduced: l.priceReduced || false
+          dom: l.dom || ""
         });
       }
     },
@@ -7202,7 +7080,7 @@ function TourDetailPage(_ref19) {
       flexDirection: "column",
       gap: 8
     }
-  }, [["address", "Address"], ["city", "City"], ["agent", "Listing Agent"], ["agentEmail", "Agent Email"], ["agentPhone", "Agent Phone"], ["price", "List Price"], ["beds", "Beds"], ["baths", "Baths"], ["sqft", "Sq Ft"], ["dom", "Days on Market"]].map(_ref21 => {
+  }, [["address", "Address"], ["city", "City"], ["agent", "Listing Agent"], ["agentEmail", "Agent Email"], ["price", "List Price"], ["beds", "Beds"], ["baths", "Baths"], ["sqft", "Sq Ft"], ["dom", "Days on Market"]].map(_ref21 => {
     let [f, label] = _ref21;
     return /*#__PURE__*/React.createElement("div", {
       key: f
@@ -7256,11 +7134,7 @@ function TourDetailPage(_ref19) {
       fontSize: 13,
       cursor: "pointer"
     }
-  }, "Save Changes"),
-  /*#__PURE__*/React.createElement("label",{style:{display:"flex",alignItems:"center",gap:10,cursor:"pointer",padding:"8px 10px",marginTop:6,background:editFields.priceReduced?"#FFF7F0":"#F7F4EF",borderRadius:8,border:"1.5px solid "+(editFields.priceReduced?"#F97316":"#D8D0C8")}},
-    /*#__PURE__*/React.createElement("input",{type:"checkbox",checked:!!editFields.priceReduced,onChange:e=>setEditFields(ef=>({...ef,priceReduced:e.target.checked})),style:{width:18,height:18,accentColor:"#F97316",cursor:"pointer"}}),
-    /*#__PURE__*/React.createElement("span",{style:{fontSize:13,fontWeight:700,color:editFields.priceReduced?"#C2410C":B.gray}},"\uD83D\uDD3B Price Reduced")
-  )), /*#__PURE__*/React.createElement("textarea", {
+  }, "Save Changes")), /*#__PURE__*/React.createElement("textarea", {
     placeholder: "Private admin note...",
     rows: 2,
     maxLength: 500,
@@ -7350,25 +7224,6 @@ function TourDetailPage(_ref19) {
       gap: 8
     }
   }, optimizing ? "⏳ Optimizing..." : "🗺️ Optimize Driving Route"), adminListings.length >= 1 && /*#__PURE__*/React.createElement("button", {
-    onClick: syncAgentContacts,
-    className: "btn-hover",
-    style: {
-      width: "100%",
-      background: "#0D9488",
-      color: "#fff",
-      border: "none",
-      borderRadius: 12,
-      padding: "12px 0",
-      fontWeight: 700,
-      fontSize: 15,
-      cursor: "pointer",
-      marginTop: 10,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8
-    }
-  }, "📋 Sync Agent Contacts from Requests"), adminListings.length >= 1 && /*#__PURE__*/React.createElement("button", {
     onClick: sendRoute,
     disabled: sendingRoute,
     className: "btn-hover",
@@ -7408,29 +7263,7 @@ function TourDetailPage(_ref19) {
       justifyContent: "center",
       gap: 8
     }
-  }, sendingFollowUp ? "⏳ Sending..." : "📊 Send Post-Tour Follow-Up"),
-  /*#__PURE__*/React.createElement("button", {
-    onClick: sendSellerReport,
-    disabled: sendingSellerReport,
-    className: "btn-hover",
-    style: {
-      width: "100%",
-      background: sendingSellerReport ? "#9CA3AF" : "#059669",
-      color: "#fff",
-      border: "none",
-      borderRadius: 12,
-      padding: "14px 0",
-      fontWeight: 700,
-      fontSize: 16,
-      cursor: sendingSellerReport ? "default" : "pointer",
-      marginTop: 10,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8
-    }
-  }, sendingSellerReport ? "⏳ Sending..." : "🏠 Send Seller Report"),
-  /*#__PURE__*/React.createElement("button", {
+  }, sendingFollowUp ? "⏳ Sending..." : "📊 Send Post-Tour Follow-Up"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowCancelModal(true),
     className: "btn-hover",
     style: {
@@ -7703,18 +7536,11 @@ function TourDetailPage(_ref19) {
       marginTop: 12
     }
   }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
-      const shareUrl = "https://marketreadytours.com/t/" + tour.id;
-      if (navigator.share) {
-        navigator.share({ title: (tour.emoji || "\uD83C\uDFE1") + " " + tour.name, url: shareUrl });
-      } else {
-        navigator.clipboard.writeText(shareUrl).then(() => showToast("\uD83D\uDD17 Share link copied!", "success", 2500));
-      }
-    },
+    onClick: () => setShowQR(true),
     style: {
       flex: 1,
-      background: "#C9A55A",
-      border: "2px solid rgba(255,255,255,.5)",
+      background: "rgba(255,255,255,.15)",
+      border: "1px solid rgba(255,255,255,.3)",
       color: "#fff",
       borderRadius: 10,
       padding: "12px 4px",
@@ -7722,16 +7548,24 @@ function TourDetailPage(_ref19) {
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      gap: 3,
-      boxShadow: "0 2px 8px rgba(0,0,0,.2)"
+      gap: 3
     }
   }, /*#__PURE__*/React.createElement("span", {
-    style: { fontSize: 22 }
-  }, "\uD83D\uDD17"), /*#__PURE__*/React.createElement("span", {
-    style: { fontSize: 12, fontWeight: 700 }
-  }, "Share Tour"), /*#__PURE__*/React.createElement("span", {
-    style: { fontSize: 11, opacity: .9, lineHeight: 1.2 }
-  }, "Facebook · Text")), /*#__PURE__*/React.createElement("button", {
+    style: {
+      fontSize: 22
+    }
+  }, "\u2B1C"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      fontWeight: 700
+    }
+  }, "QR Code"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 11,
+      opacity: .7,
+      lineHeight: 1.2
+    }
+  }, "Share Link")), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowInvite(true),
     style: {
       flex: 1,
@@ -7854,13 +7688,7 @@ function TourDetailPage(_ref19) {
       color: "rgba(255,255,255,.7)",
       fontSize: 12
     }
-  }, "\u2B50 ", favCount, " fav \xB7 \u2705 ", ratedCount, " rated"),
-  sorted.length>=2 && /*#__PURE__*/React.createElement("a",{
-    href:"https://www.google.com/maps/dir/"+sorted.map(l=>encodeURIComponent((l.address||"")+" "+(l.city||""))).join("/"),
-    target:"_blank",rel:"noreferrer",
-    style:{background:"rgba(255,255,255,.2)",color:"#fff",borderRadius:7,padding:"3px 9px",fontSize:11,fontWeight:700,textDecoration:"none",whiteSpace:"nowrap",border:"1px solid rgba(255,255,255,.3)"}
-  },"\uD83D\uDDFA\uFE0F All Stops")
-)), /*#__PURE__*/React.createElement("div", {
+  }, "\u2B50 ", favCount, " fav \xB7 \u2705 ", ratedCount, " rated"))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,
@@ -8516,24 +8344,16 @@ function TourDetailPage(_ref19) {
         marginBottom: 12,
         flexWrap: "wrap"
       }
-    }, (() => {
-      const _ppsf = listing.sqft > 0 ? Math.round(listing.price / listing.sqft) : 0;
-      const _dom = Number(listing.dom) || 0;
-      const _chips = [
-        {t:"\uD83D\uDECF ".concat(listing.beds," bd"), bg:B.lightGray, c:B.dark},
-        {t:"\uD83D\uDEBF ".concat(listing.baths," ba"), bg:B.lightGray, c:B.dark},
-        {t:"\uD83D\uDCD0 ".concat(listing.sqft.toLocaleString()," sqft"), bg:B.lightGray, c:B.dark},
-        {t:"\uD83D\uDCC5 ".concat(_dom," DOM"),
-          bg:_dom>60?"#FEE2E2":_dom>30?"#FEF3C7":B.lightGray,
-          c:_dom>60?"#9B1C1C":_dom>30?"#92400E":B.dark},
-        ...(_ppsf>0?[{t:"$".concat(_ppsf.toLocaleString(),"/sqft"),bg:"#EFF6FF",c:"#1B3A6B"}]:[]),
-        ...(listing.priceReduced?[{t:"\uD83D\uDD3B Reduced",bg:"#FFF7F0",c:"#C2410C"}]:[]),
-      ];
-      return _chips.map((chip,i) => /*#__PURE__*/React.createElement("span",{
-        key:i,
-        style:{background:chip.bg,borderRadius:6,padding:"4px 9px",color:chip.c,fontWeight:600,fontSize:12}
-      },chip.t));
-    })()), note && /*#__PURE__*/React.createElement("div", {
+    }, ["\uD83D\uDECF ".concat(listing.beds, " bd"), "\uD83D\uDEBF ".concat(listing.baths, " ba"), "\uD83D\uDCD0 ".concat(listing.sqft.toLocaleString(), " sqft"), "\uD83D\uDCC5 ".concat(listing.dom, " DOM")].map((t, i) => /*#__PURE__*/React.createElement("span", {
+      key: i,
+      style: {
+        background: B.lightGray,
+        borderRadius: 6,
+        padding: "4px 9px",
+        color: B.dark,
+        fontWeight: 500
+      }
+    }, t))), note && /*#__PURE__*/React.createElement("div", {
       style: {
         background: "#F5EDD8",
         border: "1px solid #D4B896",
@@ -8543,15 +8363,11 @@ function TourDetailPage(_ref19) {
         fontSize: 12,
         color: "#7A5A28"
       }
-    }, "\uD83D\uDCDD ", /*#__PURE__*/React.createElement("strong", null, "Agent Note:"), " ", note), isRated && /*#__PURE__*/React.createElement(React.Fragment, null,
-      /*#__PURE__*/React.createElement("div", {style:{marginBottom:4}}, starBar(avg, tour.color)),
-      (() => {
-        const _rs = (tour.ratingSubmissions||{})[listing.id];
-        const _n = Array.isArray(_rs)?_rs.length:Object.keys(_rs||{}).length;
-        return _n > 0 ? /*#__PURE__*/React.createElement("div",{style:{fontSize:11,color:B.gray,marginBottom:10,fontWeight:600}},
-          "\uD83D\uDC65 ",_n===1?"1 agent rated":_n+" agents rated") : null;
-      })()
-    ), /*#__PURE__*/React.createElement("div", {
+    }, "\uD83D\uDCDD ", /*#__PURE__*/React.createElement("strong", null, "Agent Note:"), " ", note), isRated && /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginBottom: 12
+      }
+    }, starBar(avg, tour.color)), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 12,
         color: B.gray,
@@ -8562,7 +8378,7 @@ function TourDetailPage(_ref19) {
         color: B.dark,
         fontWeight: 600
       }
-    }, listing.agent), " \xB7 Listing Agent", listing.agentEmail ? /*#__PURE__*/React.createElement("a", {href: "mailto:" + listing.agentEmail, style: {color: "#1B3A6B", textDecoration: "none", marginLeft: 6, fontWeight: 500}}, "\u2709\uFE0F") : null, listing.agentPhone ? /*#__PURE__*/React.createElement("a", {href: "tel:" + listing.agentPhone, style: {color: "#1B3A6B", textDecoration: "none", marginLeft: 6, fontWeight: 500}}, "\uD83D\uDCDE " + listing.agentPhone) : null), /*#__PURE__*/React.createElement("div", {
+    }, listing.agent), " \xB7 Listing Agent"), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         gap: 8
@@ -9530,7 +9346,7 @@ function ToursDashboard(_ref26) {
     onClearTourId
   } = _ref26;
   const [filterDate, setFilterDate] = useState("upcoming");
-  const [showRequestForm, setShowRequestForm] = useState(() => window.location.hash.slice(2) === "request-tour");
+  const [showRequestForm, setShowRequestForm] = useState(false);
   const requestFormRef = React.useRef(null);
   const [activeTourId, setActiveTourId] = useState(initialTourId || null);
   // If tours load after initial render and we have a deep-linked ID, keep it set
@@ -10300,13 +10116,6 @@ function ToursDashboard(_ref26) {
   }, isAdmin ? 'Tap "+ New Tour" to create one.' : "Check with your admin for the schedule.")), filtered.map(tour => {
     const ratedCount = Object.keys(tour.ratings || {}).length;
     const favCount = Object.values(tour.favorites || {}).filter(Boolean).length;
-    const _tMs=tour.date?new Date(tour.date+"T00:00:00").getTime():null;
-    const _dAway=_tMs!==null?Math.round((_tMs-new Date().setHours(0,0,0,0))/86400000):null;
-    const _badge=_dAway===0?{l:"\uD83D\uDD34 LIVE TODAY",bg:"#DC2626"}
-      :_dAway===1?{l:"\uD83D\uDCC5 Tomorrow",bg:"#D97706"}
-      :_dAway!==null&&_dAway>0&&_dAway<=6?{l:"\uD83D\uDD52 In "+_dAway+" days",bg:"rgba(0,0,0,.3)"}
-      :_dAway!==null&&_dAway<0?{l:"\u2705 Completed",bg:"rgba(0,0,0,.2)"}
-      :null;
     return /*#__PURE__*/React.createElement("div", {
       key: tour.id,
       className: "card-hover",
@@ -10314,7 +10123,7 @@ function ToursDashboard(_ref26) {
         background: "#fff",
         borderRadius: 18,
         overflow: "hidden",
-        boxShadow: _dAway===0?"0 0 0 3px #DC2626,0 6px 28px rgba(220,38,38,.25)":"0 4px 24px rgba(0,0,0,.10)",
+        boxShadow: "0 4px 24px rgba(0,0,0,.10)",
         border: "1px solid rgba(0,0,0,.05)"
       }
     }, /*#__PURE__*/React.createElement("div", {
@@ -10338,9 +10147,7 @@ function ToursDashboard(_ref26) {
     }, /*#__PURE__*/React.createElement(TourIcon, {
       emoji: tour.emoji,
       size: 30
-    })), /*#__PURE__*/React.createElement("div", null,
-      _badge&&/*#__PURE__*/React.createElement("div",{style:{display:"inline-block",background:_badge.bg,color:"#fff",fontSize:10,fontWeight:800,borderRadius:5,padding:"2px 8px",marginBottom:4,letterSpacing:.5,textTransform:"uppercase"}},_badge.l),
-      /*#__PURE__*/React.createElement("div", {
+    })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
       style: {
         color: "#fff",
         fontFamily: "Georgia,serif",
@@ -10391,21 +10198,34 @@ function ToursDashboard(_ref26) {
         fontWeight: 700,
         color: "#FCA5A5"
       }
-    }, "\u2764\uFE0F ", favCount)))), isAdmin && /*#__PURE__*/React.createElement("div",{style:{display:"flex",flexDirection:"column",gap:5,flexShrink:0}},
-      /*#__PURE__*/React.createElement("button",{
-        onClick:e=>{
-          e.stopPropagation();
-          const _c={...tour,id:uid("tour"),name:tour.name+" (Copy)",ratings:{},ratingSubmissions:{},favorites:{},notes:{},campaignContacts:[],createdBy:(currentUser&&currentUser.email)||SUPER_ADMIN_EMAIL};
-          setTours(prev=>[...prev,_c]);
-          showToast("\uD83D\uDDC2\uFE0F Tour duplicated! Tap to update date.","success",3500);
-        },
-        style:{background:B.gold,border:"none",color:"#fff",borderRadius:10,padding:"6px 10px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}
-      },/*#__PURE__*/React.createElement("span",{style:{fontSize:18}},"\uD83D\uDDC2\uFE0F"),/*#__PURE__*/React.createElement("span",{style:{fontSize:10,fontWeight:800}},"Copy")),
-      /*#__PURE__*/React.createElement("button",{
-        onClick:e=>{e.stopPropagation();setConfirmDelete(tour.id);},
-        style:{background:"#9B1C1C",border:"none",color:"#fff",borderRadius:10,padding:"6px 10px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}
-      },/*#__PURE__*/React.createElement("span",{style:{fontSize:18}},"\uD83D\uDDD1\uFE0F"),/*#__PURE__*/React.createElement("span",{style:{fontSize:10,fontWeight:800}},"Delete"))
-    )), (tour.listings || []).length > 0 && /*#__PURE__*/React.createElement("div", {
+    }, "\u2764\uFE0F ", favCount)))), isAdmin && /*#__PURE__*/React.createElement("button", {
+      onClick: e => {
+        e.stopPropagation();
+        setConfirmDelete(tour.id);
+      },
+      style: {
+        background: "#9B1C1C",
+        border: "none",
+        color: "#fff",
+        borderRadius: 10,
+        padding: "8px 12px",
+        cursor: "pointer",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 2,
+        flexShrink: 0
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 20
+      }
+    }, "\uD83D\uDDD1\uFE0F"), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 11,
+        fontWeight: 700
+      }
+    }, "Delete"))), (tour.listings || []).length > 0 && /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         overflowX: "auto",
@@ -11242,15 +11062,6 @@ function RequestListingPage(_ref31) {
         sendCFEmail(subAdminEmail, tourSignUp ? "New Tour Sign Up \u2014 ".concat(requestData.tourName) : "New Listing Request \u2014 ".concat(fields.address), notifyMsg).catch(() => {});
       }
       await sendCFEmail(fields.agentEmail, tourSignUp ? "Tour Sign Up Confirmation — MarketReady Tours" : "We received your listing request — MarketReady Tours", "Hi ".concat(fields.agentName, ",\n\nThank you for submitting your listing at ").concat(fields.address, "!\n\nWe've received your request for the ").concat(requestData.tourName, " tour and will review it shortly. You'll receive an email letting you know whether your listing has been approved or denied.\n\nIf you have any questions, reply to marketreadytours@gmail.com.\n\n\u2014 MarketReady Tours\nmarketreadytours.com"));
-      // Write directly to Firebase REST API (works without auth for public submissions)
-      try {
-        const reqKey = requestData.id.replace(/[.#$[\]]/g, "_");
-        await fetch("https://marketready-tours-default-rtdb.firebaseio.com/mrt_listing_requests/" + reqKey + ".json", {
-          method: "PUT",
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify(requestData)
-        });
-      } catch(e) { /* fallback to onSubmit state update */ }
       onSubmit(requestData);
       sendSMS(tourSignUp ? "New Tour Sign Up: ".concat(fields.agentName, " for ").concat(requestData.tourName) : "New Listing: ".concat(fields.address, " by ").concat(fields.agentName, " for ").concat(requestData.tourName));
       setDone(true);
@@ -11900,7 +11711,6 @@ function ListingRequestsAdmin(_ref34) {
         price: req.price,
         agent: req.agentName,
         agentEmail: req.agentEmail || "",
-        agentPhone: req.agentPhone || "",
         photos: req.photos,
         order: (tour.listings || []).length + 1
       };
@@ -13374,11 +13184,7 @@ function App() {
   const [page, setPage] = useState(() => {
     const h = window.location.hash.slice(2) || "";
     if (h.startsWith("request/")) return "request";
-    if (h === "request") return "request";
-    if (h === "tour-signup") return "tour-signup";
-    if (h === "request-tour") return "dashboard";
     if (h.startsWith("not-interested")) return "not-interested";
-    if (h.startsWith("tour/")) return "dashboard";
     return "dashboard";
   });
   const [activeTourId, setActiveTourId] = useState(() => {
@@ -13406,10 +13212,6 @@ function App() {
         setPreselectedTourId(null);
       } else if (h === "tour-signup") {
         setPage("tour-signup");
-        setActiveTourId(null);
-        setPreselectedTourId(null);
-      } else if (h === "request-tour") {
-        setPage("dashboard");
         setActiveTourId(null);
         setPreselectedTourId(null);
       } else if (h.startsWith("not-interested")) {
@@ -13617,25 +13419,6 @@ function App() {
   useEffect(() => {
     if (!fbLoaded || tours.length === 0) return;
     fbWrite("mrt_tours", tours);
-    // Write public preview for each tour (used by share worker for OG meta)
-    if (_fb) {
-      const previews = {};
-      tours.forEach(t => {
-        if (!t || !t.id) return;
-        const listings = t.listings || [];
-        const photo = listings[0]?.photos?.[0] || listings[0]?.photo || null;
-        previews[t.id.replace(/[.#$[\]]/g,"_")] = {
-          name: t.name || "",
-          emoji: t.emoji || "🏡",
-          date: t.date || "",
-          color: t.color || "#C9A55A",
-          listingCount: listings.length,
-          // Only use photos without auth tokens (public URLs only)
-          photo: (photo && photo.startsWith("http")) ? photo : null
-        };
-      });
-      _fb.ref("mrt_tour_previews").set(previews);
-    }
   }, [tours, fbLoaded]);
   useEffect(() => {
     if (!fbLoaded) return;
