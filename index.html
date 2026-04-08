@@ -1,9 +1,9 @@
-<!-- MarketReady Tours v27 | Built 2026-04-08 17:41:28 -->
+<!-- MarketReady Tours RECOVERY | Built 2026-04-08 17:46:50 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="MRT Tours"/>
@@ -54,8 +54,6 @@ window.loadGoogleMaps=function(cb){
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F7F4EF}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#C9A55A;border-radius:2px}
 textarea,input,select{font-family:inherit}
-body{padding-bottom:env(safe-area-inset-bottom);padding-top:env(safe-area-inset-top)}
-#root{min-height:calc(100vh + env(safe-area-inset-bottom))}
 .btn-hover{transition:all .2s cubic-bezier(.4,0,.2,1)!important}
 .btn-hover:hover{opacity:.9;transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.25)!important}
 .btn-hover:active{transform:translateY(0);box-shadow:none!important}
@@ -523,7 +521,6 @@ function Gallery(_ref3) {
   }, /*#__PURE__*/React.createElement("img", {
     src: photos[cur],
     alt: "",
-    loading: "lazy",
     style: {
       width: "100%",
       maxHeight: "62vh",
@@ -1422,10 +1419,10 @@ function RatingPage(_ref7) {
         _subject: "\uD83C\uDFE1 Home Tour Rating \u2014 ".concat(listing.address),
         "Property Address": listing.address,
         "City": listing.city,
-        "Listing Agent": listing.agent || "Unknown Agent",
-        "List Price": "$".concat(Number(listing.price||0).toLocaleString()),
+        "Listing Agent": listing.agent,
+        "List Price": "$".concat(listing.price.toLocaleString()),
         "Beds / Baths": "".concat(listing.beds, " bd / ").concat(listing.baths, " ba"),
-        "Square Feet": "".concat(Number(listing.sqft||0).toLocaleString(), " sqft"),
+        "Square Feet": "".concat(listing.sqft.toLocaleString(), " sqft"),
         "Days on Market": "".concat(listing.dom, " days"),
         "Tour Name": "".concat(tour.emoji, " ").concat(tour.name),
         "Tour Date": tour.date,
@@ -1446,7 +1443,7 @@ function RatingPage(_ref7) {
       };
       // Build email HTML
       const ratingRows = RATING_CATS.map(cat => "<tr><td style=\"padding:6px 12px;color:#8A8078;font-size:13px\">".concat(cat.label, "</td><td style=\"padding:6px 12px;text-align:right;font-size:14px\">").concat("★".repeat(ratings[cat.key] || 0)).concat("☆".repeat(5 - (ratings[cat.key] || 0)), " ").concat(ratings[cat.key] || 0, "/5</td></tr>")).join("");
-      const emailHtml = "<div style=\"font-family:Georgia,serif;max-width:600px;margin:0 auto;background:#fff\">\n<div style=\"background:#0D0D0D;padding:22px 28px\"><p style=\"margin:0;font-family:Georgia,serif;font-size:24px;font-weight:900;color:#ffffff;letter-spacing:1px\">Market<span style=\"color:#C9A55A\">Ready</span> <span style=\"font-weight:300;font-size:20px;letter-spacing:3px\">Tours</span></p></div>\n<div style=\"background:#C9A55A;height:4px\"></div>\n<div style=\"padding:28px\">\n<h2 style=\"color:#0D0D0D;margin:0 0 4px\">New Rating Submitted</h2>\n<p style=\"color:#8A8078;margin:0 0 20px;font-size:14px\">".concat(tour.emoji, " ").concat(tour.name, " \xB7 Stop #").concat(listing.order, "</p>\n<div style=\"background:#F9FAFB;border-radius:10px;padding:16px 20px;margin-bottom:20px\">\n<div style=\"font-size:15px;font-weight:700;color:#111\">").concat(listing.address, "</div>\n<div style=\"font-size:13px;color:#8A8078\">").concat(listing.city, " \xB7 Listed by ").concat(listing.agent, " \xB7 $").concat(Number(listing.price||0).toLocaleString(), "</div>\n</div>\n<table style=\"width:100%;border-collapse:collapse;margin-bottom:20px\">").concat(ratingRows, "</table>\n").concat(suggestions ? "<div style=\"margin-bottom:12px\"><strong style=\"font-size:12px;color:#8A8078;text-transform:uppercase;letter-spacing:.5px\">Suggestions</strong><p style=\"margin:4px 0 0;font-size:14px;color:#111\">".concat(suggestions, "</p></div>") : "", "\n<div style=\"margin-bottom:12px\"><strong style=\"font-size:12px;color:#8A8078;text-transform:uppercase;letter-spacing:.5px\">Suggested Price</strong><p style=\"margin:4px 0 0;font-size:14px;font-weight:700;color:#0D0D0D\">").concat(pricedRight ? "✅ Priced Correctly" : sugPrice || "Not provided", "</p></div>\n").concat(photos.filter(p => p.url && p.url.startsWith("https://")).length > 0 ? "<div style=\"margin-top:16px\"><strong style=\"font-size:12px;color:#8A8078;text-transform:uppercase;letter-spacing:.5px\">&#128247; Photos (".concat(photos.filter(p => p.url && p.url.startsWith("https://")).length, ")</strong><div style=\"margin-top:8px\">").concat(photos.filter(p => p.url && p.url.startsWith("https://")).map((p, i) => "<a href=\"".concat(p.url, "\" target=\"_blank\" style=\"display:inline-block;margin:4px 6px 4px 0;background:#0D0D0D;color:#ffffff;text-decoration:none;padding:6px 14px;border-radius:6px;font-size:13px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif\">&#128247; View Photo ").concat(i + 1, "</a>")).join(""), "</div></div>") : "", "\n<p style=\"font-size:11px;color:#9CA3AF;margin-top:24px;border-top:1px solid #F0EDE8;padding-top:12px\">All feedback is provided by licensed real estate agents specializing in the area.</p>\n</div></div>");
+      const emailHtml = "<div style=\"font-family:Georgia,serif;max-width:600px;margin:0 auto;background:#fff\">\n<div style=\"background:#0D0D0D;padding:22px 28px\"><p style=\"margin:0;font-family:Georgia,serif;font-size:24px;font-weight:900;color:#ffffff;letter-spacing:1px\">Market<span style=\"color:#C9A55A\">Ready</span> <span style=\"font-weight:300;font-size:20px;letter-spacing:3px\">Tours</span></p></div>\n<div style=\"background:#C9A55A;height:4px\"></div>\n<div style=\"padding:28px\">\n<h2 style=\"color:#0D0D0D;margin:0 0 4px\">New Rating Submitted</h2>\n<p style=\"color:#8A8078;margin:0 0 20px;font-size:14px\">".concat(tour.emoji, " ").concat(tour.name, " \xB7 Stop #").concat(listing.order, "</p>\n<div style=\"background:#F9FAFB;border-radius:10px;padding:16px 20px;margin-bottom:20px\">\n<div style=\"font-size:15px;font-weight:700;color:#111\">").concat(listing.address, "</div>\n<div style=\"font-size:13px;color:#8A8078\">").concat(listing.city, " \xB7 Listed by ").concat(listing.agent, " \xB7 $").concat(Number(listing.price).toLocaleString(), "</div>\n</div>\n<table style=\"width:100%;border-collapse:collapse;margin-bottom:20px\">").concat(ratingRows, "</table>\n").concat(suggestions ? "<div style=\"margin-bottom:12px\"><strong style=\"font-size:12px;color:#8A8078;text-transform:uppercase;letter-spacing:.5px\">Suggestions</strong><p style=\"margin:4px 0 0;font-size:14px;color:#111\">".concat(suggestions, "</p></div>") : "", "\n<div style=\"margin-bottom:12px\"><strong style=\"font-size:12px;color:#8A8078;text-transform:uppercase;letter-spacing:.5px\">Suggested Price</strong><p style=\"margin:4px 0 0;font-size:14px;font-weight:700;color:#0D0D0D\">").concat(pricedRight ? "✅ Priced Correctly" : sugPrice || "Not provided", "</p></div>\n").concat(photos.filter(p => p.url && p.url.startsWith("https://")).length > 0 ? "<div style=\"margin-top:16px\"><strong style=\"font-size:12px;color:#8A8078;text-transform:uppercase;letter-spacing:.5px\">&#128247; Photos (".concat(photos.filter(p => p.url && p.url.startsWith("https://")).length, ")</strong><div style=\"margin-top:8px\">").concat(photos.filter(p => p.url && p.url.startsWith("https://")).map((p, i) => "<a href=\"".concat(p.url, "\" target=\"_blank\" style=\"display:inline-block;margin:4px 6px 4px 0;background:#0D0D0D;color:#ffffff;text-decoration:none;padding:6px 14px;border-radius:6px;font-size:13px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif\">&#128247; View Photo ").concat(i + 1, "</a>")).join(""), "</div></div>") : "", "\n<p style=\"font-size:11px;color:#9CA3AF;margin-top:24px;border-top:1px solid #F0EDE8;padding-top:12px\">All feedback is provided by licensed real estate agents specializing in the area.</p>\n</div></div>");
       // Fire CF email first — independent of Formspree
       onRatingSubmit(listing.id, ratings, {
         raterName: raterName || "Anonymous",
@@ -1636,7 +1633,7 @@ function RatingPage(_ref7) {
       flexWrap: "wrap",
       marginBottom: 10
     }
-  }, ["\uD83D\uDECF ".concat(listing.beds, " beds"), "\uD83D\uDEBF ".concat(listing.baths, " baths"), "\uD83D\uDCD0 ".concat(Number(listing.sqft||0).toLocaleString(), " sqft"), "\uD83D\uDCC5 ".concat(listing.dom||0, " DOM")].map((t, i) => /*#__PURE__*/React.createElement("span", {
+  }, ["\uD83D\uDECF ".concat(listing.beds, " beds"), "\uD83D\uDEBF ".concat(listing.baths, " baths"), "\uD83D\uDCD0 ".concat(listing.sqft.toLocaleString(), " sqft"), "\uD83D\uDCC5 ".concat(listing.dom, " DOM")].map((t, i) => /*#__PURE__*/React.createElement("span", {
     key: i,
     style: {
       background: B.lightGray,
@@ -1658,7 +1655,7 @@ function RatingPage(_ref7) {
       color: B.primary,
       fontFamily: "Georgia,serif"
     }
-  }, "$", Number(listing.price||0).toLocaleString()), /*#__PURE__*/React.createElement("div", {
+  }, "$", listing.price.toLocaleString()), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 12,
       color: B.gray,
@@ -1672,7 +1669,6 @@ function RatingPage(_ref7) {
   }, /*#__PURE__*/React.createElement("a", {
     href: "https://www.marketreadytours.com",
     target: "_blank",
-    rel: "noreferrer",
     style: {
       background: B.primary,
       color: "#fff",
@@ -1685,7 +1681,6 @@ function RatingPage(_ref7) {
   }, "Buyer Est."), /*#__PURE__*/React.createElement("a", {
     href: "https://www.marketreadytours.com",
     target: "_blank",
-    rel: "noreferrer",
     style: {
       background: B.gold,
       color: "#fff",
@@ -1767,7 +1762,7 @@ function RatingPage(_ref7) {
     /*#__PURE__*/React.createElement("input", {
       type:"text",value:raterName,onChange:e=>setRaterName(e.target.value),
       placeholder:"e.g. Jane Smith — Agent",
-      style:{width:"100%",border:"1.5px solid #D8D0C8",borderRadius:8,padding:"10px 12px",fontSize:16,outline:"none",background:B.cream}
+      style:{width:"100%",border:"1.5px solid #D8D0C8",borderRadius:8,padding:"10px 12px",fontSize:14,outline:"none",background:B.cream}
     })
   ),
   /*#__PURE__*/React.createElement("textarea", {
@@ -3314,7 +3309,6 @@ function TourSponsorsModal(_ref10) {
     }, sp.logo ? /*#__PURE__*/React.createElement("img", {
       src: sp.logo,
       alt: sp.name,
-      loading: "lazy",
       style: {
         width: 40,
         height: 40,
@@ -6287,7 +6281,7 @@ function TourDetailPage(_ref19) {
           const v = s[cat.key] || 0;
           return v > 0 ? "<tr><td style=\"padding:5px 12px;color:#8A8078;font-size:13px\">".concat(cat.label, "</td><td style=\"padding:5px 12px;text-align:right;font-size:13px;color:#0D0D0D;font-weight:600\">").concat("★".repeat(v)).concat("☆".repeat(5 - v), " ").concat(v, "/5</td></tr>") : "";
         }).join("");
-        return "<div style=\"background:#F9FAFB;border-radius:10px;padding:14px 16px;margin-top:10px;border-left:4px solid #C9A55A\">\n<div style=\"font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9CA3AF;margin-bottom:8px\">Submission #".concat(si + 1, " &nbsp;\xB7&nbsp; ").concat(s.raterName && s.raterName !== "Anonymous" ? s.raterName + " &nbsp;\xB7&nbsp; " : "").concat(s.submittedAt ? new Date(s.submittedAt).toLocaleDateString("en-US", {
+        return "<div style=\"background:#F9FAFB;border-radius:10px;padding:14px 16px;margin-top:10px;border-left:4px solid #C9A55A\">\n<div style=\"font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9CA3AF;margin-bottom:8px\">Submission #".concat(si + 1, " &nbsp;\xB7&nbsp; ").concat(s.submittedAt ? new Date(s.submittedAt).toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",
           hour: "2-digit",
@@ -8011,7 +8005,6 @@ adminListings.length >= 1 && /*#__PURE__*/React.createElement("button", {
   }, /*#__PURE__*/React.createElement("img", {
     src: sp.logo,
     alt: sp.name,
-    loading: "lazy",
     style: {
       maxWidth: "100%",
       maxHeight: "100%",
@@ -8197,7 +8190,6 @@ adminListings.length >= 1 && /*#__PURE__*/React.createElement("button", {
   }, /*#__PURE__*/React.createElement("img", {
     src: sp.logo,
     alt: sp.name,
-    loading: "lazy",
     style: {
       maxWidth: "100%",
       maxHeight: "100%",
@@ -8443,7 +8435,7 @@ adminListings.length >= 1 && /*#__PURE__*/React.createElement("button", {
         fontFamily: "Georgia,serif",
         color: "#fff"
       }
-    }, "$", Number(listing.price||0).toLocaleString())), (listing.photos || []).length > 1 && /*#__PURE__*/React.createElement("div", {
+    }, "$", listing.price.toLocaleString())), (listing.photos || []).length > 1 && /*#__PURE__*/React.createElement("div", {
       style: {
         position: "absolute",
         bottom: 10,
@@ -8551,7 +8543,7 @@ adminListings.length >= 1 && /*#__PURE__*/React.createElement("button", {
       const _chips = [
         {t:"\uD83D\uDECF ".concat(listing.beds," bd"),bg:B.lightGray,c:B.dark},
         {t:"\uD83D\uDEBF ".concat(listing.baths," ba"),bg:B.lightGray,c:B.dark},
-        {t:"\uD83D\uDCD0 ".concat(Number(listing.sqft||0).toLocaleString()," sqft"),bg:B.lightGray,c:B.dark},
+        {t:"\uD83D\uDCD0 ".concat(listing.sqft.toLocaleString()," sqft"),bg:B.lightGray,c:B.dark},
         {t:"\uD83D\uDCC5 ".concat(_dom," DOM"),bg:_dom>60?"#FEE2E2":_dom>30?"#FEF3C7":B.lightGray,c:_dom>60?"#9B1C1C":_dom>30?"#92400E":B.dark},
         ...(_ppsf>0?[{t:"$".concat(_ppsf.toLocaleString(),"/sqft"),bg:"#EFF6FF",c:"#1B3A6B"}]:[]),
         ...(listing.priceReduced?[{t:"\uD83D\uDD3B Reduced",bg:"#FFF7F0",c:"#C2410C"}]:[]),
@@ -9005,7 +8997,6 @@ function SponsorsPage(_ref22) {
   }, sp.logo ? /*#__PURE__*/React.createElement("img", {
     src: sp.logo,
     alt: sp.name,
-    loading: "lazy",
     style: {
       maxWidth: "100%",
       maxHeight: 76,
@@ -9975,12 +9966,7 @@ function ToursDashboard(_ref26) {
     }
   }, "Cancel"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
-      const deletedId = confirmDelete;
-      setTours(prev => prev.filter(t => t.id !== deletedId));
-      if (_fb) { _fb.ref("mrt_listing_requests").once("value").then(snap => {
-        const all = snap.val() || {};
-        Object.entries(all).forEach(([k, v]) => { if (v && v.tourId === deletedId) _fb.ref("mrt_listing_requests/" + k).remove().catch(()=>{}); });
-      }).catch(() => {}); }
+      setTours(prev => prev.filter(t => t.id !== confirmDelete));
       setConfirmDelete(null);
     },
     style: {
@@ -10285,7 +10271,7 @@ function ToursDashboard(_ref26) {
     value:tourSearch,
     onChange:e=>setTourSearch(e.target.value),
     placeholder:"\uD83D\uDD0D Search tours...",
-    style:{width:"100%",border:"1.5px solid #D8D0C8",borderRadius:10,padding:"9px 14px",fontSize:16,outline:"none",background:"#fff",marginBottom:12}
+    style:{width:"100%",border:"1.5px solid #D8D0C8",borderRadius:10,padding:"9px 14px",fontSize:14,outline:"none",background:"#fff",marginBottom:12}
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
@@ -12021,7 +12007,7 @@ function ListingRequestsAdmin(_ref34) {
           const m = parseInt(timeParts[2]);
           if (timeParts[3].toUpperCase() === "PM" && h !== 12) h += 12;
           if (timeParts[3].toUpperCase() === "AM" && h === 12) h = 0;
-          tourMs = new Date(tour.date + "T12:00:00").setHours(h, m, 0, 0);
+          tourMs = new Date(tour.date).setHours(h, m, 0, 0);
         }
         const reminder48h = tourMs - 48 * 60 * 60 * 1000;
         const reminder24h = tourMs - 24 * 60 * 60 * 1000;
@@ -12869,7 +12855,6 @@ function ContactPage(_ref36) {
   }, "marketreadytours@gmail.com")), /*#__PURE__*/React.createElement("a", {
     href: "https://www.marketreadytours.com",
     target: "_blank",
-    rel: "noreferrer",
     style: {
       color: "#fff",
       textDecoration: "none",
@@ -13046,9 +13031,6 @@ function SponsorSignupPage(_ref38) {
       tourId: selectedTour,
       plan,
       ...form,
-      name: sanitize(form.name),
-      contactName: sanitize(form.contactName || ""),
-      tagline: sanitize(form.tagline || ""),
       id: "sp-" + uid("sp"),
       paid: false,
       paymentPlan: plan,
