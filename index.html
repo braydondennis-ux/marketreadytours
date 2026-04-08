@@ -1231,6 +1231,7 @@ function RatingPage(_ref7) {
     onRatingSubmit
   } = _ref7;
   const [ratings, setRatings] = useState({});
+  const [raterName, setRaterName] = useState("");
   const [suggestions, setSuggestions] = useState("");
   const [sugPrice, setSugPrice] = useState("");
   const [pricedRight, setPricedRight] = useState(false);
@@ -1403,6 +1404,11 @@ function RatingPage(_ref7) {
     if (!canSend("rating_" + listing.id, 3000)) {
       return;
     } // prevent double-submit
+    const ratedCount = Object.values(ratings).filter(v => v > 0).length;
+    if (ratedCount === 0) {
+      setSubmitError("Please rate at least one category before submitting.");
+      return;
+    }
     const safeSuggestions = sanitize(suggestions);
     const safeSugPrice = sanitize(sugPrice);
     setSubmitting(true);
@@ -1421,6 +1427,7 @@ function RatingPage(_ref7) {
         "Tour Date": tour.date,
         "Tour Time": tour.time,
         "Stop Number": "#".concat(listing.order),
+        "Rated By": raterName || "Anonymous",
         "── RATINGS ──": "─────────────────",
         ...Object.fromEntries(RATING_CATS.map(cat => [cat.label, starLabel(ratings[cat.key] || 0)])),
         "── FEEDBACK ──": "─────────────────",
@@ -1438,6 +1445,7 @@ function RatingPage(_ref7) {
       const emailHtml = "<div style=\"font-family:Georgia,serif;max-width:600px;margin:0 auto;background:#fff\">\n<div style=\"background:#0D0D0D;padding:22px 28px\"><p style=\"margin:0;font-family:Georgia,serif;font-size:24px;font-weight:900;color:#ffffff;letter-spacing:1px\">Market<span style=\"color:#C9A55A\">Ready</span> <span style=\"font-weight:300;font-size:20px;letter-spacing:3px\">Tours</span></p></div>\n<div style=\"background:#C9A55A;height:4px\"></div>\n<div style=\"padding:28px\">\n<h2 style=\"color:#0D0D0D;margin:0 0 4px\">New Rating Submitted</h2>\n<p style=\"color:#8A8078;margin:0 0 20px;font-size:14px\">".concat(tour.emoji, " ").concat(tour.name, " \xB7 Stop #").concat(listing.order, "</p>\n<div style=\"background:#F9FAFB;border-radius:10px;padding:16px 20px;margin-bottom:20px\">\n<div style=\"font-size:15px;font-weight:700;color:#111\">").concat(listing.address, "</div>\n<div style=\"font-size:13px;color:#8A8078\">").concat(listing.city, " \xB7 Listed by ").concat(listing.agent, " \xB7 $").concat(Number(listing.price).toLocaleString(), "</div>\n</div>\n<table style=\"width:100%;border-collapse:collapse;margin-bottom:20px\">").concat(ratingRows, "</table>\n").concat(suggestions ? "<div style=\"margin-bottom:12px\"><strong style=\"font-size:12px;color:#8A8078;text-transform:uppercase;letter-spacing:.5px\">Suggestions</strong><p style=\"margin:4px 0 0;font-size:14px;color:#111\">".concat(suggestions, "</p></div>") : "", "\n<div style=\"margin-bottom:12px\"><strong style=\"font-size:12px;color:#8A8078;text-transform:uppercase;letter-spacing:.5px\">Suggested Price</strong><p style=\"margin:4px 0 0;font-size:14px;font-weight:700;color:#0D0D0D\">").concat(pricedRight ? "✅ Priced Correctly" : sugPrice || "Not provided", "</p></div>\n").concat(photos.filter(p => p.url && p.url.startsWith("https://")).length > 0 ? "<div style=\"margin-top:16px\"><strong style=\"font-size:12px;color:#8A8078;text-transform:uppercase;letter-spacing:.5px\">&#128247; Photos (".concat(photos.filter(p => p.url && p.url.startsWith("https://")).length, ")</strong><div style=\"margin-top:8px\">").concat(photos.filter(p => p.url && p.url.startsWith("https://")).map((p, i) => "<a href=\"".concat(p.url, "\" target=\"_blank\" style=\"display:inline-block;margin:4px 6px 4px 0;background:#0D0D0D;color:#ffffff;text-decoration:none;padding:6px 14px;border-radius:6px;font-size:13px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif\">&#128247; View Photo ").concat(i + 1, "</a>")).join(""), "</div></div>") : "", "\n<p style=\"font-size:11px;color:#9CA3AF;margin-top:24px;border-top:1px solid #F0EDE8;padding-top:12px\">All feedback is provided by licensed real estate agents specializing in the area.</p>\n</div></div>");
       // Fire CF email first — independent of Formspree
       onRatingSubmit(listing.id, ratings, {
+        raterName: raterName || "Anonymous",
         suggestions: safeSuggestions,
         sugPrice: pricedRight ? "Priced Correctly" : safeSugPrice,
         pricedRight,
@@ -1747,7 +1755,16 @@ function RatingPage(_ref7) {
       color: B.gray,
       marginBottom: 8
     }
-  }, "Suggestions"), /*#__PURE__*/React.createElement("textarea", {
+  }, "Suggestions"),
+  /*#__PURE__*/React.createElement("div", {style:{marginBottom:16}},
+    /*#__PURE__*/React.createElement("label", {style:{display:"block",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,color:B.gray,marginBottom:6}}, "Your Name (optional)"),
+    /*#__PURE__*/React.createElement("input", {
+      type:"text",value:raterName,onChange:e=>setRaterName(e.target.value),
+      placeholder:"e.g. Jane Smith — Agent",
+      style:{width:"100%",border:"1.5px solid #D8D0C8",borderRadius:8,padding:"10px 12px",fontSize:14,outline:"none",background:B.cream}
+    })
+  ),
+  /*#__PURE__*/React.createElement("textarea", {
     maxLength: 500,
     placeholder: "e.g. Update master bath, repaint exterior...",
     rows: 3,
@@ -9525,6 +9542,7 @@ function ToursDashboard(_ref26) {
     onClearTourId
   } = _ref26;
   const [filterDate, setFilterDate] = useState("upcoming");
+  const [tourSearch, setTourSearch] = useState("");
   const [showRequestForm, setShowRequestForm] = useState(() => window.location.hash.slice(2) === "request-tour");
   const requestFormRef = React.useRef(null);
   const [activeTourId, setActiveTourId] = useState(initialTourId || null);
@@ -9555,7 +9573,9 @@ function ToursDashboard(_ref26) {
   });
   const [confirmDelete, setConfirmDelete] = useState(null);
   const todayStr = new Date().toISOString().split("T")[0];
-  const filtered = (filterDate === "upcoming" ? tours.filter(t => t.date >= todayStr) : tours.filter(t => t.date === filterDate)).sort((a, b) => a.date.localeCompare(b.date) || (a.time || "").localeCompare(b.time || ""));
+  const filtered = (filterDate === "upcoming" ? tours.filter(t => t.date >= todayStr) : tours.filter(t => t.date === filterDate))
+    .filter(t => !tourSearch || (t.name||"").toLowerCase().includes(tourSearch.toLowerCase()))
+    .sort((a, b) => a.date.localeCompare(b.date) || (a.time || "").localeCompare(b.time || ""));
   const pastDates = [...new Set(tours.map(t => t.date).filter(d => d && d < todayStr))].sort();
   const fmt12 = t24 => {
     const [h, m] = t24.split(":");
@@ -10245,7 +10265,13 @@ function ToursDashboard(_ref26) {
       flexDirection: "column",
       gap: 16
     }
-  }, /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("input", {
+    type:"search",
+    value:tourSearch,
+    onChange:e=>setTourSearch(e.target.value),
+    placeholder:"\uD83D\uDD0D Search tours...",
+    style:{width:"100%",border:"1.5px solid #D8D0C8",borderRadius:10,padding:"9px 14px",fontSize:14,outline:"none",background:"#fff",marginBottom:12}
+  }), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       justifyContent: "space-between",
