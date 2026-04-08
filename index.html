@@ -1,4 +1,4 @@
-<!-- MarketReady Tours v23 | Built 2026-04-08 16:45 -->
+<!-- MarketReady Tours v24 | Built 2026-04-08 16:49 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9973,7 +9973,13 @@ function ToursDashboard(_ref26) {
     }
   }, "Cancel"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
-      setTours(prev => prev.filter(t => t.id !== confirmDelete));
+      const deletedId = confirmDelete;
+      setTours(prev => prev.filter(t => t.id !== deletedId));
+      setListingRequests && setListingRequests(prev => prev.filter(r => r.tourId !== deletedId));
+      if (_fb) { _fb.ref("mrt_listing_requests").once("value").then(snap => {
+        const all = snap.val() || {};
+        Object.entries(all).forEach(([k, v]) => { if (v && v.tourId === deletedId) _fb.ref("mrt_listing_requests/" + k).remove(); });
+      }).catch(() => {}); }
       setConfirmDelete(null);
     },
     style: {
@@ -13038,6 +13044,9 @@ function SponsorSignupPage(_ref38) {
       tourId: selectedTour,
       plan,
       ...form,
+      name: sanitize(form.name),
+      contactName: sanitize(form.contactName || ""),
+      tagline: sanitize(form.tagline || ""),
       id: "sp-" + uid("sp"),
       paid: false,
       paymentPlan: plan,
