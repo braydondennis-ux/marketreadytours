@@ -1,4 +1,4 @@
-<!-- MarketReady Tours v24 | Built 2026-04-08 16:49 -->
+<!-- MarketReady Tours v24b | Built 2026-04-08 17:03 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9975,10 +9975,9 @@ function ToursDashboard(_ref26) {
     onClick: () => {
       const deletedId = confirmDelete;
       setTours(prev => prev.filter(t => t.id !== deletedId));
-      setListingRequests && setListingRequests(prev => prev.filter(r => r.tourId !== deletedId));
       if (_fb) { _fb.ref("mrt_listing_requests").once("value").then(snap => {
         const all = snap.val() || {};
-        Object.entries(all).forEach(([k, v]) => { if (v && v.tourId === deletedId) _fb.ref("mrt_listing_requests/" + k).remove(); });
+        Object.entries(all).forEach(([k, v]) => { if (v && v.tourId === deletedId) _fb.ref("mrt_listing_requests/" + k).remove().catch(()=>{}); });
       }).catch(() => {}); }
       setConfirmDelete(null);
     },
