@@ -1,4 +1,4 @@
-<!-- MarketReady Tours v25b | Built 2026-04-08 17:29:08 -->
+<!-- MarketReady Tours v26 | Built 2026-04-08 17:32:32 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7050,7 +7050,7 @@ function TourDetailPage(_ref19) {
     },
     onClick: () => {
       var _navigator$clipboard;
-      (_navigator$clipboard = navigator.clipboard) === null || _navigator$clipboard === void 0 || _navigator$clipboard.writeText(tour.code);
+      (_navigator$clipboard = navigator.clipboard) === null || _navigator$clipboard === void 0 || _navigator$clipboard.writeText(tour.code).then(()=>showToast("\uD83D\uDD11 Code copied!","success",2000)).catch(()=>showToast("\uD83D\uDD11 Tour code: "+tour.code,"info",4000));
     },
     title: "Click to copy"
   }, "\uD83D\uDD11 ", tour.code)), /*#__PURE__*/React.createElement("div", {
