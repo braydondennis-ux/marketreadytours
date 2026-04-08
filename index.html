@@ -1,4 +1,4 @@
-<!-- MarketReady Tours v25 | Built 2026-04-08 17:06 -->
+<!-- MarketReady Tours v25b | Built 2026-04-08 17:29:08 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1422,10 +1422,10 @@ function RatingPage(_ref7) {
         _subject: "\uD83C\uDFE1 Home Tour Rating \u2014 ".concat(listing.address),
         "Property Address": listing.address,
         "City": listing.city,
-        "Listing Agent": listing.agent,
+        "Listing Agent": listing.agent || "Unknown Agent",
         "List Price": "$".concat(Number(listing.price||0).toLocaleString()),
         "Beds / Baths": "".concat(listing.beds, " bd / ").concat(listing.baths, " ba"),
-        "Square Feet": "".concat(listing.sqft.toLocaleString(), " sqft"),
+        "Square Feet": "".concat(Number(listing.sqft||0).toLocaleString(), " sqft"),
         "Days on Market": "".concat(listing.dom, " days"),
         "Tour Name": "".concat(tour.emoji, " ").concat(tour.name),
         "Tour Date": tour.date,
@@ -1524,7 +1524,7 @@ function RatingPage(_ref7) {
     onClose: () => setShowGallery(false)
   }), /*#__PURE__*/React.createElement("div", {
     style: {
-      background: tour.color,
+      background: tour.color || "#0D0D0D",
       padding: "14px 18px",
       display: "flex",
       alignItems: "center",
@@ -1636,7 +1636,7 @@ function RatingPage(_ref7) {
       flexWrap: "wrap",
       marginBottom: 10
     }
-  }, ["\uD83D\uDECF ".concat(listing.beds, " beds"), "\uD83D\uDEBF ".concat(listing.baths, " baths"), "\uD83D\uDCD0 ".concat(listing.sqft.toLocaleString(), " sqft"), "\uD83D\uDCC5 ".concat(listing.dom, " DOM")].map((t, i) => /*#__PURE__*/React.createElement("span", {
+  }, ["\uD83D\uDECF ".concat(listing.beds, " beds"), "\uD83D\uDEBF ".concat(listing.baths, " baths"), "\uD83D\uDCD0 ".concat(Number(listing.sqft||0).toLocaleString(), " sqft"), "\uD83D\uDCC5 ".concat(listing.dom||0, " DOM")].map((t, i) => /*#__PURE__*/React.createElement("span", {
     key: i,
     style: {
       background: B.lightGray,
@@ -2020,7 +2020,7 @@ function RankingPage(_ref8) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      background: tour.color,
+      background: tour.color || "#0D0D0D",
       padding: "14px 18px",
       display: "flex",
       alignItems: "center",
@@ -2188,7 +2188,7 @@ function SummaryDashboard(_ref9) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      background: tour.color,
+      background: tour.color || "#0D0D0D",
       padding: "14px 18px",
       display: "flex",
       alignItems: "center",
@@ -6383,7 +6383,7 @@ function TourDetailPage(_ref19) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      background: tour.color,
+      background: tour.color || "#0D0D0D",
       padding: "14px 18px",
       display: "flex",
       alignItems: "center",
@@ -6455,7 +6455,7 @@ function TourDetailPage(_ref19) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      background: tour.color,
+      background: tour.color || "#0D0D0D",
       padding: "14px 18px",
       display: "flex",
       alignItems: "center",
@@ -7011,7 +7011,7 @@ function TourDetailPage(_ref19) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      background: tour.color,
+      background: tour.color || "#0D0D0D",
       padding: "14px 18px",
       display: "flex",
       alignItems: "center",
@@ -8551,7 +8551,7 @@ adminListings.length >= 1 && /*#__PURE__*/React.createElement("button", {
       const _chips = [
         {t:"\uD83D\uDECF ".concat(listing.beds," bd"),bg:B.lightGray,c:B.dark},
         {t:"\uD83D\uDEBF ".concat(listing.baths," ba"),bg:B.lightGray,c:B.dark},
-        {t:"\uD83D\uDCD0 ".concat(listing.sqft.toLocaleString()," sqft"),bg:B.lightGray,c:B.dark},
+        {t:"\uD83D\uDCD0 ".concat(Number(listing.sqft||0).toLocaleString()," sqft"),bg:B.lightGray,c:B.dark},
         {t:"\uD83D\uDCC5 ".concat(_dom," DOM"),bg:_dom>60?"#FEE2E2":_dom>30?"#FEF3C7":B.lightGray,c:_dom>60?"#9B1C1C":_dom>30?"#92400E":B.dark},
         ...(_ppsf>0?[{t:"$".concat(_ppsf.toLocaleString(),"/sqft"),bg:"#EFF6FF",c:"#1B3A6B"}]:[]),
         ...(listing.priceReduced?[{t:"\uD83D\uDD3B Reduced",bg:"#FFF7F0",c:"#C2410C"}]:[]),
@@ -8568,7 +8568,7 @@ adminListings.length >= 1 && /*#__PURE__*/React.createElement("button", {
         color: "#7A5A28"
       }
     }, "\uD83D\uDCDD ", /*#__PURE__*/React.createElement("strong", null, "Agent Note:"), " ", note), isRated && /*#__PURE__*/React.createElement(React.Fragment, null,
-      /*#__PURE__*/React.createElement("div", {style:{marginBottom:4}}, starBar(avg, tour.color)),
+      /*#__PURE__*/React.createElement("div", {style:{marginBottom:4}}, starBar(avg, tour.color || "#0D0D0D")),
       (() => {
         const _rs=(tour.ratingSubmissions||{})[listing.id];
         const _n=Array.isArray(_rs)?_rs.length:Object.keys(_rs||{}).length;
@@ -8617,7 +8617,7 @@ adminListings.length >= 1 && /*#__PURE__*/React.createElement("button", {
       },
       style: {
         flex: 1,
-        background: isRated ? "#2D6A4F" : tour.color,
+        background: isRated ? "#2D6A4F" : (tour.color || "#0D0D0D"),
         color: "#fff",
         border: "none",
         borderRadius: 10,
