@@ -1,8 +1,9 @@
+<!-- MarketReady Tours v23 | Built 2026-04-08 16:45 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="MRT Tours"/>
@@ -53,6 +54,8 @@ window.loadGoogleMaps=function(cb){
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F7F4EF}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#C9A55A;border-radius:2px}
 textarea,input,select{font-family:inherit}
+body{padding-bottom:env(safe-area-inset-bottom);padding-top:env(safe-area-inset-top)}
+#root{min-height:calc(100vh + env(safe-area-inset-bottom))}
 .btn-hover{transition:all .2s cubic-bezier(.4,0,.2,1)!important}
 .btn-hover:hover{opacity:.9;transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.25)!important}
 .btn-hover:active{transform:translateY(0);box-shadow:none!important}
@@ -520,6 +523,7 @@ function Gallery(_ref3) {
   }, /*#__PURE__*/React.createElement("img", {
     src: photos[cur],
     alt: "",
+    loading: "lazy",
     style: {
       width: "100%",
       maxHeight: "62vh",
@@ -1419,9 +1423,9 @@ function RatingPage(_ref7) {
         "Property Address": listing.address,
         "City": listing.city,
         "Listing Agent": listing.agent,
-        "List Price": "$".concat(Number(listing.price || 0).toLocaleString()),
+        "List Price": "$".concat(Number(listing.price||0).toLocaleString()),
         "Beds / Baths": "".concat(listing.beds, " bd / ").concat(listing.baths, " ba"),
-        "Square Feet": "".concat(Number(listing.sqft || 0).toLocaleString(), " sqft"),
+        "Square Feet": "".concat(listing.sqft.toLocaleString(), " sqft"),
         "Days on Market": "".concat(listing.dom, " days"),
         "Tour Name": "".concat(tour.emoji, " ").concat(tour.name),
         "Tour Date": tour.date,
@@ -1632,7 +1636,7 @@ function RatingPage(_ref7) {
       flexWrap: "wrap",
       marginBottom: 10
     }
-  }, ["\uD83D\uDECF ".concat(listing.beds, " beds"), "\uD83D\uDEBF ".concat(listing.baths, " baths"), "\uD83D\uDCD0 ".concat(Number(listing.sqft || 0).toLocaleString(), " sqft"), "\uD83D\uDCC5 ".concat(listing.dom, " DOM")].map((t, i) => /*#__PURE__*/React.createElement("span", {
+  }, ["\uD83D\uDECF ".concat(listing.beds, " beds"), "\uD83D\uDEBF ".concat(listing.baths, " baths"), "\uD83D\uDCD0 ".concat(listing.sqft.toLocaleString(), " sqft"), "\uD83D\uDCC5 ".concat(listing.dom, " DOM")].map((t, i) => /*#__PURE__*/React.createElement("span", {
     key: i,
     style: {
       background: B.lightGray,
@@ -1654,7 +1658,7 @@ function RatingPage(_ref7) {
       color: B.primary,
       fontFamily: "Georgia,serif"
     }
-  }, "$", Number(listing.price || 0).toLocaleString()), /*#__PURE__*/React.createElement("div", {
+  }, "$", Number(listing.price||0).toLocaleString()), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 12,
       color: B.gray,
@@ -1761,7 +1765,7 @@ function RatingPage(_ref7) {
     /*#__PURE__*/React.createElement("input", {
       type:"text",value:raterName,onChange:e=>setRaterName(e.target.value),
       placeholder:"e.g. Jane Smith — Agent",
-      style:{width:"100%",border:"1.5px solid #D8D0C8",borderRadius:8,padding:"10px 12px",fontSize:14,outline:"none",background:B.cream}
+      style:{width:"100%",border:"1.5px solid #D8D0C8",borderRadius:8,padding:"10px 12px",fontSize:16,outline:"none",background:B.cream}
     })
   ),
   /*#__PURE__*/React.createElement("textarea", {
@@ -3308,6 +3312,7 @@ function TourSponsorsModal(_ref10) {
     }, sp.logo ? /*#__PURE__*/React.createElement("img", {
       src: sp.logo,
       alt: sp.name,
+      loading: "lazy",
       style: {
         width: 40,
         height: 40,
@@ -8004,6 +8009,7 @@ adminListings.length >= 1 && /*#__PURE__*/React.createElement("button", {
   }, /*#__PURE__*/React.createElement("img", {
     src: sp.logo,
     alt: sp.name,
+    loading: "lazy",
     style: {
       maxWidth: "100%",
       maxHeight: "100%",
@@ -8189,6 +8195,7 @@ adminListings.length >= 1 && /*#__PURE__*/React.createElement("button", {
   }, /*#__PURE__*/React.createElement("img", {
     src: sp.logo,
     alt: sp.name,
+    loading: "lazy",
     style: {
       maxWidth: "100%",
       maxHeight: "100%",
@@ -8434,7 +8441,7 @@ adminListings.length >= 1 && /*#__PURE__*/React.createElement("button", {
         fontFamily: "Georgia,serif",
         color: "#fff"
       }
-    }, "$", Number(listing.price || 0).toLocaleString())), (listing.photos || []).length > 1 && /*#__PURE__*/React.createElement("div", {
+    }, "$", Number(listing.price||0).toLocaleString())), (listing.photos || []).length > 1 && /*#__PURE__*/React.createElement("div", {
       style: {
         position: "absolute",
         bottom: 10,
@@ -8542,7 +8549,7 @@ adminListings.length >= 1 && /*#__PURE__*/React.createElement("button", {
       const _chips = [
         {t:"\uD83D\uDECF ".concat(listing.beds," bd"),bg:B.lightGray,c:B.dark},
         {t:"\uD83D\uDEBF ".concat(listing.baths," ba"),bg:B.lightGray,c:B.dark},
-        {t:"\uD83D\uDCD0 ".concat(Number(listing.sqft || 0).toLocaleString()," sqft"),bg:B.lightGray,c:B.dark},
+        {t:"\uD83D\uDCD0 ".concat(listing.sqft.toLocaleString()," sqft"),bg:B.lightGray,c:B.dark},
         {t:"\uD83D\uDCC5 ".concat(_dom," DOM"),bg:_dom>60?"#FEE2E2":_dom>30?"#FEF3C7":B.lightGray,c:_dom>60?"#9B1C1C":_dom>30?"#92400E":B.dark},
         ...(_ppsf>0?[{t:"$".concat(_ppsf.toLocaleString(),"/sqft"),bg:"#EFF6FF",c:"#1B3A6B"}]:[]),
         ...(listing.priceReduced?[{t:"\uD83D\uDD3B Reduced",bg:"#FFF7F0",c:"#C2410C"}]:[]),
@@ -8996,6 +9003,7 @@ function SponsorsPage(_ref22) {
   }, sp.logo ? /*#__PURE__*/React.createElement("img", {
     src: sp.logo,
     alt: sp.name,
+    loading: "lazy",
     style: {
       maxWidth: "100%",
       maxHeight: 76,
@@ -10270,7 +10278,7 @@ function ToursDashboard(_ref26) {
     value:tourSearch,
     onChange:e=>setTourSearch(e.target.value),
     placeholder:"\uD83D\uDD0D Search tours...",
-    style:{width:"100%",border:"1.5px solid #D8D0C8",borderRadius:10,padding:"9px 14px",fontSize:14,outline:"none",background:"#fff",marginBottom:12}
+    style:{width:"100%",border:"1.5px solid #D8D0C8",borderRadius:10,padding:"9px 14px",fontSize:16,outline:"none",background:"#fff",marginBottom:12}
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
