@@ -6280,7 +6280,7 @@ function TourDetailPage(_ref19) {
           const v = s[cat.key] || 0;
           return v > 0 ? "<tr><td style=\"padding:5px 12px;color:#8A8078;font-size:13px\">".concat(cat.label, "</td><td style=\"padding:5px 12px;text-align:right;font-size:13px;color:#0D0D0D;font-weight:600\">").concat("★".repeat(v)).concat("☆".repeat(5 - v), " ").concat(v, "/5</td></tr>") : "";
         }).join("");
-        return "<div style=\"background:#F9FAFB;border-radius:10px;padding:14px 16px;margin-top:10px;border-left:4px solid #C9A55A\">\n<div style=\"font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9CA3AF;margin-bottom:8px\">Submission #".concat(si + 1, " &nbsp;\xB7&nbsp; ").concat(s.submittedAt ? new Date(s.submittedAt).toLocaleDateString("en-US", {
+        return "<div style=\"background:#F9FAFB;border-radius:10px;padding:14px 16px;margin-top:10px;border-left:4px solid #C9A55A\">\n<div style=\"font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9CA3AF;margin-bottom:8px\">Submission #".concat(si + 1, " &nbsp;\xB7&nbsp; ").concat(s.raterName && s.raterName !== "Anonymous" ? s.raterName + " &nbsp;\xB7&nbsp; " : "").concat(s.submittedAt ? new Date(s.submittedAt).toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",
           hour: "2-digit",
@@ -12006,7 +12006,7 @@ function ListingRequestsAdmin(_ref34) {
           const m = parseInt(timeParts[2]);
           if (timeParts[3].toUpperCase() === "PM" && h !== 12) h += 12;
           if (timeParts[3].toUpperCase() === "AM" && h === 12) h = 0;
-          tourMs = new Date(tour.date).setHours(h, m, 0, 0);
+          tourMs = new Date(tour.date + "T12:00:00").setHours(h, m, 0, 0);
         }
         const reminder48h = tourMs - 48 * 60 * 60 * 1000;
         const reminder24h = tourMs - 24 * 60 * 60 * 1000;
