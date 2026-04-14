@@ -1,4 +1,3 @@
-<!-- MarketReady Tours v16 | Emergency Deploy 2026-04-08 21:16:27 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6144,7 +6143,7 @@ function TourDetailPage(_ref19) {
     const signups = (listingRequests || []).filter(r => r.tourId === tour.id && r.type === "tour-signup" && r.status === "approved");
     const allRecipients = [];
     const seen = new Set();
-    // Listing agents from approved requests
+    // Listing agents from approved requests (or fallback to tour.listings)
     tourReqs.filter(r => r.type === "listing-request").forEach(r => {
       if (r.agentEmail && !seen.has(r.agentEmail)) {
         seen.add(r.agentEmail);
@@ -6166,8 +6165,32 @@ function TourDetailPage(_ref19) {
         });
       }
     });
+    // Sponsors with an email
+    (tour.sponsors || []).forEach(sp => {
+      const spEmail = sp.email || sp.contactEmail || "";
+      const spName = sp.contactName || sp.name || "Sponsor";
+      if (spEmail && !seen.has(spEmail)) {
+        seen.add(spEmail);
+        allRecipients.push({
+          name: spName,
+          email: spEmail,
+          type: "sponsor"
+        });
+      }
+    });
+    // Tour admin / organizer
+    const adminEmail = (tour.createdBy) || SUPER_ADMIN_EMAIL;
+    const adminName = (tour.createdByName) || "MarketReady Tours";
+    if (adminEmail && !seen.has(adminEmail)) {
+      seen.add(adminEmail);
+      allRecipients.push({
+        name: adminName,
+        email: adminEmail,
+        type: "admin"
+      });
+    }
     if (allRecipients.length === 0) {
-      showToast("No approved attendees or listing agents found for this tour.", "warn");
+      showToast("No recipients found for this tour.", "warn");
       return;
     }
     setSendingRoute(true);
@@ -6185,8 +6208,16 @@ function TourDetailPage(_ref19) {
       }
     }
     setSendingRoute(false);
+    const agentCount = allRecipients.filter(r => r.type === "agent").length;
+    const attendeeCount = allRecipients.filter(r => r.type === "attendee").length;
+    const sponsorCount = allRecipients.filter(r => r.type === "sponsor").length;
+    const breakdown = [
+      agentCount > 0 ? agentCount + " agent" + (agentCount !== 1 ? "s" : "") : "",
+      attendeeCount > 0 ? attendeeCount + " attendee" + (attendeeCount !== 1 ? "s" : "") : "",
+      sponsorCount > 0 ? sponsorCount + " sponsor" + (sponsorCount !== 1 ? "s" : "") : ""
+    ].filter(Boolean).join(", ");
     const routeType = failed > 0 ? "warn" : "success";
-    showToast("\u2709\uFE0F Route sent to ".concat(sent, " recipient").concat(sent !== 1 ? "s" : "").concat(failed > 0 ? " (".concat(failed, " failed)") : ""), routeType, 5000);
+    showToast("\u2709\uFE0F Route sent to " + sent + " recipient" + (sent !== 1 ? "s" : "") + (breakdown ? " (" + breakdown + ")" : "") + (failed > 0 ? " — " + failed + " failed" : ""), routeType, 6000);
   };
   const saveAdmin = () => {
     onUpdateTour({
