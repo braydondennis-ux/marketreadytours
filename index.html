@@ -3826,21 +3826,24 @@ function AddListingForm(_ref12) {
       setSugg([]);
       return;
     }
-    const svc = new window.google.maps.places.AutocompleteService();
-    svc.getPlacePredictions({
-      input: query,
-      sessionToken,
-      types: ["address"],
-      componentRestrictions: {
-        country: "us"
-      }
-    }, (predictions, status) => {
-      if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
-        setSugg(predictions);
-      } else {
-        setSugg([]);
-      }
-    });
+    const timer = setTimeout(() => {
+      const svc = new window.google.maps.places.AutocompleteService();
+      svc.getPlacePredictions({
+        input: query,
+        sessionToken,
+        types: ["address"],
+        componentRestrictions: {
+          country: "us"
+        }
+      }, (predictions, status) => {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
+          setSugg(predictions);
+        } else {
+          setSugg([]);
+        }
+      });
+    }, 350);
+    return () => clearTimeout(timer);
   }, [query]);
   const handleSelect = prediction => {
     setSugg([]);
@@ -9102,17 +9105,20 @@ const RequestATourInlineForm = React.forwardRef(function (_ref24, ref) {
       setSugg([]);
       return;
     }
-    const svc = new window.google.maps.places.AutocompleteService();
-    svc.getPlacePredictions({
-      input: query,
-      sessionToken,
-      types: ["address"],
-      componentRestrictions: {
-        country: "us"
-      }
-    }, (predictions, status) => {
-      if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) setSugg(predictions);else setSugg([]);
-    });
+    const timer = setTimeout(() => {
+      const svc = new window.google.maps.places.AutocompleteService();
+      svc.getPlacePredictions({
+        input: query,
+        sessionToken,
+        types: ["address"],
+        componentRestrictions: {
+          country: "us"
+        }
+      }, (predictions, status) => {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) setSugg(predictions);else setSugg([]);
+      });
+    }, 350);
+    return () => clearTimeout(timer);
   }, [query]);
   const handleAddrSelect = prediction => {
     setSugg([]);
@@ -11182,17 +11188,20 @@ function RequestListingPage(_ref31) {
       setSugg([]);
       return;
     }
-    const svc = new window.google.maps.places.AutocompleteService();
-    svc.getPlacePredictions({
-      input: query,
-      sessionToken,
-      types: ["address"],
-      componentRestrictions: {
-        country: "us"
-      }
-    }, (predictions, status) => {
-      if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) setSugg(predictions);else setSugg([]);
-    });
+    const timer = setTimeout(() => {
+      const svc = new window.google.maps.places.AutocompleteService();
+      svc.getPlacePredictions({
+        input: query,
+        sessionToken,
+        types: ["address"],
+        componentRestrictions: {
+          country: "us"
+        }
+      }, (predictions, status) => {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) setSugg(predictions);else setSugg([]);
+      });
+    }, 350);
+    return () => clearTimeout(timer);
   }, [query]);
   const handleAddrSelect = prediction => {
     setSugg([]);
