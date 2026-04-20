@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="MRT Tours"/>
@@ -63,6 +63,8 @@ textarea,input,select{font-family:inherit}
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 .fade-in{animation:fadeIn .35s cubic-bezier(.4,0,.2,1)}
 input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!important;box-shadow:0 0 0 3px rgba(201,165,90,.15)!important}
+/* iOS safe-area: pads the page bottom away from the home indicator */
+@supports(padding:env(safe-area-inset-bottom)){body{padding-bottom:env(safe-area-inset-bottom)}.mrt-scroll-pad{padding-bottom:calc(90px + env(safe-area-inset-bottom))!important}}
 </style>
 </head>
 <body>
@@ -175,7 +177,7 @@ const FORMSPREE_URL = "https://formspree.io/f/xykdngrr";
 const LISTING_REQUEST_FORMSPREE = "https://formspree.io/f/xwvnrbqr"; // listing requests form
 const SMS_EMAIL = "4806951996@txt.att.net";
 const sendSMS = msg => {
-  fetch(LISTING_REQUEST_FORMSPREE, {
+  fetchWithTimeout(LISTING_REQUEST_FORMSPREE, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -186,7 +188,7 @@ const sendSMS = msg => {
       _subject: "MRT Alert",
       message: msg
     })
-  }).catch(e => console.warn("SMS failed", e));
+  }, 8000).catch(() => {});
 };
 async function sendWelcomeEmail(name, email) {
   try {
@@ -584,7 +586,7 @@ function Gallery(_ref3) {
       marginTop: 12,
       flexWrap: "wrap"
     }
-  }, photos.map((p, i) => /*#__PURE__*/React.createElement("img", {
+  }, photos.map((p, i) => /*#__PURE__*/React.createElement("img", {loading:"lazy",
     key: i,
     src: p,
     alt: "",
@@ -1240,6 +1242,7 @@ function RatingPage(_ref7) {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [raterName, setRaterName] = useState("");
   const fileRef = useRef(null);
   // Code gate — unlocked once per tour per session
   const sessionKey = "mrt_unlocked_" + tour.id;
@@ -1420,6 +1423,7 @@ function RatingPage(_ref7) {
         "Tour Date": tour.date,
         "Tour Time": tour.time,
         "Stop Number": "#".concat(listing.order),
+        "Rater Name": raterName || "Anonymous",
         "── RATINGS ──": "─────────────────",
         ...Object.fromEntries(RATING_CATS.map(cat => [cat.label, starLabel(ratings[cat.key] || 0)])),
         "── FEEDBACK ──": "─────────────────",
@@ -1440,6 +1444,7 @@ function RatingPage(_ref7) {
         suggestions: safeSuggestions,
         sugPrice: pricedRight ? "Priced Correctly" : safeSugPrice,
         pricedRight,
+        raterName: raterName || "Anonymous",
         photoCount: photos.length,
         photoUrls: photos.map(p => p.url).filter(u => u && u.startsWith("https://"))
       });
@@ -1448,14 +1453,14 @@ function RatingPage(_ref7) {
         await sendCFEmail(email, "\uD83C\uDFE1 New Rating \u2014 ".concat(listing.address, " (").concat(tour.emoji, " ").concat(tour.name, ")"), emailHtml, emailHtml);
       }
       // Formspree as secondary (non-blocking)
-      fetch("https://formspree.io/f/xdallqwa", {
+      fetchWithTimeout("https://formspree.io/f/xdallqwa", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Accept": "application/json"
         },
         body: JSON.stringify(payload)
-      }).catch(() => {});
+      }, 10000).catch(() => {});
       setDone(true);
       setTimeout(onBack, 2800);
     } catch (e) {
@@ -1564,6 +1569,7 @@ function RatingPage(_ref7) {
   }, /*#__PURE__*/React.createElement("img", {
     src: (listing.photos || [])[0],
     alt: listing.address,
+    loading: "lazy",
     style: {
       width: "100%",
       height: 220,
@@ -1741,6 +1747,31 @@ function RatingPage(_ref7) {
       textTransform: "uppercase",
       letterSpacing: .5,
       color: B.gray,
+      marginBottom: 8
+    }
+  }, "Your Name (Optional)"), /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    maxLength: 60,
+    placeholder: "e.g. Jane Smith",
+    value: raterName,
+    onChange: e => setRaterName(e.target.value),
+    style: {
+      width: "100%",
+      border: "1.5px solid #D8D0C8",
+      borderRadius: 8,
+      padding: "10px 12px",
+      fontSize: 14,
+      background: "#F7F4EF",
+      marginBottom: 16
+    }
+  }), /*#__PURE__*/React.createElement("label", {
+    style: {
+      display: "block",
+      fontSize: 11,
+      fontWeight: 700,
+      textTransform: "uppercase",
+      letterSpacing: .5,
+      color: "#8A8078",
       marginBottom: 8
     }
   }, "Suggestions"), /*#__PURE__*/React.createElement("textarea", {
@@ -3901,7 +3932,7 @@ function AddListingForm(_ref12) {
           uploaded.push(finalPhotos[i]);
         } else {
           try {
-            const res = await fetch(finalPhotos[i]);
+            const res = await fetchWithTimeout(finalPhotos[i], {}, 15000);
             const blob = await res.blob();
             const file = new File([blob], "photo.jpg", {
               type: "image/jpeg"
@@ -11256,7 +11287,7 @@ function RequestListingPage(_ref31) {
       // Write directly to Firebase REST API (works without auth for public submissions)
       try {
         const reqKey = requestData.id.replace(/[.#$[\]]/g, "_");
-        await fetch("https://marketready-tours-default-rtdb.firebaseio.com/mrt_listing_requests/" + reqKey + ".json", {
+        await fetchWithTimeout("https://marketready-tours-default-rtdb.firebaseio.com/mrt_listing_requests/" + reqKey + ".json", {
           method: "PUT",
           headers: {"Content-Type": "application/json"},
           body: JSON.stringify(requestData)
