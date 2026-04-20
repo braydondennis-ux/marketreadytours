@@ -9577,7 +9577,7 @@ function ToursDashboard(_ref26) {
   const createTour = () => {
     if (!newTour.name) return;
     const code = String(Math.floor(1000 + Math.random() * 9000));
-    setTours(prev => [...prev, {
+    const _newTourObj = {
       ...newTour,
       id: uid("tour"),
       code,
@@ -9595,7 +9595,12 @@ function ToursDashboard(_ref26) {
       brokerageLogo: "",
       createdBy: (currentUser === null || currentUser === void 0 ? void 0 : currentUser.email) || SUPER_ADMIN_EMAIL,
       createdByName: (currentUser === null || currentUser === void 0 ? void 0 : currentUser.name) || "MarketReady Tours"
-    }]);
+    };
+    setTours(prev => [...prev, _newTourObj]);
+    if (_fb && fbReady.current && _newTourObj.id) {
+      const safeId = _newTourObj.id.replace(/[.#$[\]]/g, "_");
+      _fb.ref("mrt_tours/" + safeId).set(_newTourObj).catch(() => {});
+    }
     setShowCreate(false);
     setNewTour({
       name: "",
@@ -9613,7 +9618,15 @@ function ToursDashboard(_ref26) {
       onClearTourId && onClearTourId();
       window.location.hash = "/";
     },
-    onUpdateTour: updated => setTours(prev => prev.map(t => t.id === updated.id ? updated : t)),
+    onUpdateTour: updated => {
+      setTours(prev => prev.map(t => t.id === updated.id ? updated : t));
+      if (_fb && fbReady.current && updated.id) {
+        const safeId = updated.id.replace(/[.#$[\]]/g, "_");
+        fbIgnore.current["mrt_tours"] = true;
+        _fb.ref("mrt_tours/" + safeId).set(updated).catch(() => {});
+        setTimeout(() => { fbIgnore.current["mrt_tours"] = false; }, 3000);
+      }
+    },
     isAdmin: isAdmin,
     isSuperAdmin: isSuperAdmin,
     currentUser: currentUser,
@@ -9956,6 +9969,10 @@ function ToursDashboard(_ref26) {
   }, "Cancel"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setTours(prev => prev.filter(t => t.id !== confirmDelete));
+    if (_fb && fbReady.current && confirmDelete) {
+      const safeId = confirmDelete.replace(/[.#$[\]]/g, "_");
+      _fb.ref("mrt_tours/" + safeId).remove().catch(() => {});
+    }
       setConfirmDelete(null);
     },
     style: {
@@ -13504,20 +13521,24 @@ function App() {
   }, []);
   const [tours, setTours] = useState(() => lsGet("mrt_tours", INITIAL_TOURS));
   useEffect(() => {
+    if (!isAnyAdmin) return;
     lsSet("mrt_tours", tours);
-  }, [tours]);
+  }, [tours, isAnyAdmin]);
   const [listingRequests, setListingRequests] = useState(() => lsGet("mrt_listing_requests", []));
   useEffect(() => {
+    if (!isAnyAdmin) return;
     lsSet("mrt_listing_requests", listingRequests);
-  }, [listingRequests]);
+  }, [listingRequests, isAnyAdmin]);
   const [tourRequests, setTourRequests] = useState(() => lsGet("mrt_tour_requests", []));
   useEffect(() => {
+    if (!isAnyAdmin) return;
     lsSet("mrt_tour_requests", tourRequests);
-  }, [tourRequests]);
+  }, [tourRequests, isAnyAdmin]);
   const [subAdmins, setSubAdmins] = useState(() => lsGet("gat_subadmins", []));
   useEffect(() => {
+    if (!isAnyAdmin) return;
     lsSet("gat_subadmins", subAdmins);
-  }, [subAdmins]);
+  }, [subAdmins, isAnyAdmin]);
   const [currentUser, setCurrentUser] = useState(null);
   const [showLogin, setShowLogin] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
