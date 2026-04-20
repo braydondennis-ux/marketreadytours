@@ -13566,7 +13566,8 @@ function App() {
   const fbWriteTimeout = useRef({});
   const [fbLoaded, setFbLoaded] = useState(false);
 
-  // On mount: load from Firebase ONCE, then start listening
+  // Firebase sync — real-time for admins, polling for regular users
+  const fbPollInterval = useRef(null);
   useEffect(() => {
     if (!_fb) return;
     const paths = {
@@ -13575,38 +13576,49 @@ function App() {
       "mrt_tour_requests": val => setTourRequests(Array.isArray(val) ? val : Object.values(val || {})),
       "mrt_subadmins": val => setSubAdmins(Array.isArray(val) ? val : Object.values(val || {}))
     };
-    Promise.all(Object.keys(paths).map(path => _fb.ref(path).once("value").then(snap => {
-      try {
-        const raw = snap.val();
-        if (raw !== null && raw !== undefined) {
-          paths[path](fbToArr(raw));
-        }
-      } catch (e) {}
-    }).catch(() => {}))).then(() => {
+    // Load all paths once on mount
+    const loadAll = () => Promise.all(
+      Object.keys(paths).map(path =>
+        _fb.ref(path).once("value").then(snap => {
+          try {
+            const raw = snap.val();
+            if (raw !== null && raw !== undefined) paths[path](fbToArr(raw));
+          } catch (e) {}
+        }).catch(() => {})
+      )
+    );
+    loadAll().then(() => {
       fbReady.current = true;
       setFbLoaded(true);
-      Object.entries(paths).forEach(_ref41 => {
-        let [path, setter] = _ref41;
-        try {
-          _fb.ref(path).on("value", snap => {
-            try {
-              if (fbIgnore.current[path]) {
-                return;
-              }
-              const raw = snap.val();
-              if (raw !== null && raw !== undefined) setter(fbToArr(raw));
-            } catch (e) {}
-          });
-        } catch (e) {}
-      });
+      if (isAnyAdmin) {
+        // Admins: real-time listeners so edits appear instantly across tabs
+        Object.entries(paths).forEach(([path, setter]) => {
+          try {
+            _fb.ref(path).on("value", snap => {
+              try {
+                if (fbIgnore.current[path]) return;
+                const raw = snap.val();
+                if (raw !== null && raw !== undefined) setter(fbToArr(raw));
+              } catch (e) {}
+            });
+          } catch (e) {}
+        });
+      } else {
+        // Non-admins: silent 60-second poll — no constant fan-out
+        fbPollInterval.current = setInterval(() => {
+          loadAll().catch(() => {});
+        }, 60000);
+      }
     });
-    // Cleanup: remove all Firebase listeners on unmount
     return () => {
       try {
-        Object.keys(paths).forEach(path => _fb.ref(path).off());
+        if (isAnyAdmin) {
+          Object.keys(paths).forEach(path => _fb.ref(path).off());
+        }
+        if (fbPollInterval.current) clearInterval(fbPollInterval.current);
       } catch (e) {}
     };
-  }, []);
+  }, [isAnyAdmin]);
 
   // Debounced write to Firebase — waits 800ms after last change before writing
   const fbWrite = (path, data) => {
@@ -13623,10 +13635,10 @@ function App() {
     }, 800);
   };
   useEffect(() => {
-    if (!fbLoaded || tours.length === 0) return;
+    if (!fbLoaded || tours.length === 0 || !isAnyAdmin) return;
     fbWrite("mrt_tours", tours);
-    // Write public preview for each tour (used by share worker for OG meta)
-    if (_fb) {
+    // Write public preview — only when admin saves, not on every state change
+    if (_fb && fbReady.current) {
       const previews = {};
       tours.forEach(t => {
         if (!t || !t.id) return;
@@ -13638,25 +13650,24 @@ function App() {
           date: t.date || "",
           color: t.color || "#C9A55A",
           listingCount: listings.length,
-          // Only use photos without auth tokens (public URLs only)
           photo: (photo && photo.startsWith("http")) ? photo : null
         };
       });
       _fb.ref("mrt_tour_previews").set(previews);
     }
-  }, [tours, fbLoaded]);
+  }, [tours, fbLoaded, isAnyAdmin]);
   useEffect(() => {
-    if (!fbLoaded) return;
+    if (!fbLoaded || !isAnyAdmin) return;
     fbWrite("mrt_listing_requests", listingRequests);
-  }, [listingRequests, fbLoaded]);
+  }, [listingRequests, fbLoaded, isAnyAdmin]);
   useEffect(() => {
-    if (!fbLoaded) return;
+    if (!fbLoaded || !isAnyAdmin) return;
     fbWrite("mrt_tour_requests", tourRequests);
-  }, [tourRequests, fbLoaded]);
+  }, [tourRequests, fbLoaded, isAnyAdmin]);
   useEffect(() => {
-    if (!fbLoaded) return;
+    if (!fbLoaded || !isAnyAdmin) return;
     fbWrite("mrt_subadmins", subAdmins);
-  }, [subAdmins, fbLoaded]);
+  }, [subAdmins, fbLoaded, isAnyAdmin]);
   // Show loading skeleton while Firebase Auth resolves (prevents blank flash)
   if (authLoading) return /*#__PURE__*/React.createElement("div", {
     style: {
