@@ -9535,6 +9535,7 @@ function ToursDashboard(_ref26) {
     onClearTourId
   } = _ref26;
   const [filterDate, setFilterDate] = useState("upcoming");
+  const [showArchived, setShowArchived] = useState(false);
   const [showRequestForm, setShowRequestForm] = useState(() => window.location.hash.slice(2) === "request-tour");
   const requestFormRef = React.useRef(null);
   const [activeTourId, setActiveTourId] = useState(initialTourId || null);
@@ -9565,7 +9566,9 @@ function ToursDashboard(_ref26) {
   });
   const [confirmDelete, setConfirmDelete] = useState(null);
   const todayStr = new Date().toISOString().split("T")[0];
-  const filtered = (filterDate === "upcoming" ? tours.filter(t => t.date >= todayStr) : tours.filter(t => t.date === filterDate)).sort((a, b) => a.date.localeCompare(b.date) || (a.time || "").localeCompare(b.time || ""));
+  const activeTours = tours.filter(t => !t.archived);
+  const archivedTours = tours.filter(t => !!t.archived);
+  const filtered = (showArchived ? archivedTours : (filterDate === "upcoming" ? activeTours.filter(t => t.date >= todayStr) : activeTours.filter(t => t.date === filterDate))).sort((a, b) => a.date.localeCompare(b.date) || (a.time || "").localeCompare(b.time || ""));
   const pastDates = [...new Set(tours.map(t => t.date).filter(d => d && d < todayStr))].sort();
   const fmt12 = t24 => {
     const [h, m] = t24.split(":");
@@ -10283,7 +10286,20 @@ function ToursDashboard(_ref26) {
       color: B.gray,
       fontSize: 13
     }
-  }, filtered.length, " ", filtered.length === 1 ? "tour" : "tours", " ", filterDate === "upcoming" ? "upcoming" : "scheduled", isAdmin && /*#__PURE__*/React.createElement("span", {
+  }, filtered.length, " ", filtered.length === 1 ? "tour" : "tours", " ", showArchived ? "archived" : filterDate === "upcoming" ? "upcoming" : "scheduled", isAdmin && archivedTours.length > 0 && /*#__PURE__*/React.createElement("button", {
+    onClick: () => setShowArchived(a => !a),
+    style: {
+      marginLeft: 10,
+      background: showArchived ? B.gold : "transparent",
+      color: showArchived ? "#fff" : B.gray,
+      border: "1.5px solid " + (showArchived ? B.gold : "#D8D0C8"),
+      borderRadius: 12,
+      padding: "2px 10px",
+      fontSize: 11,
+      fontWeight: 700,
+      cursor: "pointer"
+    }
+  }, "\uD83D\uDCE6 ", showArchived ? "Hide Archived" : "Archived (" + archivedTours.length + ")"), isAdmin && /*#__PURE__*/React.createElement("span", {
     style: {
       color: B.gold,
       marginLeft: 6
@@ -10294,7 +10310,7 @@ function ToursDashboard(_ref26) {
       fontWeight: 600,
       fontSize: 13
     }
-  }, filterDate === "upcoming" ? "Today & Future" : new Date(filterDate + "T12:00:00").toLocaleDateString("en-US", {
+  }, showArchived ? "Archived Tours" : filterDate === "upcoming" ? "Today & Future" : new Date(filterDate + "T12:00:00").toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric"
@@ -10319,7 +10335,7 @@ function ToursDashboard(_ref26) {
     style: {
       fontSize: 14
     }
-  }, isAdmin ? 'Tap "+ New Tour" to create one.' : "Check with your admin for the schedule.")), filtered.map(tour => {
+  }, showArchived ? "No archived tours." : isAdmin ? 'Tap "+ New Tour" to create one.' : "Check with your admin for the schedule.")), filtered.map(tour => {
     const ratedCount = Object.keys(tour.ratings || {}).length;
     const favCount = Object.values(tour.favorites || {}).filter(Boolean).length;
     const _tMs=tour.date?new Date(tour.date+"T00:00:00").getTime():null;
@@ -10419,6 +10435,11 @@ function ToursDashboard(_ref26) {
         style:{background:B.gold,border:"none",color:"#fff",borderRadius:10,padding:"6px 10px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}
       },/*#__PURE__*/React.createElement("span",{style:{fontSize:18}},"\uD83D\uDDC2\uFE0F"),/*#__PURE__*/React.createElement("span",{style:{fontSize:10,fontWeight:800}},"Copy")),
       /*#__PURE__*/React.createElement("button",{
+        onClick:e=>{e.stopPropagation();onUpdateTour({...tour,archived:!tour.archived});},
+        title: tour.archived ? "Unarchive tour" : "Archive tour",
+        style:{background:tour.archived?"#059669":"#475569",border:"none",color:"#fff",borderRadius:10,padding:"6px 10px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}
+      },/*#__PURE__*/React.createElement("span",{style:{fontSize:18}},tour.archived?"\uD83D\uDCE4":"\uD83D\uDCE6"),/*#__PURE__*/React.createElement("span",{style:{fontSize:10,fontWeight:800}},tour.archived?"Restore":"Archive")),
+      !tour.archived && /*#__PURE__*/React.createElement("button",{
         onClick:e=>{e.stopPropagation();setConfirmDelete(tour.id);},
         style:{background:"#9B1C1C",border:"none",color:"#fff",borderRadius:10,padding:"6px 10px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}
       },/*#__PURE__*/React.createElement("span",{style:{fontSize:18}},"\uD83D\uDDD1\uFE0F"),/*#__PURE__*/React.createElement("span",{style:{fontSize:10,fontWeight:800}},"Delete"))
@@ -13521,24 +13542,24 @@ function App() {
   }, []);
   const [tours, setTours] = useState(() => lsGet("mrt_tours", INITIAL_TOURS));
   useEffect(() => {
-    if (!isAnyAdmin) return;
+    if (!currentUser) return;
     lsSet("mrt_tours", tours);
-  }, [tours, isAnyAdmin]);
+  }, [tours, currentUser]);
   const [listingRequests, setListingRequests] = useState(() => lsGet("mrt_listing_requests", []));
   useEffect(() => {
-    if (!isAnyAdmin) return;
+    if (!currentUser) return;
     lsSet("mrt_listing_requests", listingRequests);
-  }, [listingRequests, isAnyAdmin]);
+  }, [listingRequests, currentUser]);
   const [tourRequests, setTourRequests] = useState(() => lsGet("mrt_tour_requests", []));
   useEffect(() => {
-    if (!isAnyAdmin) return;
+    if (!currentUser) return;
     lsSet("mrt_tour_requests", tourRequests);
-  }, [tourRequests, isAnyAdmin]);
+  }, [tourRequests, currentUser]);
   const [subAdmins, setSubAdmins] = useState(() => lsGet("gat_subadmins", []));
   useEffect(() => {
-    if (!isAnyAdmin) return;
+    if (!currentUser) return;
     lsSet("gat_subadmins", subAdmins);
-  }, [subAdmins, isAnyAdmin]);
+  }, [subAdmins, currentUser]);
   const [currentUser, setCurrentUser] = useState(null);
   const [showLogin, setShowLogin] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
