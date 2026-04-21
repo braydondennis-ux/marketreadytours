@@ -13534,24 +13534,24 @@ function App() {
   }, []);
   const [tours, setTours] = useState(() => lsGet("mrt_tours", INITIAL_TOURS));
   useEffect(() => {
-    if (!currentUser) return;
+    if (!sessionStorage.getItem("gat_session")) return;
     lsSet("mrt_tours", tours);
-  }, [tours, currentUser]);
+  }, [tours]);
   const [listingRequests, setListingRequests] = useState(() => lsGet("mrt_listing_requests", []));
   useEffect(() => {
-    if (!currentUser) return;
+    if (!sessionStorage.getItem("gat_session")) return;
     lsSet("mrt_listing_requests", listingRequests);
-  }, [listingRequests, currentUser]);
+  }, [listingRequests]);
   const [tourRequests, setTourRequests] = useState(() => lsGet("mrt_tour_requests", []));
   useEffect(() => {
-    if (!currentUser) return;
+    if (!sessionStorage.getItem("gat_session")) return;
     lsSet("mrt_tour_requests", tourRequests);
-  }, [tourRequests, currentUser]);
+  }, [tourRequests]);
   const [subAdmins, setSubAdmins] = useState(() => lsGet("gat_subadmins", []));
   useEffect(() => {
-    if (!currentUser) return;
+    if (!sessionStorage.getItem("gat_session")) return;
     lsSet("gat_subadmins", subAdmins);
-  }, [subAdmins, currentUser]);
+  }, [subAdmins]);
   const [currentUser, setCurrentUser] = useState(null);
   const [showLogin, setShowLogin] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
