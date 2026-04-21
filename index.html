@@ -9621,15 +9621,7 @@ function ToursDashboard(_ref26) {
       onClearTourId && onClearTourId();
       window.location.hash = "/";
     },
-    onUpdateTour: updated => {
-      setTours(prev => prev.map(t => t.id === updated.id ? updated : t));
-      if (_fb && fbReady.current && updated.id) {
-        const safeId = updated.id.replace(/[.#$[\]]/g, "_");
-        fbIgnore.current["mrt_tours"] = true;
-        _fb.ref("mrt_tours/" + safeId).set(updated).catch(() => {});
-        setTimeout(() => { fbIgnore.current["mrt_tours"] = false; }, 3000);
-      }
-    },
+    onUpdateTour: updated => setTours(prev => prev.map(t => t.id === updated.id ? updated : t)),
     isAdmin: isAdmin,
     isSuperAdmin: isSuperAdmin,
     currentUser: currentUser,
