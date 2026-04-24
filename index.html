@@ -9966,10 +9966,10 @@ function ToursDashboard(_ref26) {
   }, "Cancel"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setTours(prev => prev.filter(t => t.id !== confirmDelete));
-    if (_fb && fbReady.current && confirmDelete) {
-      const safeId = confirmDelete.replace(/[.#$[\]]/g, "_");
-      _fb.ref("mrt_tours/" + safeId).remove().catch(() => {});
-    }
+      if (_fb && fbReady.current && confirmDelete) {
+        const safeId = confirmDelete.replace(/[.#$[\]]/g, "_");
+        _fb.ref("mrt_tours/" + safeId).remove().catch(() => {});
+      }
       setConfirmDelete(null);
     },
     style: {
