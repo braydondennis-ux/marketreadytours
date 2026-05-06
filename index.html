@@ -164,6 +164,7 @@ const LI = (name, size=16, extraStyle={}) => {
   return buildEl(svgData);
 };
 const SEND_EMAIL_URL = "https://sendemail-wraz5q2v2a-uc.a.run.app";
+const SQUARE_INVOICE_URL = "https://us-central1-marketready-tours.cloudfunctions.net/createSquareInvoice";
 const sendCFEmail = async (to, subject, message, html) => {
   if (!to || !isValidEmail(to)) {
     console.warn("sendCFEmail: invalid recipient", to);
@@ -3694,17 +3695,25 @@ function TourSponsorsModal(_ref10) {
         _error: ""
       }));
       const amt = showPayment.paymentPlan === "split" ? "49.75" : showPayment.paymentPlan === "half" ? "99.50" : "199.00";
-      const planLabel = showPayment.paymentPlan === "split" ? "Quarter Sponsor (1/4)" : showPayment.paymentPlan === "half" ? "Half Sponsor (1/2)" : "Full Sponsor";
-      // Build the invoice message
-      const squareLink = SQUARE_LINKS[showPayment.paymentPlan] || SQUARE_LINKS.full;
-      const invoiceMsg = "Hi ".concat(showPayment.contactName || showPayment.name, ",\n\n") + "Thank you for sponsoring our ".concat(tour.emoji, " ").concat(tour.name, " tour! We truly appreciate your support.\n\n") + "INVOICE DETAILS\n" + "━━━━━━━━━━━━━━━━━━━━━━━━\n" + "Sponsor: ".concat(showPayment.name, "\n") + "Tour: ".concat(tour.emoji, " ").concat(tour.name, "\n") + "Date: ".concat((tour.date ? new Date(tour.date + "T12:00:00") : new Date()).toLocaleDateString("en-US", {weekday:"long",month:"long",day:"numeric",year:"numeric"}), "\n") + "Plan: ".concat(planLabel, "\n") + "Amount Due: $".concat(amt, "\n") + "━━━━━━━━━━━━━━━━━━━━━━━━\n\n" + "PAY ONLINE (Credit/Debit Card)\n━━━━━━━━━━━━━━━━━━━━━━━━\n".concat(squareLink, "\n\n") + "Please remit payment at your earliest convenience. If you have any questions, feel free to reply to this email.\n\n" + "Thank you for helping make this tour possible!\n\n" + "Best regards,\nMarketReady Tours\nwww.marketreadytours.com";
+      const planLabel = showPayment.paymentPlan === "split" ? "Quarter Sponsor (1/4)" : showPayment.paymentPlan === "half" ? "Half (1/2)" : "Full Sponsor";
       try {
-        const emailOk = await sendCFEmail(
-          showPayment.email,
-          "\uD83D\uDCB3 Sponsorship Invoice \u2014 " + tour.emoji + " " + tour.name + " | $" + amt,
-          invoiceMsg
-        );
-        if (!emailOk) throw new Error("Email delivery failed");
+        const res = await fetchWithTimeout(SQUARE_INVOICE_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sponsorName: showPayment.name,
+            contactName: showPayment.contactName,
+            email: showPayment.email,
+            amount: amt,
+            planLabel,
+            tourName: tour.name,
+            tourEmoji: tour.emoji,
+            sponsorId: showPayment.id,
+            tourId: tour.id
+          })
+        }, 20000);
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || "Invoice creation failed");
         setShowPayment(prev => ({
           ...prev,
           _sent: true,
@@ -3714,7 +3723,7 @@ function TourSponsorsModal(_ref10) {
         setShowPayment(prev => ({
           ...prev,
           _sending: false,
-          _error: "Failed to send. Please try again."
+          _error: "Failed to send invoice. Please try again."
         }));
       }
     },
@@ -13627,9 +13636,9 @@ function App() {
     if (!_fb) return;
     const paths = {
       "mrt_tours": val => setTours(Array.isArray(val) ? val : Object.values(val || {})),
-      "mrt_listing_requests": val => setListingRequests(Array.isArray(val) ? val : Object.values(val || {})),
-      "mrt_tour_requests": val => setTourRequests(Array.isArray(val) ? val : Object.values(val || {})),
-      "mrt_subadmins": val => setSubAdmins(Array.isArray(val) ? val : Object.values(val || {}))
+      "mrt_listing_requests": val => setListingRequests(Array.isArray(val) ? val : Object.entries(val || {}).map(([k,v]) => v && typeof v === "object" ? {...v, id: v.id || k} : v)),
+      "mrt_tour_requests": val => setTourRequests(Array.isArray(val) ? val : Object.entries(val || {}).map(([k,v]) => v && typeof v === "object" ? {...v, id: v.id || k} : v)),
+      "mrt_subadmins": val => setSubAdmins(Array.isArray(val) ? val : Object.entries(val || {}).map(([k,v]) => v && typeof v === "object" ? {...v, id: v.id || k} : v))
     };
     // Load all paths once on mount
     const loadAll = () => Promise.all(
