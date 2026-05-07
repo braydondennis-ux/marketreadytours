@@ -164,7 +164,7 @@ const LI = (name, size=16, extraStyle={}) => {
   return buildEl(svgData);
 };
 const SEND_EMAIL_URL = "https://sendemail-wraz5q2v2a-uc.a.run.app";
-const SQUARE_INVOICE_URL = "https://us-central1-marketready-tours.cloudfunctions.net/createSquareInvoice";
+const SQUARE_INVOICE_URL = "https://marketreadynetwork.com/.netlify/functions/create-invoice-mrt";
 const sendCFEmail = async (to, subject, message, html) => {
   if (!to || !isValidEmail(to)) {
     console.warn("sendCFEmail: invalid recipient", to);
@@ -6562,7 +6562,7 @@ function TourDetailPage(_ref19) {
       position: "fixed",
       inset: 0,
       background: "rgba(0,0,0,.75)",
-      zIndex: 500,
+      zIndex: 9999,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -9946,11 +9946,14 @@ function ToursDashboard(_ref26) {
     }
   }, "Cancel"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
-      setTours(prev => prev.filter(t => t.id !== confirmDelete));
-      if (_fb && fbReady.current && confirmDelete) {
-        const safeId = confirmDelete.replace(/[.#$[\]]/g, "_");
+      const deletedId = confirmDelete;
+      fbDeletingTour.current = true;
+      setTours(prev => prev.filter(t => t.id !== deletedId));
+      if (_fb && fbReady.current && deletedId) {
+        const safeId = deletedId.replace(/[.#$[\]]/g, "_");
         _fb.ref("mrt_tours/" + safeId).remove().catch(() => {});
       }
+      setTimeout(() => { fbDeletingTour.current = false; }, 3000);
       setConfirmDelete(null);
     },
     style: {
@@ -13685,8 +13688,11 @@ function App() {
   }, [isAnyAdmin]);
 
   // Debounced write to Firebase — waits 800ms after last change before writing
+  const fbDeletingTour = useRef(false);
   const fbWrite = (path, data) => {
     if (!_fb || !fbReady.current) return;
+    // Skip bulk tour write immediately after a granular delete to prevent race condition
+    if (path === "mrt_tours" && fbDeletingTour.current) return;
     fbIgnore.current[path] = true;
     clearTimeout(fbWriteTimeout.current[path]);
     fbWriteTimeout.current[path] = setTimeout(() => {
