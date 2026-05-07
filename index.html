@@ -9946,9 +9946,7 @@ function ToursDashboard(_ref26) {
     }
   }, "Cancel"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
-      const deletedId = confirmDelete;
-      fbDeletingTour.current = true;
-      setTours(prev => prev.filter(t => t.id !== deletedId));
+      setTours(prev => prev.filter(t => t.id !== confirmDelete));
       if (_fb && fbReady.current && deletedId) {
         const safeId = deletedId.replace(/[.#$[\]]/g, "_");
         _fb.ref("mrt_tours/" + safeId).remove().catch(() => {});
