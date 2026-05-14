@@ -4706,41 +4706,59 @@ function InviteCampaignTab(_ref15) {
       if (!window.confirm("Launch campaign for ".concat(pending.length, " contact").concat(pending.length !== 1 ? "s" : "", "?\n\nThis will start the 5-email sequence in Instantly."))) return;
     }
     setLaunching(true);
-    setLaunchStatus("Sending first invitation email...");
+    setLaunchStatus("Sending invitation emails (0 of " + pending.length + ")...");
+    let sent = 0;
+    let failed = 0;
     try {
       const templates = emailTemplates || buildCampaignEmails(tour);
       const firstEmail = templates[0];
-      let sent = 0;
-      // Send first email immediately to all pending contacts
-      for (const c of pending) {
+      const sentEmails = [];
+      // Send first email to each pending contact
+      for (let i = 0; i < pending.length; i++) {
+        const c = pending[i];
         const personalizedSubject = (firstEmail.subject || "")
-          .replace(/{{firstName}}/g, c.firstName || "")
+          .replace(/{{firstName}}/g, c.firstName || "there")
           .replace(/{{propertyAddress}}/g, c.address || "");
         const personalizedBody = (firstEmail.body || "")
-          .replace(/{{firstName}}/g, c.firstName || "")
+          .replace(/{{firstName}}/g, c.firstName || "there")
           .replace(/{{propertyAddress}}/g, c.address || "");
         try {
-          await sendCFEmail(c.email, personalizedSubject, personalizedBody);
-          sent++;
+          // sendCFEmail expects (to, subject, message, html) — pass body as both
+          const ok = await sendCFEmail(c.email, personalizedSubject, personalizedBody, personalizedBody);
+          if (ok) {
+            sent++;
+            sentEmails.push(c.email);
+          } else {
+            failed++;
+          }
         } catch (err) {
           console.warn("Failed to email " + c.email, err);
+          failed++;
         }
+        setLaunchStatus("Sending invitation emails (" + (i + 1) + " of " + pending.length + ")...");
       }
-      // Mark contacts as invited
-      const updatedContacts = contacts.map(c => c.status === "pending" ? {
+      // Mark sent contacts as invited
+      const sentSet = new Set(sentEmails.map(e => e.toLowerCase()));
+      const updatedContacts = contacts.map(c => sentSet.has(c.email.toLowerCase()) ? {
         ...c,
         status: "invited",
         invitedAt: new Date().toISOString()
       } : c);
       setContacts(updatedContacts);
-      onUpdateTour({
-        ...tour,
-        campaignContacts: updatedContacts
-      });
-      setLaunchStatus("\u2705 Sent " + sent + " of " + pending.length + " invitation email" + (pending.length !== 1 ? "s" : "") + ".");
-      setTimeout(() => setLaunchStatus(""), 6000);
+      try {
+        onUpdateTour({ ...tour, campaignContacts: updatedContacts });
+      } catch (dbErr) {
+        console.warn("Failed to save campaign state:", dbErr);
+      }
+      const msg = failed > 0
+        ? "\u2705 Sent " + sent + " of " + pending.length + " (" + failed + " failed)"
+        : "\u2705 Sent " + sent + " invitation email" + (sent !== 1 ? "s" : "") + "!";
+      setLaunchStatus(msg);
+      setTimeout(() => setLaunchStatus(""), 8000);
     } catch (e) {
-      setLaunchStatus("❌ " + e.message);
+      console.error("Campaign launch error:", e);
+      setLaunchStatus("❌ " + (e.message || "Unknown error") + " (sent " + sent + " before failing)");
+      setTimeout(() => setLaunchStatus(""), 10000);
     }
     setLaunching(false);
   };
