@@ -4528,10 +4528,8 @@ function InviteCampaignTab(_ref15) {
   const [checkingKey, setCheckingKey] = useState(true);
   const fileRef = useRef(null);
   useEffect(() => {
-    getInstantlyKey().then(k => {
-      setHasApiKey(!!k);
-      setCheckingKey(false);
-    });
+    setCheckingKey(false);
+    setHasApiKey(true); // Skip API key check - using built-in email function
   }, []);
   useEffect(() => {
     if (!emailTemplates) {
@@ -4708,56 +4706,38 @@ function InviteCampaignTab(_ref15) {
       if (!window.confirm("Launch campaign for ".concat(pending.length, " contact").concat(pending.length !== 1 ? "s" : "", "?\n\nThis will start the 5-email sequence in Instantly."))) return;
     }
     setLaunching(true);
-    setLaunchStatus("Creating campaign in Instantly...");
+    setLaunchStatus("Sending first invitation email...");
     try {
       const templates = emailTemplates || buildCampaignEmails(tour);
-      // Create campaign
-      const campaign = await instantlyAPI("campaigns", "POST", {
-        name: "".concat(tour.emoji, " ").concat(tour.name, " \u2014 ").concat(tour.date),
-        subject: templates[0].subject,
-        body: templates[0].body
-      });
-      const campaignId = campaign.id;
-      setLaunchStatus("Adding contacts...");
-      // Add leads to campaign
-      const leads = pending.map(c => ({
-        email: c.email,
-        first_name: c.firstName,
-        last_name: c.lastName,
-        personalization: "",
-        variables: {
-          propertyAddress: c.address || "",
-          phone: c.phone || ""
+      const firstEmail = templates[0];
+      let sent = 0;
+      // Send first email immediately to all pending contacts
+      for (const c of pending) {
+        const personalizedSubject = (firstEmail.subject || "")
+          .replace(/{{firstName}}/g, c.firstName || "")
+          .replace(/{{propertyAddress}}/g, c.address || "");
+        const personalizedBody = (firstEmail.body || "")
+          .replace(/{{firstName}}/g, c.firstName || "")
+          .replace(/{{propertyAddress}}/g, c.address || "");
+        try {
+          await sendCFEmail(c.email, personalizedSubject, personalizedBody);
+          sent++;
+        } catch (err) {
+          console.warn("Failed to email " + c.email, err);
         }
-      }));
-      await instantlyAPI("campaigns/".concat(campaignId, "/leads"), "POST", {
-        leads
-      });
-      // Add follow-up emails (2-5)
-      for (let i = 1; i < templates.length; i++) {
-        const delays = [0, 2, 5, 8, 12];
-        await instantlyAPI("campaigns/".concat(campaignId, "/sequences"), "POST", {
-          subject: templates[i].subject,
-          body: templates[i].body,
-          delay_days: delays[i]
-        });
       }
-      // Activate campaign
-      await instantlyAPI("campaigns/".concat(campaignId, "/activate"), "POST", {});
-      // Update contact statuses
+      // Mark contacts as invited
       const updatedContacts = contacts.map(c => c.status === "pending" ? {
         ...c,
         status: "invited",
-        campaignId,
         invitedAt: new Date().toISOString()
       } : c);
       setContacts(updatedContacts);
       onUpdateTour({
         ...tour,
-        campaignContacts: updatedContacts,
-        instantlyCampaignId: campaignId
+        campaignContacts: updatedContacts
       });
-      setLaunchStatus("\u2705 Campaign launched! ".concat(pending.length, " contacts added to the 5-email sequence."));
+      setLaunchStatus("\u2705 Sent " + sent + " of " + pending.length + " invitation email" + (pending.length !== 1 ? "s" : "") + ".");
       setTimeout(() => setLaunchStatus(""), 6000);
     } catch (e) {
       setLaunchStatus("❌ " + e.message);
@@ -9896,7 +9876,7 @@ function ToursDashboard(_ref26) {
       position: "fixed",
       inset: 0,
       background: "rgba(0,0,0,.75)",
-      zIndex: 9999,
+      zIndex: 500,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -9946,7 +9926,14 @@ function ToursDashboard(_ref26) {
     }
   }, "Cancel"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
-      setTours(prev => prev.filter(t => t.id !== confirmDelete));
+      const deletedId = confirmDelete;
+      fbDeletingTour.current = true;
+      setTours(prev => prev.filter(t => t.id !== deletedId));
+      if (_fb && fbReady.current && deletedId) {
+        const safeId = deletedId.replace(/[.#$[\]]/g, "_");
+        _fb.ref("mrt_tours/" + safeId).remove().catch(() => {});
+      }
+      setTimeout(() => { fbDeletingTour.current = false; }, 3000);
       setConfirmDelete(null);
     },
     style: {
