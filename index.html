@@ -4446,6 +4446,9 @@ const getInstantlyKey = async () => {
 };
 const INSTANTLY_PROXY_URL = "https://instantlyproxy-wraz5q2v2a-uc.a.run.app";
 const instantlyAPI = async function (endpoint) {
+  // Instantly integration removed - return empty success
+  return { ok: true, data: null };
+  // eslint-disable-next-line no-unreachable
   let method = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "GET";
   let body = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
   let apiKey = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : null;
@@ -4763,16 +4766,8 @@ function InviteCampaignTab(_ref15) {
     setLaunching(false);
   };
   const removeFromInstantly = async (email, campaignId) => {
-    if (!campaignId) return;
-    try {
-      await instantlyAPI("campaigns/".concat(campaignId, "/leads/remove"), "POST", {
-        leads: [{
-          email
-        }]
-      });
-    } catch (e) {
-      console.warn("Could not remove from Instantly:", e.message);
-    }
+    // Instantly integration removed - no-op
+    return;
   };
   const statusColors = {
     pending: "#E5E7EB",
