@@ -4568,7 +4568,7 @@ function InviteCampaignTab(_ref15) {
   const MAX_CSV_SIZE_MB = 2;
   const parseCSV = text => {
     const lines = text.trim().split(/\r?\n/);
-    if (lines.length < 2) return [];
+    if (lines.length < 2) return { contacts: [], invalid: 0, blank: 0, totalRows: 0 };
     // Handle quoted CSV fields properly
     const splitLine = line => {
       const r = [];
@@ -4590,20 +4590,28 @@ function InviteCampaignTab(_ref15) {
     };
     const headers = splitLine(lines[0]).map(h => h.toLowerCase().replace(/[^a-z]/g, ""));
     const contacts = [];
+    const seenEmails = new Set();
+    let invalid = 0;
+    let blank = 0;
+    let dupesInFile = 0;
+    let totalRows = 0;
     for (let i = 1; i < lines.length; i++) {
-      if (!lines[i].trim()) continue;
+      if (!lines[i].trim()) { blank++; continue; }
+      totalRows++;
       const vals = splitLine(lines[i]);
       const obj = {};
       headers.forEach((h, idx) => {
         obj[h] = vals[idx] || "";
       });
-      const email = (obj.email || "").trim();
-      if (!isValidEmail(email)) continue; // skip invalid emails
+      const email = (obj.email || "").trim().toLowerCase();
+      if (!isValidEmail(email)) { invalid++; continue; } // skip invalid emails
+      if (seenEmails.has(email)) { dupesInFile++; continue; } // dedupe within file
+      seenEmails.add(email);
       const contact = {
         id: uid("c"),
         firstName: (obj.firstname || obj.first || "").trim(),
         lastName: (obj.lastname || obj.last || "").trim(),
-        email: email.toLowerCase(),
+        email: email,
         phone: (obj.phone || obj.phonenumber || "").trim(),
         address: (obj.propertyaddress || obj.address || obj.property || "").trim(),
         status: "pending",
@@ -4611,7 +4619,7 @@ function InviteCampaignTab(_ref15) {
       };
       contacts.push(contact);
     }
-    return contacts;
+    return { contacts, invalid, blank, dupesInFile, totalRows };
   };
   const [csvStatus, setCsvStatus] = useState("");
   const handleCSV = e => {
@@ -4624,23 +4632,29 @@ function InviteCampaignTab(_ref15) {
     }
     const reader = new FileReader();
     reader.onload = ev => {
-      const parsed = parseCSV(ev.target.result);
+      const result = parseCSV(ev.target.result);
+      const parsed = result.contacts;
       if (parsed.length === 0) {
-        setCsvStatus("❌ No valid contacts found. Make sure your CSV has an Email column with valid addresses.");
+        setCsvStatus("\u274C No valid contacts found. " + (result.invalid > 0 ? result.invalid + " rows had invalid/missing emails. " : "") + "Make sure your CSV has an Email column with valid addresses.");
+        setTimeout(() => setCsvStatus(""), 8000);
         return;
       }
-      const existingEmails = new Set(contacts.map(c => c.email.toLowerCase()));
-      const newContacts = parsed.filter(c => !existingEmails.has(c.email.toLowerCase()));
-      const merged = [...contacts, ...newContacts];
+      // Add ALL parsed contacts, including emails that already exist in the list
+      const merged = [...contacts, ...parsed];
       setContacts(merged);
       onUpdateTour({
         ...tour,
         campaignContacts: merged
       });
-      setCsvStatus("\u2705 Imported ".concat(newContacts.length, " contacts (").concat(parsed.length - newContacts.length, " duplicates skipped)"));
-      setTimeout(() => setCsvStatus(""), 5000);
+      const parts = ["\u2705 Imported " + parsed.length + " of " + result.totalRows + " contacts"];
+      const skipped = [];
+      if (result.invalid > 0) skipped.push(result.invalid + " invalid email" + (result.invalid !== 1 ? "s" : ""));
+      if (result.dupesInFile > 0) skipped.push(result.dupesInFile + " duplicate" + (result.dupesInFile !== 1 ? "s" : "") + " in file");
+      if (skipped.length > 0) parts.push("(" + skipped.join(", ") + " skipped)");
+      setCsvStatus(parts.join(" "));
+      setTimeout(() => setCsvStatus(""), 10000);
     };
-    reader.onerror = () => setCsvStatus("❌ Could not read file. Please try again.");
+    reader.onerror = () => setCsvStatus("\u274C Could not read file. Please try again.");
     reader.readAsText(file);
     e.target.value = "";
   };
