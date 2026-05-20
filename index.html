@@ -9567,8 +9567,11 @@ function ToursDashboard(_ref26) {
     const hr12 = hr % 12 || 12;
     return "".concat(hr12, ":").concat(m, " ").concat(ampm);
   };
+  const creatingTourRef = React.useRef(false);
   const createTour = () => {
-    if (!newTour.name) return;
+    if (!newTour.name || creatingTourRef.current) return;
+    creatingTourRef.current = true;
+    setTimeout(() => { creatingTourRef.current = false; }, 1500);
     const code = String(Math.floor(1000 + Math.random() * 9000));
     const _newTourObj = {
       ...newTour,
@@ -9590,10 +9593,6 @@ function ToursDashboard(_ref26) {
       createdByName: (currentUser === null || currentUser === void 0 ? void 0 : currentUser.name) || "MarketReady Tours"
     };
     setTours(prev => [...prev, _newTourObj]);
-    if (_fb && fbReady.current && _newTourObj.id) {
-      const safeId = _newTourObj.id.replace(/[.#$[\]]/g, "_");
-      _fb.ref("mrt_tours/" + safeId).set(_newTourObj).catch(() => {});
-    }
     setShowCreate(false);
     setNewTour({
       name: "",
@@ -9602,6 +9601,7 @@ function ToursDashboard(_ref26) {
       color: "#0D0D0D",
       emoji: "🏡"
     });
+    showToast("\u2705 Tour \"" + _newTourObj.name + "\" created", "success", 3000);
   };
   const activeTour = tours.find(t => t.id === activeTourId);
   if (activeTour) return /*#__PURE__*/React.createElement(TourDetailPage, {
@@ -9953,15 +9953,9 @@ function ToursDashboard(_ref26) {
     }
   }, "Cancel"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
-      const deletedId = confirmDelete;
-      fbDeletingTour.current = true;
-      setTours(prev => prev.filter(t => t.id !== deletedId));
-      if (_fb && fbReady.current && deletedId) {
-        const safeId = deletedId.replace(/[.#$[\]]/g, "_");
-        _fb.ref("mrt_tours/" + safeId).remove().catch(() => {});
-      }
-      setTimeout(() => { fbDeletingTour.current = false; }, 3000);
+      setTours(prev => prev.filter(t => t.id !== confirmDelete));
       setConfirmDelete(null);
+      showToast("\uD83D\uDDD1\uFE0F Tour deleted", "info", 2500);
     },
     style: {
       flex: 1,
