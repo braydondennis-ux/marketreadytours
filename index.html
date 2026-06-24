@@ -5970,14 +5970,15 @@ function TourDetailPage(_ref19) {
     setAdminListings([...(tour.listings || [])].sort((a, b) => a.order - b.order));
   }, [tour]);
   const toggleFavorite = listingId => {
-    const fav = {
-      ...(tour.favorites || {}),
-      [listingId]: !(tour.favorites || {})[listingId]
-    };
-    onUpdateTour({
-      ...tour,
-      favorites: fav
-    });
+    const cur = !!(tour.favorites || {})[listingId];
+    const next = !cur;
+    if (_fb) {
+      try {
+        const ref = _fb.ref("mrt_favorites/" + tour.id + "/" + listingId + "/" + mrtUserKey());
+        (next ? ref.set(true) : ref.remove()).catch(() => {});
+      } catch (e) {}
+    }
+    onUpdateTour({ ...tour, favorites: { ...(tour.favorites || {}), [listingId]: next } });
   };
   const handleRatingSubmit = (listingId, ratings, extra) => {
     const newSub = { ...ratings, ...(extra || {}), submittedAt: new Date().toISOString() };
