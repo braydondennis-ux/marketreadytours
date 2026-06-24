@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "emu": "npx firebase-tools emulators:start --only auth,database --import=./.emu-seed --export-on-exit=./.emu-seed",
+    "serve": "npx http-server -p 8080 -c-1 .",
+    "validate": "node www/validate.js"
   },
   "keywords": [],
   "author": "",
