@@ -265,6 +265,12 @@ const uid = function () {
   let prefix = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : "id";
   return "".concat(prefix, "-").concat(Date.now(), "-").concat(++_idCounter, "-").concat(Math.random().toString(36).slice(2, 7));
 };
+/* ── STABLE ANON USER KEY (favorites) ── */
+const mrtUserKey = () => {
+  let k = lsGet("mrt_uid", null);
+  if (!k) { k = uid("u"); lsSet("mrt_uid", k); }
+  return k;
+};
 /* ── EMAIL VALIDATOR ── */
 const isValidEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((e || "").trim());
 /* ── FETCH WITH TIMEOUT — prevents indefinite hangs ── */
