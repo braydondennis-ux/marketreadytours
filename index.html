@@ -21,16 +21,16 @@
 <meta name="twitter:description" content="Tour. Rate. Decide. Browse curated home tours, RSVP, and submit real-time feedback."/>
 <meta name="twitter:image" content="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200&h=630&fit=crop"/>
 <!-- React must load synchronously as app depends on it -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" integrity="sha384-tMH8h3BGESGckSAVGZ82T9n90ztNXxvdwvdM6UoR56cYcf+0iGXBliJ29D+wZ/x8" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" integrity="sha384-bm7MnzvK++ykSwVJ2tynSE5TRdN+xL418osEVF2DE/L/gfWHj91J2Sphe582B1Bh" crossorigin="anonymous"></script>
 <!-- Firebase loads synchronously — app depends on it for data -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" integrity="sha384-AQ3POAMqIhwS81FrUH95ekxqBZHeP5tG2JfEL3+7GuTtfRLWnrRh32UxwzM+//A9" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js" integrity="sha384-TnlRYaR4JYz/lpaGuaiU61PjNberSA4vjLjtF+oRC/IkohkJqnWxw5EmDSOt1vA1" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js" integrity="sha384-1/m+A1jVWbD3yiK3/vtFvm1+LjK1WLpSoDY+Kaxppwn/yP9BVSgdHTNQVOjrzUO5" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js" integrity="sha384-6I0gWsz4FIAr30c0TxIxJnPQuJiZ1FfILdZrgJdjxTH3R8dgPGTvexbyqTvReV6Z" crossorigin="anonymous"></script>
 <!-- Non-critical scripts load after page without blocking render -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.383.0/lucide.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.383.0/lucide.min.js" integrity="sha384-ZSs6LKr2GoUPDyHrN+rCQgyHL1yUyok5xMniSrgeRG7rUvA6vTmxronM1eZOfjgz" crossorigin="anonymous"></script>
 <!-- Google Maps loads lazily — only injected when address search is first used -->
 <script>
 window._mapsLoaded=false;
@@ -102,6 +102,17 @@ try {
   window._fbAuth = _fbAuth;
 } catch (e) {/* Firebase unavailable — app still works via localStorage */}
 
+/* ── LOCAL EMULATOR (localhost only — prod untouched) ── */
+window._MRT_LOCAL = ["localhost","127.0.0.1"].includes(location.hostname);
+if (window._MRT_LOCAL) {
+  try {
+    if (_fb)      _fb.useEmulator("127.0.0.1", 9000);
+    if (_fbAuth)  _fbAuth.useEmulator("http://127.0.0.1:9099", { disableWarnings: true });
+    if (_fbStorage) _fbStorage.useEmulator("127.0.0.1", 9199);
+    console.log("MRT: connected to local Firebase emulators");
+  } catch (e) { console.warn("MRT: emulator connect failed", e); }
+}
+
 /* Create a Firebase Auth user via secondary app (so current admin stays signed in) */
 async function createFirebaseUser(email, password) {
   let secondaryApp;
@@ -170,6 +181,7 @@ const sendCFEmail = async (to, subject, message, html) => {
     console.warn("sendCFEmail: invalid recipient", to);
     return false;
   }
+  if (window._MRT_LOCAL) { console.log("MRT[local]: sendCFEmail suppressed →", to, subject); return true; }
   try {
     const r = await fetchWithTimeout(SEND_EMAIL_URL, {
       method: "POST",
@@ -193,6 +205,7 @@ const FORMSPREE_URL = "https://formspree.io/f/xykdngrr";
 const LISTING_REQUEST_FORMSPREE = "https://formspree.io/f/xwvnrbqr"; // listing requests form
 const SMS_EMAIL = "4806951996@txt.att.net";
 const sendSMS = msg => {
+  if (window._MRT_LOCAL) { console.log("MRT[local]: sendSMS suppressed →", msg); return; }
   fetchWithTimeout(LISTING_REQUEST_FORMSPREE, {
     method: "POST",
     headers: {
@@ -14253,6 +14266,10 @@ var now=new Date();
 var cm={year:now.getFullYear(),month:now.getMonth()};
 var selectedDate=null;
 function render(){
+// SECURITY: escape tour-derived values before they enter innerHTML (stored XSS guard).
+// esc() = HTML/attribute context; jsId() = strips anything non-id for use inside inline JS handlers.
+var esc=function(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];});};
+var jsId=function(s){return String(s==null?"":s).replace(/[^\w-]/g,"");};
 var fd=new Date(cm.year,cm.month,1).getDay();
 var dm=new Date(cm.year,cm.month+1,0).getDate();
 var mn=new Date(cm.year,cm.month).toLocaleDateString("en-US",{month:"long",year:"numeric"});
@@ -14284,8 +14301,8 @@ var cursor=hasTours?"pointer":"default";
 h+='<div onclick="window._calSelectDay(\''+ds+'\')" style="min-height:52px;background:'+bg+';border:'+bdr+';border-radius:8px;padding:3px;text-align:center;overflow:hidden;cursor:'+cursor+'">';
 h+='<div style="font-size:12px;font-weight:700;color:'+col+'">'+d+'</div>';
 for(var t=0;t<Math.min(tours.length,2);t++){
-var chipBg=isSelected?"rgba(255,255,255,.25)":tours[t].color;
-h+='<div style="background:'+chipBg+';color:#fff;border-radius:3px;padding:1px 3px;font-size:7px;font-weight:700;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+tours[t].emoji+' '+tours[t].name+'</div>';
+var chipBg=isSelected?"rgba(255,255,255,.25)":esc(tours[t].color);
+h+='<div style="background:'+chipBg+';color:#fff;border-radius:3px;padding:1px 3px;font-size:7px;font-weight:700;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(tours[t].emoji)+' '+esc(tours[t].name)+'</div>';
 }
 if(tours.length>2)h+='<div style="font-size:7px;color:'+(isSelected?"rgba(255,255,255,.7)":"#6B7280")+'">+'+(tours.length-2)+' more</div>';
 h+='</div>';
@@ -14308,13 +14325,13 @@ h+='<div style="text-align:center;padding:16px;color:#9CA3AF;font-size:13px">No 
 selTours.forEach(function(t){
 var isPastTour=selectedDate<todayStr;
 var badge=isPastTour?'<span style="background:#FEF3C7;color:#92400E;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:6px">PAST</span>':'<span style="background:#D1FAE5;color:#065F46;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:6px">UPCOMING</span>';
-h+='<button onclick="window._openMRTTour(\''+t.id+'\')" style="width:100%;background:#fff;border:2px solid '+t.color+';border-radius:12px;padding:12px 14px;cursor:pointer;text-align:left;margin-bottom:8px;display:flex;align-items:center;gap:12px">';
-h+='<div style="font-size:28px">'+t.emoji+'</div>';
+h+='<button onclick="window._openMRTTour(\''+jsId(t.id)+'\')" style="width:100%;background:#fff;border:2px solid '+esc(t.color)+';border-radius:12px;padding:12px 14px;cursor:pointer;text-align:left;margin-bottom:8px;display:flex;align-items:center;gap:12px">';
+h+='<div style="font-size:28px">'+esc(t.emoji)+'</div>';
 h+='<div style="flex:1">';
-h+='<div style="font-family:Georgia,serif;font-size:15px;font-weight:700;color:'+t.color+'">'+t.name+badge+'</div>';
-h+='<div style="font-size:12px;color:#6B7280;margin-top:2px">🕒 '+t.time+' · 🏠 '+(t.listings?t.listings.length:0)+' stops</div>';
+h+='<div style="font-family:Georgia,serif;font-size:15px;font-weight:700;color:'+esc(t.color)+'">'+esc(t.name)+badge+'</div>';
+h+='<div style="font-size:12px;color:#6B7280;margin-top:2px">🕒 '+esc(t.time)+' · 🏠 '+(t.listings?t.listings.length:0)+' stops</div>';
 h+='</div>';
-h+='<div style="font-size:18px;color:'+t.color+'">→</div>';
+h+='<div style="font-size:18px;color:'+esc(t.color)+'">→</div>';
 h+='</button>';
 });
 }
