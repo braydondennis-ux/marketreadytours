@@ -13455,6 +13455,21 @@ function SponsorSignupPage(_ref38) {
     }
   }, "\u2B50 Submit Sponsorship Request \u2014 $", planPrice.toFixed(2))));
 }
+/* Merge shared mrt_ratings + mrt_favorites into the tours array (so all readers see shared data) */
+function mergeSharedIntoTours(tours, ratings, favorites) {
+  if (!Array.isArray(tours)) return tours;
+  return tours.map(t => {
+    if (!t || !t.id) return t;
+    const r = (ratings && ratings[t.id]) || null;
+    const f = (favorites && favorites[t.id]) || null;
+    if (!r && !f) return t;
+    const rs = { ...(t.ratingSubmissions || {}) };
+    if (r) for (const lid of Object.keys(r)) rs[lid] = Object.values(r[lid] || {});
+    const fav = { ...(t.favorites || {}) };
+    if (f) for (const lid of Object.keys(f)) fav[lid] = Object.values(f[lid] || {}).some(Boolean);
+    return { ...t, ratingSubmissions: rs, favorites: fav };
+  });
+}
 /* ── APP ROOT ── */
 function App() {
   const [page, setPage] = useState(() => {
@@ -13538,6 +13553,8 @@ function App() {
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
   const [tours, setTours] = useState(() => lsGet("mrt_tours", INITIAL_TOURS));
+  const [sharedRatings, setSharedRatings] = useState({});
+  const [sharedFavorites, setSharedFavorites] = useState({});
   useEffect(() => {
     if (!sessionStorage.getItem("gat_session")) return;
     lsSet("mrt_tours", tours);
@@ -13656,7 +13673,9 @@ function App() {
       "mrt_tours": val => setTours(Array.isArray(val) ? val : Object.values(val || {})),
       "mrt_listing_requests": val => setListingRequests(Array.isArray(val) ? val : Object.entries(val || {}).map(([k,v]) => v && typeof v === "object" ? {...v, id: v.id || k} : v)),
       "mrt_tour_requests": val => setTourRequests(Array.isArray(val) ? val : Object.entries(val || {}).map(([k,v]) => v && typeof v === "object" ? {...v, id: v.id || k} : v)),
-      "mrt_subadmins": val => setSubAdmins(Array.isArray(val) ? val : Object.entries(val || {}).map(([k,v]) => v && typeof v === "object" ? {...v, id: v.id || k} : v))
+      "mrt_subadmins": val => setSubAdmins(Array.isArray(val) ? val : Object.entries(val || {}).map(([k,v]) => v && typeof v === "object" ? {...v, id: v.id || k} : v)),
+      "mrt_ratings": val => setSharedRatings(val || {}),
+      "mrt_favorites": val => setSharedFavorites(val || {})
     };
     // Load all paths once on mount
     const loadAll = () => Promise.all(
@@ -13721,7 +13740,8 @@ function App() {
   };
   useEffect(() => {
     if (!fbLoaded || tours.length === 0 || !isAnyAdmin) return;
-    fbWrite("mrt_tours", tours);
+    const cleanTours = tours.map(t => { const { ratingSubmissions, favorites, ratings, ...rest } = (t || {}); return rest; });
+    fbWrite("mrt_tours", cleanTours);
     // Write public preview — only when admin saves, not on every state change
     if (_fb && fbReady.current) {
       const previews = {};
@@ -13753,6 +13773,10 @@ function App() {
     if (!fbLoaded || !isAnyAdmin) return;
     fbWrite("mrt_subadmins", subAdmins);
   }, [subAdmins, fbLoaded, isAnyAdmin]);
+  const mergedTours = React.useMemo(
+    () => mergeSharedIntoTours(tours, sharedRatings, sharedFavorites),
+    [tours, sharedRatings, sharedFavorites]
+  );
   // Show loading skeleton while Firebase Auth resolves (prevents blank flash)
   if (authLoading) return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -13860,7 +13884,7 @@ function App() {
     onClose: () => setShowLogin(false),
     subAdmins: subAdmins
   }), page === "dashboard" && /*#__PURE__*/React.createElement(ToursDashboard, {
-    tours: tours,
+    tours: mergedTours,
     setTours: setTours,
     isAdmin: isAnyAdmin,
     isSuperAdmin: isSuperAdmin,
@@ -13883,7 +13907,7 @@ function App() {
     onClearTourId: () => setActiveTourId(null),
     isSuperAdmin: isSuperAdmin
   }), page === "not-interested" && /*#__PURE__*/React.createElement(NotInterestedPage, {
-    tours: tours,
+    tours: mergedTours,
     onBack: () => {
       setPage("dashboard");
       window.location.hash = "/";
@@ -13903,14 +13927,14 @@ function App() {
     }
   }), page === "tour-signup" && /*#__PURE__*/React.createElement(RequestListingPage, {
     tourSignUp: true,
-    tours: tours,
+    tours: mergedTours,
     onBack: () => {
       setPage("dashboard");
       window.location.hash = "/";
     },
     onSubmit: req => setListingRequests(prev => [...prev, req])
   }), page === "request" && /*#__PURE__*/React.createElement(RequestListingPage, {
-    tours: tours,
+    tours: mergedTours,
     preselectedTourId: preselectedTourId,
     onBack: () => {
       setPage("dashboard");
@@ -13918,7 +13942,7 @@ function App() {
     },
     onSubmit: req => setListingRequests(prev => [...prev, req])
   }), page === "sponsor-signup" && /*#__PURE__*/React.createElement(SponsorSignupPage, {
-    tours: tours,
+    tours: mergedTours,
     onBack: () => {
       setPage("dashboard");
       window.location.hash = "/";
@@ -13939,7 +13963,7 @@ function App() {
     setRequests: setListingRequests,
     tourRequests: tourRequests,
     setTourRequests: setTourRequests,
-    tours: tours,
+    tours: mergedTours,
     setTours: setTours,
     onBack: () => {
       setPage("dashboard");
