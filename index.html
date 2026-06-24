@@ -5980,24 +5980,18 @@ function TourDetailPage(_ref19) {
     });
   };
   const handleRatingSubmit = (listingId, ratings, extra) => {
-    const newRatings = {
-      ...tour.ratings,
-      [listingId]: ratings
-    };
+    const newSub = { ...ratings, ...(extra || {}), submittedAt: new Date().toISOString() };
+    // Persist to the shared path so guests' ratings count too (anon-create allowed by rules)
+    if (_fb) {
+      try { _fb.ref("mrt_ratings/" + tour.id + "/" + listingId + "/" + uid("r")).set(newSub).catch(() => {}); }
+      catch (e) {}
+    }
+    // Keep local/admin state responsive (merge-on-read will reconcile from mrt_ratings)
     const prevSubs = Array.isArray((tour.ratingSubmissions || {})[listingId]) ? (tour.ratingSubmissions || {})[listingId] : [];
-    const newSub = {
-      ...ratings,
-      ...(extra || {}),
-      submittedAt: new Date().toISOString()
-    };
-    const newRatingSubs = {
-      ...(tour.ratingSubmissions || {}),
-      [listingId]: [...prevSubs, newSub]
-    };
     onUpdateTour({
       ...tour,
-      ratings: newRatings,
-      ratingSubmissions: newRatingSubs
+      ratings: { ...tour.ratings, [listingId]: ratings },
+      ratingSubmissions: { ...(tour.ratingSubmissions || {}), [listingId]: [...prevSubs, newSub] }
     });
   };
   const saveNote = (listingId, note) => {
