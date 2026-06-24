@@ -24,9 +24,25 @@ const tours = [
     listings: [mkListing(0,"300 South Rd")], sponsors: [] }
 ];
 
+// admins keyed exactly as the app computes them: email.replace(/\./g, ",") — '@' stays, dots → commas.
 await put("mrt_tours", tours);
 await put("admins", {
-  "super_at_example,com": { name: "Super Admin", role: "super" },
-  "sub_at_example,com":   { name: "Sub Admin",   role: "sub" }
+  "super@example,com": { name: "Super Admin", role: "super" },
+  "sub@example,com":   { name: "Sub Admin",   role: "sub" }
 });
-console.log("Seeded emulator with", tours.length, "tours.");
+
+// Create matching Auth users so login works immediately (Auth emulator REST; key is ignored locally).
+const AUTH = "http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-api-key";
+const mkUser = (email, password) => fetch(AUTH, {
+  method: "POST", headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email, password, returnSecureToken: true })
+}).then(async r => {
+  if (r.ok) return console.log("  auth user created:", email);
+  const t = await r.text();
+  if (t.includes("EMAIL_EXISTS")) return console.log("  auth user exists:", email);
+  throw new Error("auth " + email + ": " + t);
+});
+await mkUser("super@example.com", "test1234");
+await mkUser("sub@example.com", "test1234");
+
+console.log("Seeded emulator with", tours.length, "tours + 2 admins (super@example.com / sub@example.com, pw test1234).");
