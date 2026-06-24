@@ -1,7 +1,9 @@
 // Seeds the LOCAL emulator only. Run with the emulator running: node scripts/seed-emulator.mjs
+// access_token=owner = the RTDB emulator's admin bypass, so the seed can write under the
+// hardened rules (mrt_tours requires auth). Has no meaning against a real database.
 const DB = "http://127.0.0.1:9000";
 const PROJECT = "marketready-tours";
-const put = (path, data) => fetch(`${DB}/${path}.json?ns=${PROJECT}-default-rtdb`, {
+const put = (path, data) => fetch(`${DB}/${path}.json?ns=${PROJECT}-default-rtdb&access_token=owner`, {
   method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
 }).then(r => r.ok ? null : r.text().then(t => { throw new Error(path + ": " + t); }));
 
