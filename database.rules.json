@@ -74,6 +74,27 @@
           ".write": "auth != null || (!data.exists() && newData.exists())"
         }
       }
+    },
+    "mrt_ratings": {
+      ".read": true,
+      "$tourId": { "$listingId": { "$subId": {
+        ".write": "auth != null || (!data.exists() && newData.exists())",
+        ".validate": "newData.hasChild('submittedAt')"
+      } } }
+    },
+    "mrt_favorites": {
+      ".read": true,
+      "$tourId": { "$listingId": { "$userKey": {
+        ".write": true,
+        ".validate": "newData.isBoolean() || !newData.exists()"
+      } } }
+    },
+    "mrt_sponsor_signups": {
+      ".read": "auth != null",
+      "$tourId": { "$signupId": {
+        ".write": "auth != null || (!data.exists() && newData.exists())",
+        ".validate": "newData.hasChild('name') && newData.hasChild('email')"
+      } }
     }
   }
 }
