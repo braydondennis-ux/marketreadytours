@@ -1,0 +1,79 @@
+{
+  // MarketReady Tours — hardened RTDB rules. DRAFT — review, then deploy from the Firebase
+  // console (Realtime Database -> Rules) or `firebase deploy --only database`.
+  // Default-deny at the root; every path is explicitly scoped below.
+  // (The Firebase CLI accepts // and /* */ comments in this file.)
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    // Role store. Read requires login; WRITE locked to super-admin only —
+    // closes the self-privilege-escalation hole (anyone could grant themselves role:"super").
+    "admins": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.email === 'marketreadytours@gmail.com'",
+      "$emailKey": {
+        ".validate": "newData.hasChild('role')"
+      }
+    },
+
+    "mrt_subadmins": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.email === 'marketreadytours@gmail.com'"
+    },
+
+    // Holds the Instantly API key. Super-admin only, both ways.
+    "mrt_settings": {
+      ".read": "auth != null && auth.token.email === 'marketreadytours@gmail.com'",
+      ".write": "auth != null && auth.token.email === 'marketreadytours@gmail.com'"
+    },
+
+    // READ stays public so guests can open shared tour links and rate (preserves core flow).
+    // WRITE now requires auth — closes the anonymous data-wipe vector.
+    // RESIDUAL: sensitive fields (campaignContacts, notes, per-tour code) are still publicly
+    // readable here. Real fix = move those into a protected mrt_tours_private/<id> sibling
+    // (Phase 1 code change), then this node only exposes guest-safe fields.
+    "mrt_tours": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+
+    // Public, guest-visible preview cards by design.
+    "mrt_tour_previews": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+
+    "mrt_reminders": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+
+    // Public intake. Admins read all. Anonymous may CREATE a new request but
+    // cannot read, overwrite, or delete existing records.
+    "mrt_listing_requests": {
+      ".read": "auth != null",
+      "$reqId": {
+        ".write": "auth != null || (!data.exists() && newData.exists())",
+        ".validate": "newData.hasChild('id')"
+      }
+    },
+
+    "mrt_tour_requests": {
+      ".read": "auth != null",
+      "$reqId": {
+        ".write": "auth != null || (!data.exists() && newData.exists())"
+      }
+    },
+
+    // Anonymous guests flag themselves not-interested per tour. Create-only for anonymous; admins read.
+    "mrt_not_interested": {
+      ".read": "auth != null",
+      "$tourId": {
+        "$emailKey": {
+          ".write": "auth != null || (!data.exists() && newData.exists())"
+        }
+      }
+    }
+  }
+}

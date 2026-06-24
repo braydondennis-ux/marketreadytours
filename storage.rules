@@ -1,0 +1,43 @@
+rules_version = '2';
+
+// MarketReady Tours — hardened Cloud Storage rules. DRAFT — REVIEW before deploying.
+// The live bucket currently allows unauthenticated object listing; these rules scope reads to
+// the known image prefixes and restrict writes. Images must stay publicly READABLE because guests
+// view listing/sponsor/branding photos on shared tour links.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAdmin()   { return request.auth != null; }
+    function isImage()   { return request.resource.contentType.matches('image/.*'); }
+    function underMax(mb) { return request.resource.size < mb * 1024 * 1024; }
+
+    // Guest-uploaded rating photos: anyone may upload (raters aren't logged in), images only, capped.
+    match /mrt_rating_photos/{tourId}/{listingId}/{file} {
+      allow read: if true;
+      allow write: if isImage() && underMax(10);
+    }
+
+    // Admin-managed assets: public read, authenticated write only.
+    match /mrt_listing_photos/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && isImage() && underMax(10);
+    }
+    match /mrt_branding/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && isImage() && underMax(5);
+    }
+    match /mrt_sponsor_logos/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && isImage() && underMax(5);
+    }
+    match /mrt_sponsor_headshots/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && isImage() && underMax(5);
+    }
+
+    // Everything else: deny.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
