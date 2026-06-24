@@ -38,6 +38,39 @@ causes the reported symptoms:
   root-vs-`www` file drift). Tracked separately.
 - Reconciling the legacy dual tour-request channels.
 
+## Pre-existing staged security pass (Phase A — ships FIRST)
+
+The working tree already contains an **uncommitted, undeployed "Phase 0 security
+hardening" pass** (documented in `SECURITY_NOTES.md`) that overlaps our files. Per
+decision 2026-06-24, we **keep it as the baseline and ship it first** as a separate,
+smaller deploy, then build the feature (Phase B, this spec) on top.
+
+Staged artifacts (all uncommitted):
+- `database.rules.json` — hardened RTDB rules draft (default-deny root; `admins` /
+  `mrt_subadmins` / `mrt_settings` writes locked to super-admin; `mrt_tours` write
+  requires auth; create-only public intake). **This is the file our new paths get
+  added to** — not the looser live rules.
+- `storage.rules` — hardened Storage rules; **already allows guest `mrt_rating_photos`
+  uploads**, so our rating-photo flow is covered.
+- `firebase.json` (database+storage rules pointers; **no emulator block yet — we add
+  one**) + `.firebaserc` (project `marketready-tours`).
+- `vercel.json` — security headers + CSP. Its `connect-src` already whitelists
+  `https://*.firebaseio.com` + `wss://*.firebaseio.com`, so **our new writes are
+  already CSP-allowed**. (CSP must be verified against a real session before prod.)
+- `index.html` + `www/index.html` — XSS escaping (`esc()`/`jsId()`) + SRI hashes.
+
+Phase A = review + emulator-test + commit + deploy (rules via console/CLI, code via
+Vercel), verify live. Phase B (this spec) then builds on the deployed baseline.
+
+## Deploy/source reality (verified 2026-06-24)
+
+- Live `marketreadytours.com` is served by **Vercel** (Cloudflare CDN in front),
+  serving **root `index.html`** (`vercel.json` outputDirectory `.`). `www/index.html`
+  is **not deployed** and is stale (60KB smaller) — ignore it for the live site.
+- **No JSX `text/babel` source exists** in the repo; both files are already compiled
+  `React.createElement`. `build.js` is effectively dead. **Edits are made directly to
+  the compiled JS in root `index.html`.**
+
 ## Current production facts (verified 2026-06-24)
 
 - `mrt_tours` is a **30-element array** of real tours; tour id (`tour.id`, stable
@@ -89,7 +122,7 @@ replacing the current dual `tour.ratings` (last-write-wins) vs
 `tour.ratingSubmissions` (array) split. This also fixes the Ranking-vs-Summary
 disagreement and the stale "7 categories" copy.
 
-### Rules to ADD (additive only — existing rules unchanged)
+### Rules to ADD (into `database.rules.json`, the hardened draft — additive)
 
 ```json
 "mrt_ratings": {
@@ -155,7 +188,8 @@ disagreement and the stale "7 categories" copy.
 Production is live with real PII and real outbound emails, so **all dev/testing
 runs against local emulators**, never prod.
 
-- `firebase.json` + `.firebaserc` configured for **Auth + Database emulators**.
+- `firebase.json` already exists (rules pointers); **add an `emulators` block** for
+  **Auth + Database** (+ Storage if we test photo upload). `.firebaserc` already set.
 - **Emulator connect shim** in `index.html`: when
   `location.hostname === "localhost"`, call `_fb.useEmulator(...)` /
   `_fbAuth.useEmulator(...)` before first use. Production hostname → real Firebase,
@@ -178,11 +212,22 @@ runs against local emulators**, never prod.
 4. Reload both sessions → all of the above persist (from the emulator DB).
 5. Confirm **no** network POST to the real `sendemail` endpoint fired (email guard).
 
-## Rollout (prod)
+## Rollout (prod) — two phases, security first
 
-1. Erik exports prod RTDB (backup) — done as part of setup.
-2. Merge code changes; deploy to Vercel (his own Vercel project).
-3. Erik pastes the 3 added rule blocks into Console → RTDB → Rules → Publish.
+**Phase A — ship the staged security pass (separate, smaller deploy):**
+1. Erik exports prod RTDB (backup).
+2. Review staged changes; emulator-test that the hardened rules don't break the
+   guest flow (open tour, submit a listing request, etc.).
+3. Commit the staged work.
+4. Deploy: `database.rules.json` + `storage.rules` (paste into console, or
+   `firebase deploy --only database,storage`) **and** the code (`vercel.json` CSP +
+   index.html XSS/SRI) to Vercel. **Verify CSP against a real session.**
+5. Smoke-test live: login, open a tour, submit a request — confirm nothing broke.
+
+**Phase B — ship the shared-backend feature (this spec) on the deployed baseline:**
+1. Add the 3 new rule blocks to `database.rules.json`; deploy rules.
+2. Merge feature code into root `index.html`; deploy to Vercel.
+3. Optional one-time migration of existing inline ratings/favorites.
 4. Smoke-test the acceptance flow against prod with a throwaway tour.
 5. Roll back = remove the 3 rule blocks + revert deploy (additive, reversible).
 
