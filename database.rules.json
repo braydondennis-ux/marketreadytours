@@ -49,10 +49,12 @@
       ".write": "auth != null"
     },
 
-    // Public intake. Admins read all. Anonymous may CREATE a new request but
-    // cannot read, overwrite, or delete existing records.
+    // Public intake. Admins read all and may bulk-write (the app persists the whole
+    // collection on approve/deny). Anonymous may CREATE a new request but cannot read,
+    // overwrite, or delete existing records.
     "mrt_listing_requests": {
       ".read": "auth != null",
+      ".write": "auth != null",
       "$reqId": {
         ".write": "auth != null || (!data.exists() && newData.exists())",
         ".validate": "newData.hasChild('id')"
@@ -61,6 +63,7 @@
 
     "mrt_tour_requests": {
       ".read": "auth != null",
+      ".write": "auth != null",
       "$reqId": {
         ".write": "auth != null || (!data.exists() && newData.exists())"
       }
