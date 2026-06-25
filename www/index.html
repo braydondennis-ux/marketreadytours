@@ -30,7 +30,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js" integrity="sha384-6I0gWsz4FIAr30c0TxIxJnPQuJiZ1FfILdZrgJdjxTH3R8dgPGTvexbyqTvReV6Z" crossorigin="anonymous"></script>
 <!-- Non-critical scripts load after page without blocking render -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.383.0/lucide.min.js" integrity="sha384-ZSs6LKr2GoUPDyHrN+rCQgyHL1yUyok5xMniSrgeRG7rUvA6vTmxronM1eZOfjgz" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.383.0/dist/umd/lucide.min.js" integrity="sha384-wHFvAtjmgnkA2PJcMsDaCgdipf7X7YV44X/igbLHpvGiq6T5/PvFKl93grpvtbQT" crossorigin="anonymous"></script>
 <!-- Google Maps loads lazily — only injected when address search is first used -->
 <script>
 window._mapsLoaded=false;
@@ -177,15 +177,16 @@ const SQUARE_LINKS = {
   split: "https://square.link/u/ZqkeM21q"
 };
 // Lucide icon helper — LI(iconName, size, style)
+// lucide node format is [tag, attrs, childrenArray] (children nested at index 2),
+// e.g. ["svg", {...}, [["path",{d}],["path",{d}]]] — recurse over the children array.
 const LI = (name, size=16, extraStyle={}) => {
-  const Icon = window.lucide && window.lucide[name];
-  if (!Icon) return null;
-  const svg = Icon.render ? null : null;
-  // Use lucide SVG strings via createElement
-  const svgData = window.lucide[name];
-  if (!svgData) return null;
-  const [tag, attrs, ...children] = svgData;
-  const buildEl = ([t, a, ...c]) => React.createElement(t, {...a, ...('svg'===t?{width:size,height:size,style:{verticalAlign:'middle',...extraStyle}}:{})}, ...c.map(ch => Array.isArray(ch)?buildEl(ch):ch));
+  const svgData = window.lucide && window.lucide[name];
+  if (!svgData || !Array.isArray(svgData)) return null;
+  const buildEl = node => {
+    const [t, a, kids] = node;
+    const childArr = Array.isArray(kids) ? kids : [];
+    return React.createElement(t, {...a, ...('svg'===t?{width:size,height:size,style:{verticalAlign:'middle',...extraStyle}}:{})}, ...childArr.map(buildEl));
+  };
   return buildEl(svgData);
 };
 const SEND_EMAIL_URL = "https://sendemail-wraz5q2v2a-uc.a.run.app";
