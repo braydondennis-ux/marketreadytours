@@ -7957,13 +7957,13 @@ function TourDetailPage(_ref19) {
       fontSize: 12,
       fontWeight: 600
     }
-  }, "\uD83D\uDCE3 Campaign"))), (tour.sponsors || []).length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDCE3 Campaign"))), (tour.sponsors || []).filter(sp => sp.paid).length > 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       background: "#fff",
       borderBottom: "1px solid #F0EDE6",
       padding: "14px 14px"
     }
-  }, (tour.sponsors || []).filter(sp => sp.tourLead).map(sp => /*#__PURE__*/React.createElement("div", {
+  }, (tour.sponsors || []).filter(sp => sp.paid && sp.tourLead).map(sp => /*#__PURE__*/React.createElement("div", {
     key: sp.id + "lead",
     style: {
       background: "linear-gradient(135deg, #0D0D0D 0%, #243F6B 50%, #0D0D0D 100%)",
@@ -8155,7 +8155,7 @@ function TourDetailPage(_ref19) {
       fontSize: 12,
       textDecoration: "none"
     }
-  }, "\uD83C\uDF10 Website")))), (tour.sponsors || []).filter(sp => !sp.tourLead).length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, "\uD83C\uDF10 Website")))), (tour.sponsors || []).filter(sp => sp.paid && !sp.tourLead).length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
       color: B.gray,
@@ -8165,7 +8165,7 @@ function TourDetailPage(_ref19) {
       marginBottom: 10,
       textAlign: "center"
     }
-  }, (tour.sponsors || []).some(sp => sp.tourLead) ? "⭐ Tour Sponsors ⭐" : "⭐ Tour Sponsors ⭐"), (tour.sponsors || []).filter(sp => !sp.tourLead).map(sp => /*#__PURE__*/React.createElement("div", {
+  }, (tour.sponsors || []).some(sp => sp.tourLead) ? "⭐ Tour Sponsors ⭐" : "⭐ Tour Sponsors ⭐"), (tour.sponsors || []).filter(sp => sp.paid && !sp.tourLead).map(sp => /*#__PURE__*/React.createElement("div", {
     key: sp.id,
     style: {
       background: "linear-gradient(135deg, #F8F6F0 0%, #fff 100%)",
