@@ -13464,10 +13464,22 @@ function mergeSharedIntoTours(tours, ratings, favorites) {
     const f = (favorites && favorites[t.id]) || null;
     if (!r && !f) return t;
     const rs = { ...(t.ratingSubmissions || {}) };
-    if (r) for (const lid of Object.keys(r)) rs[lid] = Object.values(r[lid] || {});
+    const flat = { ...(t.ratings || {}) };
+    if (r) for (const lid of Object.keys(r)) {
+      const subs = Object.values(r[lid] || {});
+      rs[lid] = subs;
+      // Flat per-category average across submissions — drives the rated count + RankingPage,
+      // which read tour.ratings (the flat map), not ratingSubmissions.
+      const avg = {};
+      RATING_CATS.forEach(c => {
+        const vals = subs.map(s => Number(s && s[c.key])).filter(v => v > 0);
+        if (vals.length) avg[c.key] = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10;
+      });
+      if (Object.keys(avg).length) flat[lid] = avg;
+    }
     const fav = { ...(t.favorites || {}) };
     if (f) for (const lid of Object.keys(f)) fav[lid] = Object.values(f[lid] || {}).some(Boolean);
-    return { ...t, ratingSubmissions: rs, favorites: fav };
+    return { ...t, ratings: flat, ratingSubmissions: rs, favorites: fav };
   });
 }
 /* ── APP ROOT ── */
