@@ -8,6 +8,9 @@
 <meta name="apple-mobile-web-app-title" content="MRT Tours"/>
 <meta name="theme-color" content="#1B3A6B"/>
 <link rel="manifest" href="manifest.json"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <title>MarketReady Tours — #1 Real Estate Home Tours App</title>
 <meta name="description" content="Tour. Rate. Decide. Browse curated home tours, RSVP, preview homes with peers, and submit real-time feedback."/>
 <meta property="og:type" content="website"/>
@@ -53,12 +56,15 @@ window.loadGoogleMaps=function(cb){
 </script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F7F4EF}
-::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#C9A55A;border-radius:2px}
+body{font-family:'Hanken Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F7F4EF;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;color:#1A1714}
+button,select{font-family:'Hanken Grotesk',-apple-system,sans-serif}
+/* Fraunces display headings (set via inline fontFamily) get tighter optical spacing */
+h1,h2,h3,h4{letter-spacing:-.015em;line-height:1.12}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:rgba(201,165,90,.55);border-radius:3px}::-webkit-scrollbar-track{background:transparent}
 textarea,input,select{font-family:inherit}
-.btn-hover{transition:all .2s cubic-bezier(.4,0,.2,1)!important}
-.btn-hover:hover{opacity:.9;transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.25)!important}
-.btn-hover:active{transform:translateY(0);box-shadow:none!important}
+.btn-hover{transition:transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .18s ease,opacity .18s ease,background .18s ease!important}
+.btn-hover:hover{transform:translateY(-1.5px);box-shadow:0 6px 18px rgba(27,58,107,.18)!important;opacity:.97}
+.btn-hover:active{transform:translateY(0) scale(.99);box-shadow:none!important}
 .card-hover{transition:all .25s cubic-bezier(.4,0,.2,1)}
 .card-hover:hover{box-shadow:0 16px 48px rgba(0,0,0,.18)!important;transform:translateY(-3px)}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -158,12 +164,18 @@ function fbToArr(d) {
 }
 const B = {
   primary: "#0D0D0D",
+  navy: "#1B3A6B",
+  navyDark: "#152C50",
+  ink: "#1A1714",
   gold: "#C9A55A",
+  goldDeep: "#A8842F",
   lightGold: "#E8D5A3",
   cream: "#F7F4EF",
+  paper: "#FFFDFA",
   dark: "#050505",
   gray: "#8A8078",
   lightGray: "#F0EDE8",
+  line: "#E7E0D6",
   green: "#2D6A4F",
   red: "#9B1C1C",
   surface: "#1A1A1A",
@@ -717,7 +729,7 @@ function QRModal(_ref4) {
   })), /*#__PURE__*/React.createElement("h3", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 20,
       marginBottom: 4
     }
@@ -858,7 +870,7 @@ function LoginPage(_ref5) {
   }, "\uD83D\uDCE7"), /*#__PURE__*/React.createElement("h2", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 22,
       marginTop: 8
     }
@@ -1014,7 +1026,7 @@ function LoginPage(_ref5) {
   }, "\uD83D\uDD10"), /*#__PURE__*/React.createElement("h2", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 22,
       marginTop: 8
     }
@@ -1337,7 +1349,7 @@ function RatingPage(_ref7) {
   }, "\uD83D\uDD10"), /*#__PURE__*/React.createElement("h2", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 22,
       margin: "0 0 6px"
     }
@@ -1537,7 +1549,7 @@ function RatingPage(_ref7) {
   }, "\u2705"), /*#__PURE__*/React.createElement("h2", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 24
     }
   }, "Rating Submitted!"), /*#__PURE__*/React.createElement("p", {
@@ -1592,7 +1604,7 @@ function RatingPage(_ref7) {
   }, tour.emoji, " ", tour.name, " \xB7 Stop #", listing.order), /*#__PURE__*/React.createElement("div", {
     style: {
       color: "#fff",
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 15,
       fontWeight: 700
     }
@@ -1641,7 +1653,7 @@ function RatingPage(_ref7) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 17,
       fontWeight: 700,
       textShadow: "0 1px 4px rgba(0,0,0,.6)"
@@ -1696,7 +1708,7 @@ function RatingPage(_ref7) {
       fontSize: 22,
       fontWeight: 700,
       color: B.primary,
-      fontFamily: "Georgia,serif"
+      fontFamily: "Fraunces, Georgia, serif"
     }
   }, "$", listing.price.toLocaleString()), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2103,7 +2115,7 @@ function RankingPage(_ref8) {
   }, tour.emoji, " ", tour.name), /*#__PURE__*/React.createElement("div", {
     style: {
       color: "#fff",
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 15,
       fontWeight: 700
     }
@@ -2183,7 +2195,7 @@ function RankingPage(_ref8) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 14,
       fontWeight: 700,
       color: B.primary,
@@ -2271,7 +2283,7 @@ function SummaryDashboard(_ref9) {
   }, tour.emoji, " ", tour.name), /*#__PURE__*/React.createElement("div", {
     style: {
       color: "#fff",
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 15,
       fontWeight: 700
     }
@@ -2338,7 +2350,7 @@ function SummaryDashboard(_ref9) {
     }, /*#__PURE__*/React.createElement("div", {
       style: {
         color: "#fff",
-        fontFamily: "Georgia,serif",
+        fontFamily: "Fraunces, Georgia, serif",
         fontSize: 13,
         fontWeight: 700
       }
@@ -2466,7 +2478,7 @@ function AgentBrandingModal(_ref0) {
   }, /*#__PURE__*/React.createElement("h3", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 20,
       marginBottom: 20
     }
@@ -2876,7 +2888,7 @@ function TourSponsorsModal(_ref10) {
   }, /*#__PURE__*/React.createElement("h3", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 20,
       margin: 0
     }
@@ -3595,7 +3607,7 @@ function TourSponsorsModal(_ref10) {
   }, "\u2705"), /*#__PURE__*/React.createElement("h3", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 18,
       margin: "0 0 6px"
     }
@@ -3651,7 +3663,7 @@ function TourSponsorsModal(_ref10) {
   }, "\uD83D\uDCB3"), /*#__PURE__*/React.createElement("h3", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 18,
       margin: "0 0 4px"
     }
@@ -5287,7 +5299,7 @@ function InviteCampaignTab(_ref15) {
   }, /*#__PURE__*/React.createElement("h3", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 16,
       margin: 0
     }
@@ -5510,7 +5522,7 @@ function NotInterestedPage(_ref17) {
   }, /*#__PURE__*/React.createElement("p", {
     style: {
       margin: 0,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 18,
       fontWeight: 900,
       color: "#fff",
@@ -5534,7 +5546,7 @@ function NotInterestedPage(_ref17) {
   }, "\uD83D\uDC4B"), /*#__PURE__*/React.createElement("h2", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 22,
       marginBottom: 12
     }
@@ -5558,7 +5570,7 @@ function NotInterestedPage(_ref17) {
   }, "\uD83C\uDFE1"), /*#__PURE__*/React.createElement("h2", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 20,
       marginBottom: 8
     }
@@ -6493,7 +6505,7 @@ function TourDetailPage(_ref19) {
   }, tour.emoji, " ", tour.name), /*#__PURE__*/React.createElement("div", {
     style: {
       color: "#fff",
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 15,
       fontWeight: 700
     }
@@ -6565,7 +6577,7 @@ function TourDetailPage(_ref19) {
   }, tour.emoji, " ", tour.name), /*#__PURE__*/React.createElement("div", {
     style: {
       color: "#fff",
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 15,
       fontWeight: 700
     }
@@ -6653,7 +6665,7 @@ function TourDetailPage(_ref19) {
   }, "\u2709\uFE0F"), /*#__PURE__*/React.createElement("h3", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       margin: "12px 0 6px",
       fontSize: 22
     }
@@ -6724,7 +6736,7 @@ function TourDetailPage(_ref19) {
   }, "\uD83C\uDFE1\u2709\uFE0F"), /*#__PURE__*/React.createElement("h3", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       marginTop: 6,
       marginBottom: 4,
       fontSize: 20
@@ -7109,7 +7121,7 @@ function TourDetailPage(_ref19) {
   }, "\u2190"), /*#__PURE__*/React.createElement("div", {
     style: {
       color: "#fff",
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 15,
       fontWeight: 700
     }
@@ -7534,7 +7546,7 @@ function TourDetailPage(_ref19) {
   }, /*#__PURE__*/React.createElement("h3", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 18,
       marginBottom: 16
     }
@@ -7749,7 +7761,7 @@ function TourDetailPage(_ref19) {
   }))), /*#__PURE__*/React.createElement("div", {
     style: {
       color: "#fff",
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 20,
       fontWeight: 700,
       marginTop: 8
@@ -8465,7 +8477,7 @@ function TourDetailPage(_ref19) {
       style: {
         fontSize: 15,
         fontWeight: 800,
-        fontFamily: "Georgia,serif",
+        fontFamily: "Fraunces, Georgia, serif",
         color: "#fff"
       }
     }, "$", listing.price.toLocaleString())), (listing.photos || []).length > 1 && /*#__PURE__*/React.createElement("div", {
@@ -8542,7 +8554,7 @@ function TourDetailPage(_ref19) {
         margin: 0,
         fontSize: 16,
         color: B.primary,
-        fontFamily: "Georgia,serif",
+        fontFamily: "Fraunces, Georgia, serif",
         flex: 1
       }
     }, listing.address), isFav && /*#__PURE__*/React.createElement("span", {
@@ -8757,7 +8769,7 @@ function SponsorsPage(_ref22) {
   }, /*#__PURE__*/React.createElement("h3", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 20,
       marginBottom: 20
     }
@@ -8963,7 +8975,7 @@ function SponsorsPage(_ref22) {
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       color: "#fff",
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 20,
       fontWeight: 700,
       marginTop: 2
@@ -9063,7 +9075,7 @@ function SponsorsPage(_ref22) {
       fontWeight: 700,
       fontSize: 13,
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       marginBottom: 3,
       lineHeight: 1.3
     }
@@ -9278,7 +9290,7 @@ const RequestATourInlineForm = React.forwardRef(function (_ref24, ref) {
   }, "MarketReady Tours"), /*#__PURE__*/React.createElement("div", {
     style: {
       color: "#fff",
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 16,
       fontWeight: 700
     }
@@ -9307,7 +9319,7 @@ const RequestATourInlineForm = React.forwardRef(function (_ref24, ref) {
   }, "\u2705"), /*#__PURE__*/React.createElement("h3", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 20,
       marginBottom: 8
     }
@@ -9704,7 +9716,7 @@ function ToursDashboard(_ref26) {
   }, /*#__PURE__*/React.createElement("h3", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 20,
       marginBottom: 20
     }
@@ -9912,7 +9924,7 @@ function ToursDashboard(_ref26) {
   }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       color: "#fff",
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontWeight: 700,
       fontSize: 16
     }
@@ -10080,7 +10092,7 @@ function ToursDashboard(_ref26) {
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       color: B.gray,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 15,
       fontWeight: 400,
       letterSpacing: 1.5,
@@ -10367,7 +10379,7 @@ function ToursDashboard(_ref26) {
   }, "\uD83D\uDCC5"), /*#__PURE__*/React.createElement("h3", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       marginBottom: 8
     }
   }, "No tours scheduled"), /*#__PURE__*/React.createElement("p", {
@@ -10396,92 +10408,113 @@ function ToursDashboard(_ref26) {
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
-        background: tour.color,
-        padding: "16px 18px",
+        background: B.paper,
+        padding: "17px 18px 16px",
         display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between"
+        alignItems: "flex-start",
+        justifyContent: "space-between",
+        borderLeft: "3px solid " + tour.color,
+        borderBottom: "1px solid " + B.line
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
-        alignItems: "center",
-        gap: 14
+        alignItems: "flex-start",
+        gap: 13
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
-        fontSize: 30
+        fontSize: 30,
+        flexShrink: 0,
+        marginTop: 1
       }
     }, /*#__PURE__*/React.createElement(TourIcon, {
       emoji: tour.emoji,
       size: 30
     })), /*#__PURE__*/React.createElement("div", null,
-      _badge&&/*#__PURE__*/React.createElement("div",{style:{display:"inline-block",background:_badge.bg,color:"#fff",fontSize:10,fontWeight:800,borderRadius:5,padding:"2px 8px",marginBottom:4,letterSpacing:.5,textTransform:"uppercase"}},_badge.l),
+      _badge&&/*#__PURE__*/React.createElement("div",{style:{display:"inline-block",background:_badge.bg,color:"#fff",fontSize:9.5,fontWeight:800,borderRadius:5,padding:"2px 8px",marginBottom:5,letterSpacing:.6,textTransform:"uppercase"}},_badge.l),
       /*#__PURE__*/React.createElement("div", {
       style: {
-        color: "#fff",
-        fontFamily: "Georgia,serif",
-        fontSize: 18,
-        fontWeight: 700
+        color: B.ink,
+        fontFamily: "Fraunces, Georgia, serif",
+        fontSize: 19,
+        fontWeight: 600,
+        letterSpacing: "-.01em",
+        lineHeight: 1.15
       }
     }, tour.name), /*#__PURE__*/React.createElement("div", {
       style: {
-        color: "rgba(255,255,255,.9)",
-        fontSize: 16,
-        fontWeight: 700,
-        marginTop: 2
+        color: B.muted,
+        fontSize: 13,
+        fontWeight: 600,
+        marginTop: 5,
+        display: "flex",
+        alignItems: "center",
+        gap: 6
       }
-    }, "\uD83D\uDCC5 ", (tour.date ? new Date(tour.date + "T12:00:00") : new Date()).toLocaleDateString("en-US", {
+    }, LI("Calendar", 13, { color: B.gray }), (tour.date ? new Date(tour.date + "T12:00:00") : new Date()).toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
       day: "numeric"
-    }), " \xB7 \uD83D\uDD52 ", tour.time), /*#__PURE__*/React.createElement("div", {
+    }), /*#__PURE__*/React.createElement("span", { style: { opacity: .4 } }, "\u00B7"), LI("Clock", 13, { color: B.gray }), tour.time), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
-        gap: 8,
-        marginTop: 6
+        gap: 7,
+        marginTop: 9,
+        flexWrap: "wrap"
       }
     }, /*#__PURE__*/React.createElement("span", {
       style: {
-        background: "rgba(255,255,255,.2)",
-        borderRadius: 6,
-        padding: "3px 10px",
+        display: "flex", alignItems: "center", gap: 4,
+        background: B.cream,
+        border: "1px solid " + B.line,
+        borderRadius: 7,
+        padding: "3px 9px",
         fontSize: 12,
-        fontWeight: 700,
-        color: "#fff"
+        fontWeight: 600,
+        color: B.muted
       }
-    }, "\uD83C\uDFE0 ", (tour.listings || []).length, " stops"), /*#__PURE__*/React.createElement("span", {
+    }, LI("MapPin", 12, { color: B.gray }), (tour.listings || []).length, " stops"), /*#__PURE__*/React.createElement("span", {
       style: {
-        background: ratedCount >= (tour.listings || []).length && (tour.listings || []).length > 0 ? "rgba(5,150,105,.4)" : "rgba(255,255,255,.2)",
-        borderRadius: 6,
-        padding: "3px 10px",
+        display: "flex", alignItems: "center", gap: 4,
+        background: ratedCount > 0 ? "#FBF6EA" : B.cream,
+        border: "1px solid " + (ratedCount > 0 ? "#EBDCBB" : B.line),
+        borderRadius: 7,
+        padding: "3px 9px",
         fontSize: 12,
-        fontWeight: 700,
-        color: ratedCount >= (tour.listings || []).length && (tour.listings || []).length > 0 ? "#6EE7B7" : "#fff"
+        fontWeight: 600,
+        color: ratedCount > 0 ? B.goldDeep : B.muted
       }
-    }, "\u2B50 ", ratedCount, " rated"), favCount > 0 && /*#__PURE__*/React.createElement("span", {
+    }, LI("Star", 12, { color: ratedCount > 0 ? B.goldDeep : B.gray }), ratedCount, " rated"), favCount > 0 && /*#__PURE__*/React.createElement("span", {
       style: {
-        background: "rgba(220,38,38,.3)",
-        borderRadius: 6,
-        padding: "3px 10px",
+        display: "flex", alignItems: "center", gap: 4,
+        background: "#FBEDEC",
+        border: "1px solid #F2D9D7",
+        borderRadius: 7,
+        padding: "3px 9px",
         fontSize: 12,
-        fontWeight: 700,
-        color: "#FCA5A5"
+        fontWeight: 600,
+        color: "#A23B38"
       }
-    }, "\u2764\uFE0F ", favCount)))), isAdmin && /*#__PURE__*/React.createElement("div",{style:{display:"flex",flexDirection:"column",gap:5,flexShrink:0}},
+    }, LI("Heart", 12, { color: "#A23B38" }), favCount)))), isAdmin && /*#__PURE__*/React.createElement("div",{style:{display:"flex",gap:4,flexShrink:0,marginTop:1}},
       /*#__PURE__*/React.createElement("button",{
-        onClick:e=>{e.stopPropagation();const _c={...tour,id:uid("tour"),name:tour.name+" (Copy)",ratings:{},ratingSubmissions:{},favorites:{},notes:{},campaignContacts:[],createdBy:(currentUser&&currentUser.email)||SUPER_ADMIN_EMAIL};setTours(prev=>[...prev,_c]);showToast("\uD83D\uDDC2\uFE0F Tour duplicated! Tap to update date.","success",3500);},
-        style:{background:B.gold,border:"none",color:"#fff",borderRadius:10,padding:"6px 10px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}
-      },/*#__PURE__*/React.createElement("span",{style:{fontSize:18}},"\uD83D\uDDC2\uFE0F"),/*#__PURE__*/React.createElement("span",{style:{fontSize:10,fontWeight:800}},"Copy")),
+        onClick:e=>{e.stopPropagation();const _c={...tour,id:uid("tour"),name:tour.name+" (Copy)",ratings:{},ratingSubmissions:{},favorites:{},notes:{},campaignContacts:[],createdBy:(currentUser&&currentUser.email)||SUPER_ADMIN_EMAIL};setTours(prev=>[...prev,_c]);showToast("Tour duplicated \u2014 tap to update the date.","success",3500);},
+        title:"Duplicate tour",
+        className:"btn-hover",
+        style:{background:"transparent",border:"1px solid "+B.line,color:B.gray,borderRadius:9,width:34,height:34,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}
+      },LI("Copy",16,{color:B.gray})),
       /*#__PURE__*/React.createElement("button",{
         onClick:e=>{e.stopPropagation();onUpdateTour({...tour,archived:!tour.archived});},
         title: tour.archived ? "Unarchive tour" : "Archive tour",
-        style:{background:tour.archived?"#059669":"#475569",border:"none",color:"#fff",borderRadius:10,padding:"6px 10px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}
-      },/*#__PURE__*/React.createElement("span",{style:{fontSize:18}},tour.archived?"\uD83D\uDCE4":"\uD83D\uDCE6"),/*#__PURE__*/React.createElement("span",{style:{fontSize:10,fontWeight:800}},tour.archived?"Restore":"Archive")),
+        className:"btn-hover",
+        style:{background:"transparent",border:"1px solid "+B.line,color:B.gray,borderRadius:9,width:34,height:34,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}
+      },LI(tour.archived?"ArchiveRestore":"Archive",16,{color:B.gray})),
       !tour.archived && /*#__PURE__*/React.createElement("button",{
         onClick:e=>{e.stopPropagation();setConfirmDelete(tour.id);},
-        style:{background:"#9B1C1C",border:"none",color:"#fff",borderRadius:10,padding:"6px 10px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}
-      },/*#__PURE__*/React.createElement("span",{style:{fontSize:18}},"\uD83D\uDDD1\uFE0F"),/*#__PURE__*/React.createElement("span",{style:{fontSize:10,fontWeight:800}},"Delete"))
+        title:"Delete tour",
+        className:"btn-hover",
+        style:{background:"transparent",border:"1px solid #EAD4D2",color:"#A23B38",borderRadius:9,width:34,height:34,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}
+      },LI("Trash2",16,{color:"#A23B38"}))
     )), (tour.listings || []).length > 0 && /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
@@ -10812,7 +10845,7 @@ function TeamPage(_ref28) {
   }, "Super Admin"), /*#__PURE__*/React.createElement("div", {
     style: {
       color: "#fff",
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 15,
       fontWeight: 700
     }
@@ -11409,7 +11442,7 @@ function RequestListingPage(_ref31) {
   }, "\u2705"), /*#__PURE__*/React.createElement("h2", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 24,
       marginBottom: 12
     }
@@ -11482,7 +11515,7 @@ function RequestListingPage(_ref31) {
   }, "MarketReady Tours"), /*#__PURE__*/React.createElement("div", {
     style: {
       color: "#fff",
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 15,
       fontWeight: 700
     }
@@ -12179,7 +12212,7 @@ function ListingRequestsAdmin(_ref34) {
   }, "Admin"), /*#__PURE__*/React.createElement("div", {
     style: {
       color: "#fff",
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 15,
       fontWeight: 700
     }
@@ -12682,7 +12715,7 @@ function ListingRequestsAdmin(_ref34) {
   }, "\u2705"), /*#__PURE__*/React.createElement("h3", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 18,
       textAlign: "center",
       marginBottom: 8
@@ -12741,7 +12774,7 @@ function ListingRequestsAdmin(_ref34) {
   }, "\u274C"), /*#__PURE__*/React.createElement("h3", {
     style: {
       color: "#9B1C1C",
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 18,
       textAlign: "center",
       marginBottom: 8
@@ -12856,7 +12889,7 @@ function ContactPage(_ref36) {
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       color: "#fff",
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 15,
       fontWeight: 700
     }
@@ -12952,7 +12985,7 @@ function ContactPage(_ref36) {
   }, "\uD83C\uDFE1"), /*#__PURE__*/React.createElement("h3", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 22,
       marginBottom: 8
     }
@@ -12984,7 +13017,7 @@ function ContactPage(_ref36) {
   }, /*#__PURE__*/React.createElement("h3", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 18,
       marginBottom: 4
     }
@@ -13118,7 +13151,7 @@ function SponsorSignupPage(_ref38) {
   }, "\uD83C\uDF89"), /*#__PURE__*/React.createElement("h2", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 22,
       textAlign: "center",
       marginBottom: 8
@@ -13220,7 +13253,7 @@ function SponsorSignupPage(_ref38) {
   }, "\u2190"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       color: "#fff",
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 20,
       fontWeight: 700
     }
@@ -14051,7 +14084,7 @@ function App() {
   }, "\u2705"), /*#__PURE__*/React.createElement("h2", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 24,
       marginBottom: 12
     }
@@ -14100,7 +14133,7 @@ function App() {
   }, "\u274C"), /*#__PURE__*/React.createElement("h2", {
     style: {
       color: B.primary,
-      fontFamily: "Georgia,serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontSize: 24,
       marginBottom: 12
     }
@@ -14291,7 +14324,7 @@ class ErrorBoundary extends React.Component {
       style: { background:"#fff", borderRadius:20, padding:"36px 28px", maxWidth:360, width:"100%", textAlign:"center", boxShadow:"0 4px 24px rgba(0,0,0,.10)" }
     },
       React.createElement("div", { style:{ fontSize:56, marginBottom:16 } }, "\u26A0\uFE0F"),
-      React.createElement("h2", { style:{ color:"#1B3A6B", fontFamily:"Georgia,serif", fontSize:22, marginBottom:10 } }, "Something went wrong"),
+      React.createElement("h2", { style:{ color:"#1B3A6B", fontFamily:"Fraunces, Georgia, serif", fontSize:22, marginBottom:10 } }, "Something went wrong"),
       React.createElement("p", { style:{ color:"#6B7280", fontSize:14, lineHeight:1.6, marginBottom:24 } }, "The app ran into an unexpected error. Tap below to reload \u2014 your data is safe."),
       React.createElement("button", {
         onClick: () => window.location.reload(),
