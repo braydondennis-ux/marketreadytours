@@ -13779,7 +13779,16 @@ function App() {
   };
   useEffect(() => {
     if (!fbLoaded || tours.length === 0 || !isAnyAdmin) return;
-    const cleanTours = tours.map(t => { const { ratingSubmissions, favorites, ratings, ...rest } = (t || {}); return rest; });
+    // Drop a tour's shared fields from the mrt_tours write ONLY once that tour's data
+    // actually lives in the shared path — otherwise we'd wipe un-migrated inline history
+    // (some legacy tours still carry inline ratings/favorites until migration runs).
+    const cleanTours = tours.map(t => {
+      if (!t) return t;
+      const out = { ...t };
+      if (sharedRatings && sharedRatings[t.id]) { delete out.ratings; delete out.ratingSubmissions; }
+      if (sharedFavorites && sharedFavorites[t.id]) { delete out.favorites; }
+      return out;
+    });
     fbWrite("mrt_tours", cleanTours);
     // Write public preview — only when admin saves, not on every state change
     if (_fb && fbReady.current) {
