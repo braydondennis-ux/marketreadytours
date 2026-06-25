@@ -84,7 +84,7 @@ const {
 let _fb = null;
 let _fbAuth = null;
 let _fbStorage = null;
-const _fbConfig = {
+const _FB_PROD = {
   apiKey: "AIzaSyChm7UYPWXg_nhD8JqUW3WRfyzsTC491V8",
   authDomain: "marketready-tours.firebaseapp.com",
   databaseURL: "https://marketready-tours-default-rtdb.firebaseio.com",
@@ -93,6 +93,19 @@ const _fbConfig = {
   messagingSenderId: "191980265978",
   appId: "1:191980265978:web:f65000f9fd6387fa9dc443"
 };
+// Isolated dev/staging project — used ONLY on Vercel preview URLs (*.vercel.app).
+// The real domain (marketreadytours.com) and localhost-emulator keep using prod config.
+const _FB_DEV = {
+  apiKey: "AIzaSyB0Kn647lbPnO7NoH69A53KEw2BXaZ4muM",
+  authDomain: "marketready-tours-dev.firebaseapp.com",
+  databaseURL: "https://marketready-tours-dev-default-rtdb.firebaseio.com",
+  projectId: "marketready-tours-dev",
+  storageBucket: "marketready-tours-dev.firebasestorage.app",
+  messagingSenderId: "665495379631",
+  appId: "1:665495379631:web:1864e4638f2d22f72b3e5a"
+};
+const _USE_DEV = location.hostname.endsWith(".vercel.app");
+const _fbConfig = _USE_DEV ? _FB_DEV : _FB_PROD;
 try {
   firebase.initializeApp(_fbConfig);
   _fb = firebase.database();
@@ -101,6 +114,7 @@ try {
   window._fb = _fb;
   window._fbAuth = _fbAuth;
 } catch (e) {/* Firebase unavailable — app still works via localStorage */}
+if (_USE_DEV) console.log("MRT[dev] using isolated dev Firebase project (preview build)");
 
 /* ── LOCAL EMULATOR (localhost only — prod untouched) ── */
 window._MRT_LOCAL = ["localhost","127.0.0.1"].includes(location.hostname);
