@@ -13961,13 +13961,9 @@ function App() {
     },
     onSubmit: sp => {
       const tourId = sp.tourId;
-      setTours(prev => prev.map(t => t.id === tourId ? {
-        ...t,
-        sponsors: [...(t.sponsors || []), {
-          ...sp,
-          tourId: undefined
-        }]
-      } : t));
+      const signupId = uid("spreq");
+      const record = { ...sp, tourId: undefined, id: signupId, paid: false, createdAt: new Date().toISOString() };
+      if (_fb) { try { _fb.ref("mrt_sponsor_signups/" + tourId + "/" + signupId).set(record).catch(() => {}); } catch (e) {} }
       setPage("dashboard");
     }
   }), page === "requests-admin" && ((currentUser === null || currentUser === void 0 ? void 0 : currentUser.role) === "super" || currentUser) && /*#__PURE__*/React.createElement(ListingRequestsAdmin, {
