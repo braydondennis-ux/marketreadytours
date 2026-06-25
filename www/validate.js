@@ -67,10 +67,24 @@ check('No Babel standalone (pre-compiled)', () => {
   }
 });
 
-// ── 4. Brace balance ──
-check('Brace balance { }', () => {
+// ── 3b. Authoritative parse (the real gate) ──
+// new Function compiles the whole script body; any syntax error (incl. genuinely
+// unbalanced braces/parens) throws here. This is reliable where the char-counting
+// heuristics below are not — regex literals and nested templates fool a naive counter.
+check('JavaScript parses (authoritative)', () => {
   if (!script) return;
-  // Count braces outside of strings/template literals (simplified)
+  try {
+    new Function(script);
+  } catch (e) {
+    throw new Error(`Script does not parse: ${e.message}`);
+  }
+});
+
+// ── 4. Brace balance (heuristic — WARN only; the parse check above is authoritative) ──
+check('Brace balance { } (heuristic)', () => {
+  if (!script) return;
+  // Count braces outside of strings/template literals (simplified — does NOT understand
+  // regex literals or nested templates, so a nonzero net is only a hint, not a failure).
   let depth = 0, minDepth = 0;
   let inString = false, stringChar = '';
   let inTemplate = 0;
@@ -87,16 +101,15 @@ check('Brace balance { }', () => {
     if (ch === '{') depth++;
     else if (ch === '}') { depth--; if (depth < minDepth) minDepth = depth; }
   }
-  if (depth !== 0) throw new Error(`Unbalanced braces: net ${depth > 0 ? '+' : ''}${depth}`);
-  if (minDepth < 0) throw new Error(`Brace depth went negative (${minDepth}) — extra closing brace somewhere`);
+  if (depth !== 0) return `heuristic brace net ${depth > 0 ? '+' : ''}${depth} (likely regex/template false positive — parse check is authoritative)`;
 });
 
-// ── 5. Paren balance ──
-check('Paren balance ( )', () => {
+// ── 5. Paren balance (heuristic — WARN only) ──
+check('Paren balance ( ) (heuristic)', () => {
   if (!script) return;
   const open = (script.match(/\(/g)||[]).length;
   const close = (script.match(/\)/g)||[]).length;
-  if (open !== close) throw new Error(`Unbalanced parens: ${open} open, ${close} close (diff: ${open-close})`);
+  if (open !== close) return `heuristic paren diff ${open-close} (likely regex/string false positive — parse check is authoritative)`;
 });
 
 // ── 6. No duplicate const declarations (top-level) ──

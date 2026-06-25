@@ -109,8 +109,8 @@ if (window._MRT_LOCAL) {
     if (_fb)      _fb.useEmulator("127.0.0.1", 9000);
     if (_fbAuth)  _fbAuth.useEmulator("http://127.0.0.1:9099", { disableWarnings: true });
     if (_fbStorage) _fbStorage.useEmulator("127.0.0.1", 9199);
-    console.log("MRT: connected to local Firebase emulators");
-  } catch (e) { console.warn("MRT: emulator connect failed", e); }
+    console.log("MRT[emu] connected to local Firebase emulators");
+  } catch (e) { console.warn("MRT[emu] connect failed", e); }
 }
 
 /* Create a Firebase Auth user via secondary app (so current admin stays signed in) */
