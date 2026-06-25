@@ -2649,6 +2649,21 @@ function TourSponsorsModal(_ref10) {
   const [logoPreview, setLogoPreview] = useState("");
   const [headshotPreview, setHeadshotPreview] = useState("");
   const [uploadingSponsorImg, setUploadingSponsorImg] = useState(false);
+  const [pendingSignups, setPendingSignups] = useState([]);
+  useEffect(() => {
+    if (!_fb || !tour.id) return;
+    const ref = _fb.ref("mrt_sponsor_signups/" + tour.id);
+    const cb = ref.on("value", snap => {
+      const v = snap.val() || {};
+      setPendingSignups(Object.keys(v).map(k => ({ ...v[k], id: v[k].id || k })));
+    });
+    return () => ref.off("value", cb);
+  }, [tour.id]);
+  const approveSignup = (su) => {
+    const promoted = { ...su, paid: true, tourLead: false };
+    updateAndSave([...(sponsors || []), promoted]);
+    if (_fb) { try { _fb.ref("mrt_sponsor_signups/" + tour.id + "/" + su.id).remove().catch(() => {}); } catch (e) {} }
+  };
   const compressSponsorImg = (file, path) => new Promise(resolve => {
     const img = new Image();
     const objectUrl = URL.createObjectURL(file);
@@ -3334,7 +3349,19 @@ function TourSponsorsModal(_ref10) {
       width: sponsors.filter(s => s.paid).length / sponsors.length * 100 + "%",
       transition: "width .3s"
     }
-  }))), sponsors.map(sp => {
+  }))), pendingSignups.length > 0 && /*#__PURE__*/React.createElement("div", { style: { marginBottom: 14 } },
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: B.gray, marginBottom: 8 } }, "⏳ Pending signups"),
+    pendingSignups.map(su => /*#__PURE__*/React.createElement("div", {
+      key: su.id, style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, background: B.lightGray, borderRadius: 10, padding: "10px 12px", marginBottom: 6 }
+    },
+      /*#__PURE__*/React.createElement("div", null,
+        /*#__PURE__*/React.createElement("div", { style: { fontWeight: 700, fontSize: 13 } }, su.name),
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: B.gray } }, su.email + " · " + (su.paymentPlan || "—"))),
+      /*#__PURE__*/React.createElement("button", {
+        onClick: () => approveSignup(su),
+        style: { background: B.green, color: "#fff", border: "none", borderRadius: 8, padding: "8px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }
+      }, "Approve & mark paid"))),
+  ), sponsors.map(sp => {
     const amount = sp.paymentPlan === "split" ? "$49.75" : sp.paymentPlan === "half" ? "$99.50" : "$199";
     return /*#__PURE__*/React.createElement("div", {
       key: sp.id,
