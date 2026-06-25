@@ -7797,7 +7797,7 @@ function TourDetailPage(_ref19) {
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: { fontSize: 22 }
-  }, "\uD83D\uDD17"), /*#__PURE__*/React.createElement("span", {
+  }, LI("Share2", 21)), /*#__PURE__*/React.createElement("span", {
     style: { fontSize: 12, fontWeight: 700 }
   }, "Share Tour"), /*#__PURE__*/React.createElement("span", {
     style: { fontSize: 11, opacity: .9, lineHeight: 1.2 }
@@ -7820,7 +7820,7 @@ function TourDetailPage(_ref19) {
     style: {
       fontSize: 22
     }
-  }, "\u2709\uFE0F"), /*#__PURE__*/React.createElement("span", {
+  }, LI("Mail", 21)), /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 12,
       fontWeight: 700
@@ -7850,7 +7850,7 @@ function TourDetailPage(_ref19) {
     style: {
       fontSize: 22
     }
-  }, "\u2B50"), /*#__PURE__*/React.createElement("span", {
+  }, LI("Star", 21)), /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 12,
       fontWeight: 700
@@ -7883,7 +7883,7 @@ function TourDetailPage(_ref19) {
     style: {
       fontSize: 22
     }
-  }, "\u2699\uFE0F"), /*#__PURE__*/React.createElement("span", {
+  }, LI("Settings", 21)), /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 12,
       fontWeight: 700
@@ -7910,11 +7910,11 @@ function TourDetailPage(_ref19) {
       fontSize: 15,
       fontWeight: 700
     }
-  }, "\uD83D\uDCC5 ", (tour.date ? new Date(tour.date + "T12:00:00") : new Date()).toLocaleDateString("en-US", {
+  }, LI("Calendar", 14, { marginRight: 5 }), (tour.date ? new Date(tour.date + "T12:00:00") : new Date()).toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric"
-  }), " \xB7 \uD83D\uDD52 ", tour.time, " \xB7 \uD83D\uDCCD ", sorted.length, " stops"), /*#__PURE__*/React.createElement("div", {
+  }), " \xB7 ", LI("Clock", 14, { marginRight: 5 }), tour.time, " \xB7 ", LI("MapPin", 14, { marginRight: 5 }), sorted.length, " stops"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 10
@@ -7924,8 +7924,8 @@ function TourDetailPage(_ref19) {
       color: "rgba(255,255,255,.7)",
       fontSize: 12
     }
-  }, "\u2B50 ", favCount, " fav \xB7 \u2705 ", ratedCount, " rated"),
-  sorted.length>=2&&/*#__PURE__*/React.createElement("a",{href:"https://www.google.com/maps/dir/"+sorted.map(l=>encodeURIComponent((l.address||"")+" "+(l.city||""))).join("/"),target:"_blank",rel:"noreferrer",style:{background:"rgba(255,255,255,.2)",color:"#fff",borderRadius:7,padding:"3px 9px",fontSize:11,fontWeight:700,textDecoration:"none",whiteSpace:"nowrap",border:"1px solid rgba(255,255,255,.3)"}},"\uD83D\uDDFA\uFE0F All Stops")
+  }, LI("Star", 13, { marginRight: 4 }), favCount, " fav\xB7 ", LI("CheckCircle", 13, { marginRight: 4 }), ratedCount, " rated"),
+  sorted.length>=2&&/*#__PURE__*/React.createElement("a",{href:"https://www.google.com/maps/dir/"+sorted.map(l=>encodeURIComponent((l.address||"")+" "+(l.city||""))).join("/"),target:"_blank",rel:"noreferrer",style:{background:"rgba(255,255,255,.2)",color:"#fff",borderRadius:7,padding:"3px 9px",fontSize:11,fontWeight:700,textDecoration:"none",whiteSpace:"nowrap",border:"1px solid rgba(255,255,255,.3)"}},LI("Map", 12, { marginRight: 4 }),"All Stops")
 )), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
@@ -7943,9 +7943,10 @@ function TourDetailPage(_ref19) {
       padding: "7px 0",
       cursor: "pointer",
       fontSize: 12,
-      fontWeight: 600
+      fontWeight: 600,
+      display: "flex", alignItems: "center", justifyContent: "center", gap: 5
     }
-  }, "\uD83D\uDDFA\uFE0F Route"), /*#__PURE__*/React.createElement("button", {
+  }, LI("Map", 14), "Route"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setSubpage("ranking"),
     style: {
       flex: 1,
@@ -7956,9 +7957,10 @@ function TourDetailPage(_ref19) {
       padding: "7px 0",
       cursor: "pointer",
       fontSize: 12,
-      fontWeight: 600
+      fontWeight: 600,
+      display: "flex", alignItems: "center", justifyContent: "center", gap: 5
     }
-  }, "\uD83C\uDFC6 Rankings"), isAdmin && /*#__PURE__*/React.createElement("button", {
+  }, LI("Trophy", 14), "Rankings"), isAdmin && /*#__PURE__*/React.createElement("button", {
     onClick: () => setSubpage("summary"),
     style: {
       flex: 1,
@@ -7969,9 +7971,10 @@ function TourDetailPage(_ref19) {
       padding: "7px 0",
       cursor: "pointer",
       fontSize: 12,
-      fontWeight: 600
+      fontWeight: 600,
+      display: "flex", alignItems: "center", justifyContent: "center", gap: 5
     }
-  }, "\uD83D\uDCCA Summary"), isAdmin && /*#__PURE__*/React.createElement("button", {
+  }, LI("BarChart3", 14), "Summary"), isAdmin && /*#__PURE__*/React.createElement("button", {
     onClick: () => setSubpage("campaign"),
     style: {
       flex: 1,
@@ -7982,9 +7985,10 @@ function TourDetailPage(_ref19) {
       padding: "7px 0",
       cursor: "pointer",
       fontSize: 12,
-      fontWeight: 600
+      fontWeight: 600,
+      display: "flex", alignItems: "center", justifyContent: "center", gap: 5
     }
-  }, "\uD83D\uDCE3 Campaign"))), (tour.sponsors || []).filter(sp => sp.paid).length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, LI("Megaphone", 14), "Campaign"))), (tour.sponsors || []).filter(sp => sp.paid).length > 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       background: "#fff",
       borderBottom: "1px solid #F0EDE6",
