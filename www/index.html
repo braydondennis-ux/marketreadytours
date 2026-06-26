@@ -8156,7 +8156,7 @@ function TourDetailPage(_ref19) {
       fontSize: 12,
       textDecoration: "none"
     }
-  }, "\uD83D\uDCDE Call"), sp.email && /*#__PURE__*/React.createElement("a", {
+  }, LI("Phone", 14), "Call"), sp.email && /*#__PURE__*/React.createElement("a", {
     href: "mailto:" + sp.email,
     style: {
       flex: 1,
@@ -8173,7 +8173,7 @@ function TourDetailPage(_ref19) {
       fontSize: 12,
       textDecoration: "none"
     }
-  }, "\u2709\uFE0F Email"), sp.url && /*#__PURE__*/React.createElement("a", {
+  }, LI("Mail", 14), "Email"), sp.url && /*#__PURE__*/React.createElement("a", {
     href: sp.url,
     target: "_blank",
     rel: "noreferrer",
@@ -8192,17 +8192,21 @@ function TourDetailPage(_ref19) {
       fontSize: 12,
       textDecoration: "none"
     }
-  }, "\uD83C\uDF10 Website")))), (tour.sponsors || []).filter(sp => sp.paid && !sp.tourLead).length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, LI("Globe", 14), "Website")))), (tour.sponsors || []).filter(sp => sp.paid && !sp.tourLead).length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 10,
+      fontSize: 11,
       color: B.gray,
       textTransform: "uppercase",
-      letterSpacing: 1.5,
+      letterSpacing: 1.2,
       fontWeight: 700,
       marginBottom: 10,
-      textAlign: "center"
+      textAlign: "center",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 5
     }
-  }, (tour.sponsors || []).some(sp => sp.tourLead) ? "⭐ Tour Sponsors ⭐" : "⭐ Tour Sponsors ⭐"), (tour.sponsors || []).filter(sp => sp.paid && !sp.tourLead).map(sp => /*#__PURE__*/React.createElement("div", {
+  }, LI("Star", 13, { color: B.gold }), "Tour Sponsors"), (tour.sponsors || []).filter(sp => sp.paid && !sp.tourLead).map(sp => /*#__PURE__*/React.createElement("div", {
     key: sp.id,
     style: {
       background: "linear-gradient(135deg, #F8F6F0 0%, #fff 100%)",
@@ -8332,16 +8336,16 @@ function TourDetailPage(_ref19) {
       alignItems: "center",
       justifyContent: "center",
       gap: 6,
-      background: "#E8F0EC",
-      color: "#2D6A4F",
-      border: "1.5px solid #BBF7D0",
+      background: B.paper,
+      color: B.ink,
+      border: "1px solid " + B.line,
       borderRadius: 10,
       padding: "10px 0",
       fontWeight: 700,
       fontSize: 12,
       textDecoration: "none"
     }
-  }, "\uD83D\uDCDE Call"), sp.email && /*#__PURE__*/React.createElement("a", {
+  }, LI("Phone", 14), "Call"), sp.email && /*#__PURE__*/React.createElement("a", {
     href: "mailto:" + sp.email,
     style: {
       flex: 1,
@@ -8349,16 +8353,16 @@ function TourDetailPage(_ref19) {
       alignItems: "center",
       justifyContent: "center",
       gap: 6,
-      background: "#F0ECE4",
-      color: "#2563EB",
-      border: "1.5px solid #BFDBFE",
+      background: B.paper,
+      color: B.ink,
+      border: "1px solid " + B.line,
       borderRadius: 10,
       padding: "10px 0",
       fontWeight: 700,
       fontSize: 12,
       textDecoration: "none"
     }
-  }, "\u2709\uFE0F Email"), sp.url && /*#__PURE__*/React.createElement("a", {
+  }, LI("Mail", 14), "Email"), sp.url && /*#__PURE__*/React.createElement("a", {
     href: sp.url,
     target: "_blank",
     rel: "noreferrer",
@@ -8368,16 +8372,16 @@ function TourDetailPage(_ref19) {
       alignItems: "center",
       justifyContent: "center",
       gap: 6,
-      background: "#F5F3FF",
-      color: "#7C3AED",
-      border: "1.5px solid #DDD6FE",
+      background: B.paper,
+      color: B.ink,
+      border: "1px solid " + B.line,
       borderRadius: 10,
       padding: "10px 0",
       fontWeight: 700,
       fontSize: 12,
       textDecoration: "none"
     }
-  }, "\uD83C\uDF10 Website")))))), /*#__PURE__*/React.createElement("div", {
+  }, LI("Globe", 14), "Website")))))), /*#__PURE__*/React.createElement("div", {
     style: {
       padding: "16px 14px",
       display: "flex",
@@ -8596,14 +8600,14 @@ function TourDetailPage(_ref19) {
       const _ppsf = listing.sqft > 0 ? Math.round(listing.price / listing.sqft) : 0;
       const _dom = Number(listing.dom) || 0;
       const _chips = [
-        {t:"\uD83D\uDECF ".concat(listing.beds," bd"),bg:B.lightGray,c:B.dark},
-        {t:"\uD83D\uDEBF ".concat(listing.baths," ba"),bg:B.lightGray,c:B.dark},
-        {t:"\uD83D\uDCD0 ".concat(listing.sqft.toLocaleString()," sqft"),bg:B.lightGray,c:B.dark},
-        {t:"\uD83D\uDCC5 ".concat(_dom," DOM"),bg:_dom>60?"#FEE2E2":_dom>30?"#FEF3C7":B.lightGray,c:_dom>60?"#9B1C1C":_dom>30?"#92400E":B.dark},
-        ...(_ppsf>0?[{t:"$".concat(_ppsf.toLocaleString(),"/sqft"),bg:"#EFF6FF",c:"#1B3A6B"}]:[]),
-        ...(listing.priceReduced?[{t:"\uD83D\uDD3B Reduced",bg:"#FFF7F0",c:"#C2410C"}]:[]),
+        {els:[LI("BedDouble",12,{color:B.gray})," ",listing.beds," bd"],bg:B.lightGray,c:B.dark},
+        {els:[LI("Bath",12,{color:B.gray})," ",listing.baths," ba"],bg:B.lightGray,c:B.dark},
+        {els:[LI("Ruler",12,{color:B.gray})," ",listing.sqft.toLocaleString()," sqft"],bg:B.lightGray,c:B.dark},
+        {els:[LI("CalendarDays",12,{color:_dom>60?"#9B1C1C":_dom>30?"#92400E":B.gray})," ",_dom," DOM"],bg:_dom>60?"#FEE2E2":_dom>30?"#FEF3C7":B.lightGray,c:_dom>60?"#9B1C1C":_dom>30?"#92400E":B.dark},
+        ...(_ppsf>0?[{els:["$",_ppsf.toLocaleString(),"/sqft"],bg:"#EFF6FF",c:"#1B3A6B"}]:[]),
+        ...(listing.priceReduced?[{els:[LI("ArrowDown",12,{color:"#C2410C"})," Reduced"],bg:"#FFF7F0",c:"#C2410C"}]:[]),
       ];
-      return _chips.map((chip,i)=>/*#__PURE__*/React.createElement("span",{key:i,style:{background:chip.bg,borderRadius:6,padding:"4px 9px",color:chip.c,fontWeight:600,fontSize:12}},chip.t));
+      return _chips.map((chip,i)=>/*#__PURE__*/React.createElement("span",{key:i,style:{background:chip.bg,borderRadius:6,padding:"4px 9px",color:chip.c,fontWeight:600,fontSize:12,display:"inline-flex",alignItems:"center",gap:3}},...chip.els));
     })()), note && /*#__PURE__*/React.createElement("div", {
       style: {
         background: "#F5EDD8",
@@ -8647,16 +8651,16 @@ function TourDetailPage(_ref19) {
         alignItems: "center",
         justifyContent: "center",
         gap: 6,
-        background: "#E8F0EC",
-        color: "#2D6A4F",
-        border: "1.5px solid #BBF7D0",
+        background: B.paper,
+        color: B.ink,
+        border: "1px solid " + B.line,
         borderRadius: 10,
         padding: "10px 0",
         fontWeight: 700,
         fontSize: 13,
         textDecoration: "none"
       }
-    }, "\uD83E\uDDED Directions"), /*#__PURE__*/React.createElement("button", {
+    }, LI("Navigation", 13), "Directions"), /*#__PURE__*/React.createElement("button", {
       className: "btn-hover",
       onClick: () => {
         setSelected(listing);
@@ -8674,7 +8678,7 @@ function TourDetailPage(_ref19) {
         fontSize: 13,
         boxShadow: "0 3px 10px rgba(27,58,107,.25)"
       }
-    }, isRated ? "✓ Re-Rate" : "Rate Home ★"))));
+    }, isRated ? /*#__PURE__*/React.createElement(React.Fragment, null, LI("RotateCcw", 14), " Re-Rate") : /*#__PURE__*/React.createElement(React.Fragment, null, LI("Star", 14), " Rate Home")))));
   })));
 }
 /* ── SPONSORS PAGE ── */
