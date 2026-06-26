@@ -208,7 +208,7 @@ const sendCFEmail = async (to, subject, message, html) => {
     console.warn("sendCFEmail: invalid recipient", to);
     return false;
   }
-  if (window._MRT_LOCAL) { console.log("MRT[local]: sendCFEmail suppressed →", to, subject); return true; }
+  if (window._MRT_LOCAL || _USE_DEV) { console.log("MRT[no-send]: sendCFEmail suppressed →", to, subject); return true; }
   try {
     const r = await fetchWithTimeout(SEND_EMAIL_URL, {
       method: "POST",
@@ -232,7 +232,7 @@ const FORMSPREE_URL = "https://formspree.io/f/xykdngrr";
 const LISTING_REQUEST_FORMSPREE = "https://formspree.io/f/xwvnrbqr"; // listing requests form
 const SMS_EMAIL = "4806951996@txt.att.net";
 const sendSMS = msg => {
-  if (window._MRT_LOCAL) { console.log("MRT[local]: sendSMS suppressed →", msg); return; }
+  if (window._MRT_LOCAL || _USE_DEV) { console.log("MRT[no-send]: sendSMS suppressed →", msg); return; }
   fetchWithTimeout(LISTING_REQUEST_FORMSPREE, {
     method: "POST",
     headers: {
@@ -14501,13 +14501,15 @@ var check=function(){
 var sh=document.documentElement.scrollHeight;
 var st=window.pageYOffset||document.documentElement.scrollTop;
 var ch=window.innerHeight;
-if(sh>ch+100&&st<sh-ch-80){
+var onDash=(location.hash===""||location.hash==="#/"||location.hash==="#");
+if(onDash&&sh>ch+100&&st<sh-ch-80){
 ind.style.opacity="1";ind.style.pointerEvents="auto";
 }else{
 ind.style.opacity="0";ind.style.pointerEvents="none";
 }
 };
 window.addEventListener("scroll",check);
+window.addEventListener("hashchange",function(){setTimeout(check,60)});
 setTimeout(check,500);
 setTimeout(check,1500);
 var obs=new MutationObserver(function(){setTimeout(check,200)});
