@@ -10095,21 +10095,32 @@ function ToursDashboard(_ref26) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      color: B.gray,
-      fontFamily: "Fraunces, Georgia, serif",
-      fontSize: 15,
-      fontWeight: 400,
-      letterSpacing: 1.5,
-      textTransform: "uppercase",
-      lineHeight: 1.4
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      marginTop: 3,
+      flexWrap: "wrap"
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 20,
-      fontWeight: 700,
-      color: B.primary
+      background: B.goldDeep,
+      color: "#fff",
+      borderRadius: 5,
+      padding: "2px 7px",
+      fontSize: 11,
+      fontWeight: 800,
+      letterSpacing: .3,
+      flexShrink: 0
     }
-  }, "#1"), " Real Estate", /*#__PURE__*/React.createElement("br", null), "Home Tours App")), isAdmin && /*#__PURE__*/React.createElement("div", {
+  }, "#1"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: B.gray,
+      fontSize: 11,
+      fontWeight: 600,
+      letterSpacing: 1.6,
+      textTransform: "uppercase"
+    }
+  }, "Real Estate Home Tours")), isAdmin && /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,
