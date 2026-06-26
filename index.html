@@ -865,9 +865,12 @@ function LoginPage(_ref5) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 40
+      fontSize: 40,
+      display: "flex",
+      justifyContent: "center",
+      color: B.primary
     }
-  }, "\uD83D\uDCE7"), /*#__PURE__*/React.createElement("h2", {
+  }, LI("Mail", 36)), /*#__PURE__*/React.createElement("h2", {
     style: {
       color: B.primary,
       fontFamily: "Fraunces, Georgia, serif",
@@ -898,9 +901,12 @@ function LoginPage(_ref5) {
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 36,
-      marginBottom: 8
+      marginBottom: 8,
+      display: "flex",
+      justifyContent: "center",
+      color: "#2D6A4F"
     }
-  }, "\u2705"), /*#__PURE__*/React.createElement("div", {
+  }, LI("CheckCircle", 36)), /*#__PURE__*/React.createElement("div", {
     style: {
       color: "#2D6A4F",
       fontWeight: 700,
@@ -1021,9 +1027,12 @@ function LoginPage(_ref5) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 40
+      fontSize: 40,
+      display: "flex",
+      justifyContent: "center",
+      color: B.primary
     }
-  }, "\uD83D\uDD10"), /*#__PURE__*/React.createElement("h2", {
+  }, LI("LogIn", 36)), /*#__PURE__*/React.createElement("h2", {
     style: {
       color: B.primary,
       fontFamily: "Fraunces, Georgia, serif",
@@ -2892,9 +2901,12 @@ function TourSponsorsModal(_ref10) {
       color: B.primary,
       fontFamily: "Fraunces, Georgia, serif",
       fontSize: 20,
-      margin: 0
+      margin: 0,
+      display: "flex",
+      alignItems: "center",
+      gap: 8
     }
-  }, "\u2B50 Tour Sponsors"), /*#__PURE__*/React.createElement("button", {
+  }, LI("Star", 18, { color: B.goldDeep }), "Tour Sponsors"), /*#__PURE__*/React.createElement("button", {
     onClick: onClose,
     style: {
       background: "none",
@@ -3321,7 +3333,7 @@ function TourSponsorsModal(_ref10) {
       fontWeight: 700,
       cursor: uploadingSponsorImg ? "default" : "pointer"
     }
-  }, uploadingSponsorImg ? "⏳ Uploading..." : editing === "new" ? "Add Sponsor" : "Save"))) : /*#__PURE__*/React.createElement("div", {
+  }, uploadingSponsorImg ? React.createElement("span",{style:{display:"flex",alignItems:"center",gap:6}},LI("Loader2",14),"Uploading...") : editing === "new" ? "Add Sponsor" : "Save"))) : /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -3353,7 +3365,7 @@ function TourSponsorsModal(_ref10) {
       fontWeight: 700,
       color: "#2D5A40"
     }
-  }, "\uD83D\uDCB0 Revenue"), /*#__PURE__*/React.createElement("span", {
+  }, React.createElement("span",{style:{display:"flex",alignItems:"center",gap:4}},LI("DollarSign",13),"Revenue")), /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 14,
       fontWeight: 800,
@@ -3379,7 +3391,7 @@ function TourSponsorsModal(_ref10) {
       transition: "width .3s"
     }
   }))), pendingSignups.length > 0 && /*#__PURE__*/React.createElement("div", { style: { marginBottom: 14 } },
-    /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: B.gray, marginBottom: 8 } }, "⏳ Pending signups"),
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: B.gray, marginBottom: 8, display: "flex", alignItems: "center", gap: 4 } }, LI("Clock", 13, { color: B.gray }), "Pending signups"),
     pendingSignups.map(su => /*#__PURE__*/React.createElement("div", {
       key: su.id, style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, background: B.lightGray, borderRadius: 10, padding: "10px 12px", marginBottom: 6 }
     },
@@ -3428,7 +3440,7 @@ function TourSponsorsModal(_ref10) {
         justifyContent: "center",
         fontSize: 20
       }
-    }, "\u2B50"), /*#__PURE__*/React.createElement("div", {
+    }, LI("Star", 18, { color: B.goldDeep })), /*#__PURE__*/React.createElement("div", {
       style: {
         flex: 1,
         minWidth: 0
@@ -3471,7 +3483,7 @@ function TourSponsorsModal(_ref10) {
         fontWeight: 700,
         color: sp.paid ? "#2D6A4F" : "#9B1C1C"
       }
-    }, sp.paid ? "✅ Paid" : "⏳ Unpaid"), /*#__PURE__*/React.createElement("span", {
+    }, sp.paid ? React.createElement("span",{style:{display:"flex",alignItems:"center",gap:3}},LI("CheckCircle",12),"Paid") : React.createElement("span",{style:{display:"flex",alignItems:"center",gap:3}},LI("Clock",12),"Unpaid")), /*#__PURE__*/React.createElement("span", {
       style: {
         fontSize: 10,
         color: B.gray
@@ -3506,7 +3518,7 @@ function TourSponsorsModal(_ref10) {
         cursor: "pointer",
         fontSize: 16
       }
-    }, "\u270F\uFE0F"), /*#__PURE__*/React.createElement("button", {
+    }, LI("Pencil", 15, { color: B.gray })), /*#__PURE__*/React.createElement("button", {
       onClick: () => removeSponsor(sp.id),
       style: {
         background: "none",
@@ -3514,7 +3526,7 @@ function TourSponsorsModal(_ref10) {
         cursor: "pointer",
         fontSize: 16
       }
-    }, "\uD83D\uDDD1\uFE0F"))), /*#__PURE__*/React.createElement("div", {
+    }, LI("Trash2", 15, { color: "#9B1C1C" })))), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         gap: 6,
@@ -3546,7 +3558,7 @@ function TourSponsorsModal(_ref10) {
         fontSize: 11,
         fontWeight: 700
       }
-    }, "\uD83D\uDCB3 Send Invoice")));
+    }, React.createElement("span",{style:{display:"flex",alignItems:"center",gap:4}},LI("CreditCard",13),"Send Invoice"))));
   }), /*#__PURE__*/React.createElement("button", {
     onClick: startAdd,
     className: "btn-hover",
@@ -3604,9 +3616,12 @@ function TourSponsorsModal(_ref10) {
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 50,
-      marginBottom: 8
+      marginBottom: 8,
+      display: "flex",
+      justifyContent: "center",
+      color: "#2D6A4F"
     }
-  }, "\u2705"), /*#__PURE__*/React.createElement("h3", {
+  }, LI("CheckCircle", 48)), /*#__PURE__*/React.createElement("h3", {
     style: {
       color: B.primary,
       fontFamily: "Fraunces, Georgia, serif",
@@ -3660,9 +3675,12 @@ function TourSponsorsModal(_ref10) {
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 40,
-      marginBottom: 6
+      marginBottom: 6,
+      display: "flex",
+      justifyContent: "center",
+      color: B.primary
     }
-  }, "\uD83D\uDCB3"), /*#__PURE__*/React.createElement("h3", {
+  }, LI("CreditCard", 36)), /*#__PURE__*/React.createElement("h3", {
     style: {
       color: B.primary,
       fontFamily: "Fraunces, Georgia, serif",
@@ -4070,9 +4088,12 @@ function AddListingForm(_ref12) {
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 20
+      fontSize: 20,
+      display: "flex",
+      alignItems: "center",
+      color: B.gray
     }
-  }, "\uD83D\uDD0D"), /*#__PURE__*/React.createElement("h4", {
+  }, LI("Search", 18)), /*#__PURE__*/React.createElement("h4", {
     style: {
       color: B.primary,
       fontSize: 14,
@@ -4506,7 +4527,7 @@ function AddListingForm(_ref12) {
       fontWeight: 700,
       cursor: !selected || loading || uploading ? "default" : "pointer"
     }
-  }, uploading ? "⏳ Uploading..." : loading ? "Loading..." : "✓ Add Listing")));
+  }, uploading ? React.createElement("span",{style:{display:"flex",alignItems:"center",gap:6}},LI("Loader2",14),"Uploading...") : loading ? "Loading..." : React.createElement("span",{style:{display:"flex",alignItems:"center",gap:6}},LI("Plus",14),"Add Listing"))));
 }
 /* ── TOUR DETAIL PAGE ── */
 /* ── INSTANTLY.AI API HELPERS ── */
@@ -5620,7 +5641,7 @@ function NotInterestedPage(_ref17) {
       fontSize: 14,
       cursor: "pointer"
     }
-  }, "\uD83C\uDFE1 Actually, I Changed My Mind!")))));
+  }, React.createElement("span",{style:{display:"flex",alignItems:"center",justifyContent:"center",gap:6}},LI("ArrowRight",14),"Actually, I Changed My Mind!"))))));
 }
 /* ── ROUTE MAP VIEW ── */
 function RouteMapView(_ref18) {
@@ -11071,9 +11092,12 @@ function TeamPage(_ref28) {
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 44,
-      marginBottom: 12
+      marginBottom: 12,
+      display: "flex",
+      justifyContent: "center",
+      color: B.muted
     }
-  }, "\uD83D\uDC65"), /*#__PURE__*/React.createElement("p", null, "No team members yet.")), (subAdmins || []).map(u => /*#__PURE__*/React.createElement("div", {
+  }, LI("Users", 44)), /*#__PURE__*/React.createElement("p", null, "No team members yet.")), (subAdmins || []).map(u => /*#__PURE__*/React.createElement("div", {
     key: u.id,
     style: {
       background: "#fff",
@@ -11166,7 +11190,7 @@ function TeamPage(_ref28) {
       fontSize: 18,
       flexShrink: 0
     }
-  }, "\uD83D\uDC64"), /*#__PURE__*/React.createElement("div", {
+  }, LI("User", 18, { color: B.primary })), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1
     }
@@ -11216,7 +11240,7 @@ function TeamPage(_ref28) {
       fontWeight: 700,
       color: credSending[u.id] ? B.gray : "#1B3A6B"
     }
-  }, credSending[u.id] ? "\u23F3..." : "\uD83D\uDCE7 Resend"), /*#__PURE__*/React.createElement("button", {
+  }, credSending[u.id] ? React.createElement("span",{style:{display:"flex",alignItems:"center",gap:4}},LI("Loader2",13),"Sending...") : React.createElement("span",{style:{display:"flex",alignItems:"center",gap:4}},LI("Mail",13),"Resend")), /*#__PURE__*/React.createElement("button", {
     onClick: () => setConfirmDel(u.id),
     style: {
       background: "#FEE2E2",
@@ -11243,7 +11267,7 @@ function TeamPage(_ref28) {
       fontWeight: 700,
       marginBottom: 10
     }
-  }, "\uD83D\uDD10 Permission Levels"), [["👑", "Super Admin (You)", "Create tours · Manage listings · Edit sponsors · Add/remove team · Full access"], ["👤", "Sub-Admin (Team)", "Create tours · Manage listings · Invite attendees · View rankings & summary"]].map(_ref30 => {
+  }, React.createElement("span",{style:{display:"flex",alignItems:"center",gap:6}},LI("Shield",13),"Permission Levels")), [["👑", "Super Admin (You)", "Create tours · Manage listings · Edit sponsors · Add/remove team · Full access"], ["👤", "Sub-Admin (Team)", "Create tours · Manage listings · Invite attendees · View rankings & summary"]].map(_ref30 => {
     let [icon, label, desc] = _ref30;
     return /*#__PURE__*/React.createElement("div", {
       key: label,
@@ -12296,7 +12320,7 @@ function ListingRequestsAdmin(_ref34) {
       fontWeight: section === "listing" ? 700 : 500,
       color: section === "listing" ? B.primary : B.gray
     }
-  }, "\uD83C\uDFE0 Listing Requests ", pending > 0 && /*#__PURE__*/React.createElement("span", {
+  }, React.createElement("span",{style:{display:"flex",alignItems:"center",gap:4}},LI("Home",14)," Listing Requests"), pending > 0 && /*#__PURE__*/React.createElement("span", {
     style: {
       background: section === "listing" ? B.primary : "#E5E7EB",
       color: section === "listing" ? "#fff" : B.gray,
@@ -12318,7 +12342,7 @@ function ListingRequestsAdmin(_ref34) {
       fontWeight: section === "tour" ? 700 : 500,
       color: section === "tour" ? B.primary : B.gray
     }
-  }, "\uD83D\uDCE9 Tour Requests ", pendingTourReqs > 0 && /*#__PURE__*/React.createElement("span", {
+  }, React.createElement("span",{style:{display:"flex",alignItems:"center",gap:4}},LI("Inbox",14)," Tour Requests"), pendingTourReqs > 0 && /*#__PURE__*/React.createElement("span", {
     style: {
       background: section === "tour" ? B.primary : "#E5E7EB",
       color: section === "tour" ? "#fff" : B.gray,
@@ -12334,7 +12358,7 @@ function ListingRequestsAdmin(_ref34) {
       background: "#fff",
       borderBottom: "1px solid #D8D0C8"
     }
-  }, [["pending", "⏳ Pending", (section === "listing" ? requests : tourRequests || []).filter(r => r.status === "pending").length], ["contacted", "📞 Contacted", (section === "listing" ? requests : tourRequests || []).filter(r => r.status === "contacted").length], ["all", "All", (section === "listing" ? requests : tourRequests || []).length]].map(_ref35 => {
+  }, [["pending", React.createElement("span",{style:{display:"flex",alignItems:"center",gap:4}},LI("Clock",12),"Pending"), (section === "listing" ? requests : tourRequests || []).filter(r => r.status === "pending").length], ["contacted", React.createElement("span",{style:{display:"flex",alignItems:"center",gap:4}},LI("Phone",12),"Contacted"), (section === "listing" ? requests : tourRequests || []).filter(r => r.status === "contacted").length], ["all", "All", (section === "listing" ? requests : tourRequests || []).length]].map(_ref35 => {
     let [val, label, count] = _ref35;
     return /*#__PURE__*/React.createElement("button", {
       key: val,
@@ -12431,7 +12455,7 @@ function ListingRequestsAdmin(_ref34) {
       flexShrink: 0,
       marginLeft: 8
     }
-  }, req.status === "pending" ? "⏳ Pending" : "📞 Contacted")), /*#__PURE__*/React.createElement("div", {
+  }, req.status === "pending" ? React.createElement("span",{style:{display:"flex",alignItems:"center",gap:4}},LI("Clock",12),"Pending") : React.createElement("span",{style:{display:"flex",alignItems:"center",gap:4}},LI("Phone",12),"Contacted"))), /*#__PURE__*/React.createElement("div", {
     style: {
       background: "#F4F1EC",
       borderRadius: 8,
@@ -12513,7 +12537,7 @@ function ListingRequestsAdmin(_ref34) {
       fontSize: 13,
       cursor: "pointer"
     }
-  }, "\uD83D\uDCDE Mark Contacted"), /*#__PURE__*/React.createElement("button", {
+  }, React.createElement("span",{style:{display:"flex",alignItems:"center",gap:4}},LI("Phone",13),"Mark Contacted")), /*#__PURE__*/React.createElement("button", {
     onClick: () => setTourRequests(prev => prev.filter(r => r.id !== req.id)),
     style: {
       flex: 1,
@@ -12526,7 +12550,7 @@ function ListingRequestsAdmin(_ref34) {
       fontSize: 13,
       cursor: "pointer"
     }
-  }, "\uD83D\uDDD1 Delete")))))) : /*#__PURE__*/React.createElement("div", {
+  }, React.createElement("span",{style:{display:"flex",alignItems:"center",gap:4}},LI("Trash2",13),"Delete"))))))) : /*#__PURE__*/React.createElement("div", {
     style: {
       padding: "16px",
       maxWidth: 600,
@@ -12608,7 +12632,7 @@ function ListingRequestsAdmin(_ref34) {
         flexShrink: 0,
         marginLeft: 8
       }
-    }, req.status === "pending" ? "⏳ Pending" : req.status === "approved" ? "✅ Approved" : "❌ Denied")), /*#__PURE__*/React.createElement("div", {
+    }, req.status === "pending" ? React.createElement("span",{style:{display:"flex",alignItems:"center",gap:4}},LI("Clock",12),"Pending") : req.status === "approved" ? React.createElement("span",{style:{display:"flex",alignItems:"center",gap:4}},LI("CheckCircle",12),"Approved") : React.createElement("span",{style:{display:"flex",alignItems:"center",gap:4}},LI("XCircle",12),"Denied"))), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         gap: 6,
