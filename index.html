@@ -1343,10 +1343,10 @@ function RatingPage(_ref7) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 44,
-      marginBottom: 8
+      marginBottom: 8,
+      color: B.navy
     }
-  }, "\uD83D\uDD10"), /*#__PURE__*/React.createElement("h2", {
+  }, LI("Lock", 44)), /*#__PURE__*/React.createElement("h2", {
     style: {
       color: B.primary,
       fontFamily: "Fraunces, Georgia, serif",
@@ -1385,7 +1385,7 @@ function RatingPage(_ref7) {
       fontSize: 13,
       marginBottom: 12
     }
-  }, "\u26A0\uFE0F ", codeError), /*#__PURE__*/React.createElement("button", {
+  }, LI("AlertTriangle", 13, {color:"#EF4444",marginRight:4}), codeError), /*#__PURE__*/React.createElement("button", {
     onClick: checkCode,
     style: {
       width: "100%",
@@ -1674,7 +1674,7 @@ function RatingPage(_ref7) {
       padding: "4px 10px",
       fontSize: 12
     }
-  }, "\uD83D\uDCF7 ", allPhotos.length, " \u2014 tap to view")), /*#__PURE__*/React.createElement("div", {
+  }, LI("Camera", 11, {color:"#fff",marginRight:4}), allPhotos.length, " \u2014 tap to view")), /*#__PURE__*/React.createElement("div", {
     style: {
       background: "#fff",
       padding: "14px 18px",
@@ -1688,16 +1688,18 @@ function RatingPage(_ref7) {
       flexWrap: "wrap",
       marginBottom: 10
     }
-  }, ["\uD83D\uDECF ".concat(listing.beds, " beds"), "\uD83D\uDEBF ".concat(listing.baths, " baths"), "\uD83D\uDCD0 ".concat(listing.sqft.toLocaleString(), " sqft"), "\uD83D\uDCC5 ".concat(listing.dom, " DOM")].map((t, i) => /*#__PURE__*/React.createElement("span", {
+  }, [[LI("BedDouble",12,{marginRight:4,color:B.gray}), listing.beds + " beds"], [LI("Bath",12,{marginRight:4,color:B.gray}), listing.baths + " baths"], [LI("Ruler",12,{marginRight:4,color:B.gray}), listing.sqft.toLocaleString() + " sqft"], [LI("Calendar",12,{marginRight:4,color:B.gray}), listing.dom + " DOM"]].map((pair, i) => /*#__PURE__*/React.createElement("span", {
     key: i,
     style: {
       background: B.lightGray,
       borderRadius: 6,
       padding: "4px 10px",
       color: B.dark,
-      fontWeight: 500
+      fontWeight: 500,
+      display: "inline-flex",
+      alignItems: "center"
     }
-  }, t))), /*#__PURE__*/React.createElement("div", {
+  }, pair[0], pair[1]))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       justifyContent: "space-between",
@@ -1930,7 +1932,7 @@ function RatingPage(_ref7) {
       color: B.gray,
       marginBottom: 10
     }
-  }, "\uD83D\uDCF7 Attach Photos"), /*#__PURE__*/React.createElement("input", {
+  }, LI("Camera", 11, {marginRight:5,color:B.gray}), "Attach Photos"), /*#__PURE__*/React.createElement("input", {
     type: "file",
     accept: "image/*",
     multiple: true,
@@ -2016,12 +2018,12 @@ function RatingPage(_ref7) {
       color: "#9B1C1C",
       fontSize: 13
     }
-  }, "\u26A0\uFE0F ", submitError), /*#__PURE__*/React.createElement("button", {
+  }, LI("AlertTriangle", 13, {color:"#9B1C1C",marginRight:6}), submitError), /*#__PURE__*/React.createElement("button", {
     onClick: handleSubmit,
     disabled: submitting || photos.some(p => p.uploading),
     className: "btn-hover",
     style: {
-      background: submitting || photos.some(p => p.uploading) ? "#9CA3AF" : tour.color,
+      background: submitting || photos.some(p => p.uploading) ? "#9CA3AF" : B.navy,
       color: "#fff",
       border: "none",
       borderRadius: 12,
@@ -2055,7 +2057,7 @@ function RatingPage(_ref7) {
       borderRadius: "50%",
       animation: "spin .8s linear infinite"
     }
-  }), "Sending to ", listing.agent, "...") : "Submit & Email Agent ★"), /*#__PURE__*/React.createElement("p", {
+  }), "Sending to ", listing.agent, "...") : /*#__PURE__*/React.createElement(React.Fragment, null, LI("Send", 16), " Submit Rating")), /*#__PURE__*/React.createElement("p", {
     style: {
       textAlign: "center",
       fontSize: 11,
@@ -2313,10 +2315,10 @@ function SummaryDashboard(_ref9) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 48,
-      marginBottom: 12
+      marginBottom: 12,
+      color: B.muted
     }
-  }, "\uD83D\uDCCA"), /*#__PURE__*/React.createElement("p", null, "No ratings submitted yet.", /*#__PURE__*/React.createElement("br", null), "Ratings will appear here as attendees submit them.")), hasAny && listings.map(listing => {
+  }, LI("BarChart3", 48)), /*#__PURE__*/React.createElement("p", null, "No ratings submitted yet.", /*#__PURE__*/React.createElement("br", null), "Ratings will appear here as attendees submit them.")), hasAny && listings.map(listing => {
     const _rSubs=(tour.ratingSubmissions||{})[listing.id];
     const _allSubs=Array.isArray(_rSubs)?_rSubs:Object.values(_rSubs||{});
     let r;
