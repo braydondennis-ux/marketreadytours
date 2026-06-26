@@ -56,7 +56,7 @@ window.loadGoogleMaps=function(cb){
 </script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Hanken Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F7F4EF;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;color:#1A1714}
+body{font-family:'Hanken Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F7F4EF;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;color:#1A1714;font-size:16.5px;line-height:1.5;font-weight:460}
 button,select{font-family:'Hanken Grotesk',-apple-system,sans-serif}
 /* Fraunces display headings (set via inline fontFamily) get tighter optical spacing */
 h1,h2,h3,h4{letter-spacing:-.015em;line-height:1.12}
@@ -168,19 +168,19 @@ const B = {
   navyDark: "#152C50",
   ink: "#1A1714",
   gold: "#C9A55A",
-  goldDeep: "#A8842F",
+  goldDeep: "#9A7826",
   lightGold: "#E8D5A3",
   cream: "#F7F4EF",
   paper: "#FFFDFA",
   dark: "#050505",
-  gray: "#8A8078",
+  gray: "#655C53",
   lightGray: "#F0EDE8",
   line: "#E7E0D6",
   green: "#2D6A4F",
   red: "#9B1C1C",
   surface: "#1A1A1A",
   border: "#2A2A2A",
-  muted: "#5A5450"
+  muted: "#473F38"
 };
 const SUPER_ADMIN_EMAIL = "marketreadytours@gmail.com";
 const SQUARE_LINKS = {
@@ -10452,26 +10452,26 @@ function ToursDashboard(_ref26) {
       style: {
         color: B.ink,
         fontFamily: "Fraunces, Georgia, serif",
-        fontSize: 19,
-        fontWeight: 600,
+        fontSize: 22,
+        fontWeight: 700,
         letterSpacing: "-.01em",
         lineHeight: 1.15
       }
     }, tour.name), /*#__PURE__*/React.createElement("div", {
       style: {
-        color: B.muted,
-        fontSize: 13,
-        fontWeight: 600,
-        marginTop: 5,
+        color: B.ink,
+        fontSize: 14.5,
+        fontWeight: 700,
+        marginTop: 6,
         display: "flex",
         alignItems: "center",
         gap: 6
       }
-    }, LI("Calendar", 13, { color: B.gray }), (tour.date ? new Date(tour.date + "T12:00:00") : new Date()).toLocaleDateString("en-US", {
+    }, LI("Calendar", 15, { color: B.gray }), (tour.date ? new Date(tour.date + "T12:00:00") : new Date()).toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
       day: "numeric"
-    }), /*#__PURE__*/React.createElement("span", { style: { opacity: .4 } }, "\u00B7"), LI("Clock", 13, { color: B.gray }), tour.time), /*#__PURE__*/React.createElement("div", {
+    }), /*#__PURE__*/React.createElement("span", { style: { opacity: .4 } }, "\u00B7"), LI("Clock", 15, { color: B.gray }), tour.time), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         gap: 7,
@@ -10484,34 +10484,34 @@ function ToursDashboard(_ref26) {
         background: B.cream,
         border: "1px solid " + B.line,
         borderRadius: 7,
-        padding: "3px 9px",
-        fontSize: 12,
-        fontWeight: 600,
+        padding: "4px 11px",
+        fontSize: 13.5,
+        fontWeight: 700,
         color: B.muted
       }
-    }, LI("MapPin", 12, { color: B.gray }), (tour.listings || []).length, " stops"), /*#__PURE__*/React.createElement("span", {
+    }, LI("MapPin", 14, { color: B.gray }), (tour.listings || []).length, " stops"), /*#__PURE__*/React.createElement("span", {
       style: {
         display: "flex", alignItems: "center", gap: 4,
         background: ratedCount > 0 ? "#FBF6EA" : B.cream,
         border: "1px solid " + (ratedCount > 0 ? "#EBDCBB" : B.line),
         borderRadius: 7,
-        padding: "3px 9px",
-        fontSize: 12,
-        fontWeight: 600,
+        padding: "4px 11px",
+        fontSize: 13.5,
+        fontWeight: 700,
         color: ratedCount > 0 ? B.goldDeep : B.muted
       }
-    }, LI("Star", 12, { color: ratedCount > 0 ? B.goldDeep : B.gray }), ratedCount, " rated"), favCount > 0 && /*#__PURE__*/React.createElement("span", {
+    }, LI("Star", 14, { color: ratedCount > 0 ? B.goldDeep : B.gray }), ratedCount, " rated"), favCount > 0 && /*#__PURE__*/React.createElement("span", {
       style: {
         display: "flex", alignItems: "center", gap: 4,
         background: "#FBEDEC",
         border: "1px solid #F2D9D7",
         borderRadius: 7,
-        padding: "3px 9px",
-        fontSize: 12,
-        fontWeight: 600,
+        padding: "4px 11px",
+        fontSize: 13.5,
+        fontWeight: 700,
         color: "#A23B38"
       }
-    }, LI("Heart", 12, { color: "#A23B38" }), favCount)))), isAdmin && /*#__PURE__*/React.createElement("div",{style:{display:"flex",gap:4,flexShrink:0,marginTop:1}},
+    }, LI("Heart", 14, { color: "#A23B38" }), favCount)))), isAdmin && /*#__PURE__*/React.createElement("div",{style:{display:"flex",gap:4,flexShrink:0,marginTop:1}},
       /*#__PURE__*/React.createElement("button",{
         onClick:e=>{e.stopPropagation();const _c={...tour,id:uid("tour"),name:tour.name+" (Copy)",ratings:{},ratingSubmissions:{},favorites:{},notes:{},campaignContacts:[],createdBy:(currentUser&&currentUser.email)||SUPER_ADMIN_EMAIL};setTours(prev=>[...prev,_c]);showToast("Tour duplicated \u2014 tap to update the date.","success",3500);},
         title:"Duplicate tour",
@@ -10584,10 +10584,11 @@ function ToursDashboard(_ref26) {
         }
       }, "\u2764\uFE0F")), /*#__PURE__*/React.createElement("div", {
         style: {
-          fontSize: 11,
-          color: B.gray,
+          fontSize: 12.5,
+          fontWeight: 600,
+          color: B.muted,
           textAlign: "center",
-          maxWidth: 68,
+          maxWidth: 78,
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap"
