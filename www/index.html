@@ -97,6 +97,8 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
   }
   body.mrt-desktop .mrt-dash-col{ max-width:1120px !important; margin-left:auto !important; margin-right:auto !important; }
   body.mrt-desktop .mrt-list-tours{ grid-template-columns:repeat(auto-fill,minmax(340px,1fr)) !important; gap:22px !important; }
+  body.mrt-desktop .mrt-detail-col{ max-width:1000px !important; margin-left:auto !important; margin-right:auto !important; }
+  body.mrt-desktop .mrt-list-listings{ grid-template-columns:repeat(auto-fill,minmax(360px,1fr)) !important; gap:20px !important; }
 }
 </style>
 </head>
@@ -6657,6 +6659,7 @@ function TourDetailPage(_ref19) {
   const favCount = Object.values(tour.favorites || {}).filter(Boolean).length;
   const ratedCount = Object.keys(tour.ratings || {}).length;
   return /*#__PURE__*/React.createElement("div", {
+    className: "mrt-detail-col",
     style: {
       background: B.cream,
       minHeight: "100vh",
@@ -8454,7 +8457,7 @@ function TourDetailPage(_ref19) {
       fontSize: 48,
       marginBottom: 12
     }
-  }, "\uD83C\uDFE1"), /*#__PURE__*/React.createElement("p", null, "No listings yet.", isAdmin ? " Tap ⚙️ to add some." : "")), sorted.map(listing => {
+  }, "\uD83C\uDFE1"), /*#__PURE__*/React.createElement("p", null, "No listings yet.", isAdmin ? " Tap ⚙️ to add some." : "")), /*#__PURE__*/React.createElement("div", { className: "mrt-list mrt-list-listings" }, sorted.map(listing => {
     var _tour$favorites, _tour$ratings5, _tour$ratings6, _tour$notes;
     const isFav = ((_tour$favorites = tour.favorites) === null || _tour$favorites === void 0 ? void 0 : _tour$favorites[listing.id]) || false;
     const isRated = ((_tour$ratings5 = tour.ratings) === null || _tour$ratings5 === void 0 ? void 0 : _tour$ratings5[listing.id]) && Object.values(tour.ratings[listing.id]).some(v => v > 0);
@@ -8734,7 +8737,7 @@ function TourDetailPage(_ref19) {
         boxShadow: "0 3px 10px rgba(27,58,107,.25)"
       }
     }, isRated ? /*#__PURE__*/React.createElement(React.Fragment, null, LI("RotateCcw", 14), " Re-Rate") : /*#__PURE__*/React.createElement(React.Fragment, null, LI("Star", 14), " Rate Home")))));
-  })));
+  }))));
 }
 /* ── SPONSORS PAGE ── */
 const INITIAL_SPONSORS = [{
