@@ -95,6 +95,8 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
     gap:20px !important;
     align-items:start;
   }
+  body.mrt-desktop .mrt-dash-col{ max-width:1120px !important; margin-left:auto !important; margin-right:auto !important; }
+  body.mrt-desktop .mrt-list-tours{ grid-template-columns:repeat(auto-fill,minmax(340px,1fr)) !important; gap:22px !important; }
 }
 </style>
 </head>
@@ -10398,6 +10400,7 @@ function ToursDashboard(_ref26) {
       gap: 4
     }
   }, LI("HelpCircle", 14), "FAQ"))), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-dash-col",
     style: {
       padding: "20px 14px",
       display: "flex",
@@ -10464,7 +10467,7 @@ function ToursDashboard(_ref26) {
     style: {
       fontSize: 14
     }
-  }, showArchived ? "No archived tours." : isAdmin ? 'Tap "+ New Tour" to create one.' : "Check with your admin for the schedule.")), filtered.map(tour => {
+  }, showArchived ? "No archived tours." : isAdmin ? 'Tap "+ New Tour" to create one.' : "Check with your admin for the schedule.")), /*#__PURE__*/React.createElement("div", { className: "mrt-list mrt-list-tours" }, filtered.map(tour => {
     const ratedCount = Object.keys(tour.ratings || {}).length;
     const favCount = Object.values(tour.favorites || {}).filter(Boolean).length;
     const _tMs=tour.date?new Date(tour.date+"T00:00:00").getTime():null;
@@ -10680,7 +10683,7 @@ function ToursDashboard(_ref26) {
         boxShadow: "0 4px 14px ".concat(tour.color, "66")
       }
     }, "Open Tour \u2192")));
-  }), showRequestForm && /*#__PURE__*/React.createElement(RequestATourInlineForm, {
+  })), showRequestForm && /*#__PURE__*/React.createElement(RequestATourInlineForm, {
     ref: requestFormRef,
     onClose: () => setShowRequestForm(false),
     onSubmit: req => setTourRequests && setTourRequests(prev => [...prev, req])
