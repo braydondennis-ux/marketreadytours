@@ -99,6 +99,8 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
   body.mrt-desktop .mrt-list-tours{ grid-template-columns:repeat(auto-fill,minmax(340px,1fr)) !important; gap:22px !important; }
   body.mrt-desktop .mrt-detail-col{ max-width:1000px !important; margin-left:auto !important; margin-right:auto !important; }
   body.mrt-desktop .mrt-list-listings{ grid-template-columns:repeat(auto-fill,minmax(360px,1fr)) !important; gap:20px !important; }
+  body.mrt-desktop .mrt-summary-col{ max-width:960px !important; margin-left:auto !important; margin-right:auto !important; }
+  body.mrt-desktop .mrt-list-summary{ grid-template-columns:repeat(auto-fill,minmax(400px,1fr)) !important; gap:18px !important; }
 }
 </style>
 </head>
@@ -2175,6 +2177,7 @@ function RankingPage(_ref8) {
       padding: 3
     }
   })), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-col",
     style: {
       padding: "20px 14px",
       display: "flex",
@@ -2343,6 +2346,7 @@ function SummaryDashboard(_ref9) {
       padding: 3
     }
   })), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-summary-col",
     style: {
       padding: "20px 14px",
       display: "flex",
@@ -2360,7 +2364,7 @@ function SummaryDashboard(_ref9) {
       marginBottom: 12,
       color: B.muted
     }
-  }, LI("BarChart3", 48)), /*#__PURE__*/React.createElement("p", null, "No ratings submitted yet.", /*#__PURE__*/React.createElement("br", null), "Ratings will appear here as attendees submit them.")), hasAny && listings.map(listing => {
+  }, LI("BarChart3", 48)), /*#__PURE__*/React.createElement("p", null, "No ratings submitted yet.", /*#__PURE__*/React.createElement("br", null), "Ratings will appear here as attendees submit them.")), /*#__PURE__*/React.createElement("div", { className: "mrt-list mrt-list-summary" }, hasAny && listings.map(listing => {
     const _rSubs=(tour.ratingSubmissions||{})[listing.id];
     const _allSubs=Array.isArray(_rSubs)?_rSubs:Object.values(_rSubs||{});
     let r;
@@ -2441,7 +2445,7 @@ function SummaryDashboard(_ref9) {
         }
       }, v > 0 ? "".concat(v, "/5") : "—")), starBar(v, tour.color));
     })));
-  })));
+  }))));
 }
 /* ── AGENT BRANDING MODAL ── */
 function AgentBrandingModal(_ref0) {
