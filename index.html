@@ -101,6 +101,10 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
   body.mrt-desktop .mrt-list-listings{ grid-template-columns:repeat(auto-fill,minmax(360px,1fr)) !important; gap:20px !important; }
   body.mrt-desktop .mrt-summary-col{ max-width:960px !important; margin-left:auto !important; margin-right:auto !important; }
   body.mrt-desktop .mrt-list-summary{ grid-template-columns:repeat(auto-fill,minmax(400px,1fr)) !important; gap:18px !important; }
+  body.mrt-desktop .mrt-admin-col{ max-width:1080px !important; margin-left:auto !important; margin-right:auto !important; }
+  body.mrt-desktop .mrt-list-sponsors,
+  body.mrt-desktop .mrt-list-team,
+  body.mrt-desktop .mrt-list-requests{ grid-template-columns:repeat(auto-fill,minmax(380px,1fr)) !important; gap:18px !important; }
 }
 </style>
 </head>
@@ -4110,6 +4114,7 @@ function AddListingForm(_ref12) {
   };
   const agentContactFields = [["agentEmail", "Agent Email", "email"], ["agentPhone", "Agent Phone", "tel"]];
   return /*#__PURE__*/React.createElement("div", {
+    className: "mrt-col",
     style: {
       background: "#fff",
       borderRadius: 14,
@@ -9066,6 +9071,7 @@ function SponsorsPage(_ref22) {
       color: "rgba(255,255,255,.8)"
     }
   }, "\uD83D\uDD11 Tap any card to edit sponsor info & logo")), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-admin-col",
     style: {
       padding: "20px 14px"
     }
@@ -9082,6 +9088,8 @@ function SponsorsPage(_ref22) {
       gridTemplateColumns: "1fr 1fr",
       gap: 14
     }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "mrt-list mrt-list-sponsors"
   }, sponsors.map((sp, idx) => /*#__PURE__*/React.createElement("div", {
     key: sp.id,
     onClick: () => isAdmin && openEdit(sp),
@@ -9174,7 +9182,7 @@ function SponsorsPage(_ref22) {
       fontWeight: 700,
       textDecoration: "none"
     }
-  }, "Visit Website \u2192"))))), /*#__PURE__*/React.createElement("div", {
+  }, "Visit Website \u2192")))))), /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 28,
       background: "#fff",
@@ -10950,6 +10958,7 @@ function TeamPage(_ref28) {
       padding: 3
     }
   })), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-admin-col",
     style: {
       padding: "20px 16px"
     }
@@ -11137,7 +11146,9 @@ function TeamPage(_ref28) {
       justifyContent: "center",
       color: B.muted
     }
-  }, LI("Users", 44)), /*#__PURE__*/React.createElement("p", null, "No team members yet.")), (subAdmins || []).map(u => /*#__PURE__*/React.createElement("div", {
+  }, LI("Users", 44)), /*#__PURE__*/React.createElement("p", null, "No team members yet.")), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-list mrt-list-team"
+  }, (subAdmins || []).map(u => /*#__PURE__*/React.createElement("div", {
     key: u.id,
     style: {
       background: "#fff",
@@ -11292,7 +11303,7 @@ function TeamPage(_ref28) {
       fontWeight: 700,
       color: "#9B1C1C"
     }
-  }, "Remove"))))), /*#__PURE__*/React.createElement("div", {
+  }, "Remove")))))), /*#__PURE__*/React.createElement("div", {
     style: {
       background: "#fff",
       borderRadius: 14,
@@ -12426,6 +12437,7 @@ function ListingRequestsAdmin(_ref34) {
       }
     }, count));
   })), section === "tour" ? /*#__PURE__*/React.createElement("div", {
+    className: "mrt-admin-col",
     style: {
       padding: "16px",
       maxWidth: 600,
@@ -12452,7 +12464,9 @@ function ListingRequestsAdmin(_ref34) {
       fontSize: 13,
       marginTop: 4
     }
-  }, "Tour requests will appear here when people submit them.")) : (tourRequests || []).filter(r => filter === "all" ? true : r.status === filter).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt)).map(req => /*#__PURE__*/React.createElement("div", {
+  }, "Tour requests will appear here when people submit them.")) : /*#__PURE__*/React.createElement("div", {
+    className: "mrt-list mrt-list-requests"
+  }, (tourRequests || []).filter(r => filter === "all" ? true : r.status === filter).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt)).map(req => /*#__PURE__*/React.createElement("div", {
     key: req.id,
     style: {
       background: "#fff",
@@ -12591,7 +12605,8 @@ function ListingRequestsAdmin(_ref34) {
       fontSize: 13,
       cursor: "pointer"
     }
-  }, React.createElement("span",{style:{display:"flex",alignItems:"center",gap:4}},LI("Trash2",13),"Delete"))))))) : /*#__PURE__*/React.createElement("div", {
+  }, React.createElement("span",{style:{display:"flex",alignItems:"center",gap:4}},LI("Trash2",13),"Delete")))))))) : /*#__PURE__*/React.createElement("div", {
+    className: "mrt-admin-col",
     style: {
       padding: "16px",
       maxWidth: 600,
@@ -12618,7 +12633,9 @@ function ListingRequestsAdmin(_ref34) {
       fontSize: 13,
       marginTop: 4
     }
-  }, "Listing requests will appear here when agents submit them.")), visibleRequests.map(req => {
+  }, "Listing requests will appear here when agents submit them.")), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-list mrt-list-requests"
+  }, visibleRequests.map(req => {
     var _req$photos, _req$sqft, _req$price;
     return /*#__PURE__*/React.createElement("div", {
       key: req.id,
@@ -12781,7 +12798,7 @@ function ListingRequestsAdmin(_ref34) {
         color: "#9B1C1C"
       }
     }, "Reason: ", req.denialReason)));
-  })), reviewing && /*#__PURE__*/React.createElement("div", {
+  }))), reviewing && /*#__PURE__*/React.createElement("div", {
     style: {
       position: "fixed",
       inset: 0,
