@@ -6,6 +6,8 @@
 
 **Architecture:** A single additive CSS layer in the existing `<style>` block, double-gated by `@media (min-width:1024px)` AND a `body.mrt-desktop` class. A `DESKTOP_MODE` constant + a one-line effect apply the class (with a `?desktop=0/1` URL override). Screens get small, inert `className` hooks; card lists get layout-transparent wrapper divs (`display:contents` at base, `display:grid` on desktop) so mobile layout is provably identical.
 
+**IMPORTANT — global width authority (discovered during Task 1 verification):** `App()` wraps EVERY screen in one shared shell div — `React.createElement("div", { style: { maxWidth: 480, margin: "0 auto", minHeight: "100vh" } }, ...)` (the main shell at ~line 14038; a near-identical auth-loading skeleton at ~line 13960). This `maxWidth: 480` caps the whole app, so per-screen `maxWidth` columns cannot exceed it. Therefore widening is two-layer: **`mrt-shell`** on that shared shell lifts the 480 cap on desktop (the expander), and per-screen **`mrt-col`** is a *constraint* that keeps single-column content readable (~720px) inside the now-wide shell. Grid screens use wider inner caps (`mrt-dash-col` / `mrt-detail-col` / `mrt-admin-col`) plus the `mrt-list` grid wrapper.
+
 **Tech Stack:** React 18 via CDN as compiled `React.createElement` (no JSX), single-file `index.html` (~14k lines), plain CSS. No build step, no new dependencies.
 
 ## Global Constraints
@@ -105,8 +107,12 @@ Expected: `parse OK`
    stay direct children of their original parent → mobile is identical). */
 .mrt-list{display:contents}
 @media (min-width:1024px){
+  /* Shell: lifts the app-wide 480 cap so screens can use desktop width. */
+  body.mrt-desktop .mrt-shell{ max-width:1200px !important; }
+  /* Inner single-column constraint: keeps forms/reading readable inside the
+     now-wide shell. Meaningful ONLY because .mrt-shell widened the parent. */
   body.mrt-desktop .mrt-col{
-    max-width:720px !important;      /* widen the phone column on desktop */
+    max-width:720px !important;      /* readable single-column measure */
     margin-left:auto !important; margin-right:auto !important;
   }
   /* generic grid behavior for any reflowed list; per-screen tasks tune columns */
@@ -118,6 +124,8 @@ Expected: `parse OK`
   }
 }
 ```
+
+- [ ] **Step 4b: Hook the shared App shell (the width authority).** In `App()`, add `className: "mrt-shell"` to the main shell wrapper — the `React.createElement("div", { style: { maxWidth: 480, margin: "0 auto", minHeight: "100vh" } }, ...)` that returns the whole app (~line 14038) — and to the near-identical auth-loading skeleton wrapper (~line 13960). Add `className` as a new key beside the existing `style` (pure key addition, no paren change). Locate both with `grep -n "maxWidth: 480" index.html` and confirm each is the `margin: "0 auto"` + `minHeight: "100vh"` shell (NOT a nav/inner element). Parse-check after.
 
 - [ ] **Step 5: Hook the Contact screen column.** In `ContactPage` (~line 12893), find its primary centered column — the `React.createElement("div", { style: { ... maxWidth: <n> ... } }, ...)` that wraps the form content — and add `className: "mrt-col"` to that props object (keep the existing `style`). Example transform:
 
