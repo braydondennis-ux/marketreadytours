@@ -82,6 +82,8 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
    stay direct children of their original parent → mobile is identical). */
 .mrt-list{display:contents}
 @media (min-width:1024px){
+  /* Shell: lifts the app-wide 480 cap so screens can use desktop width. */
+  body.mrt-desktop .mrt-shell{ max-width:1200px !important; }
   body.mrt-desktop .mrt-col{
     max-width:720px !important;      /* widen the phone column on desktop */
     margin-left:auto !important; margin-right:auto !important;
@@ -13958,6 +13960,7 @@ function App() {
   );
   // Show loading skeleton while Firebase Auth resolves (prevents blank flash)
   if (authLoading) return /*#__PURE__*/React.createElement("div", {
+    className: "mrt-shell",
     style: {
       maxWidth: 480,
       margin: "0 auto",
@@ -14036,6 +14039,7 @@ function App() {
     }
   }, "Loading..."));
   return /*#__PURE__*/React.createElement("div", {
+    className: "mrt-shell",
     style: {
       maxWidth: 480,
       margin: "0 auto",
