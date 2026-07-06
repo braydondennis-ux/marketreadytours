@@ -74,6 +74,26 @@ textarea,input,select{font-family:inherit}
 input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!important;box-shadow:0 0 0 3px rgba(201,165,90,.15)!important}
 /* iOS safe-area: pads the page bottom away from the home indicator */
 @supports(padding:env(safe-area-inset-bottom)){body{padding-bottom:env(safe-area-inset-bottom)}.mrt-scroll-pad{padding-bottom:calc(90px + env(safe-area-inset-bottom))!important}}
+/* ══ DESKTOP LAYER (>=1024px AND body.mrt-desktop only) ═══════════════════
+   Everything here is double-gated: it cannot affect phones, portrait tablets,
+   or the Capacitor iOS app (all < 1024px), and DESKTOP_MODE=false removes the
+   body class so none of it applies at any width. ════════════════════════ */
+/* Layout-transparent list wrapper: invisible to layout at base width (cards
+   stay direct children of their original parent → mobile is identical). */
+.mrt-list{display:contents}
+@media (min-width:1024px){
+  body.mrt-desktop .mrt-col{
+    max-width:720px !important;      /* widen the phone column on desktop */
+    margin-left:auto !important; margin-right:auto !important;
+  }
+  /* generic grid behavior for any reflowed list; per-screen tasks tune columns */
+  body.mrt-desktop .mrt-list{
+    display:grid !important;
+    grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+    gap:20px !important;
+    align-items:start;
+  }
+}
 </style>
 </head>
 <body>
@@ -182,6 +202,11 @@ const B = {
   border: "#2A2A2A",
   muted: "#473F38"
 };
+// ── DESKTOP LAYER TOGGLE ──────────────────────────────────────────────
+// true  → desktop CSS layer active (>=1024px only; mobile/iOS never affected).
+// false → layer fully inert everywhere (one-line revert to the mobile-only app).
+// URL override for live A/B without redeploy: ?desktop=1 forces on, ?desktop=0 forces off.
+const DESKTOP_MODE = true;
 const SUPER_ADMIN_EMAIL = "marketreadytours@gmail.com";
 const SQUARE_LINKS = {
   full: "https://square.link/u/GZQLj5Ey",
@@ -12946,6 +12971,7 @@ function ContactPage(_ref36) {
       fontWeight: 700
     }
   }, "Contact Us"))), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-col",
     style: {
       padding: "24px 16px"
     }
@@ -13690,6 +13716,11 @@ function App() {
     const initHash = window.location.hash.slice(2) || "";
     if (!initHash || initHash === "/") window.location.hash = "/";
     return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+  React.useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("desktop");
+    const on = q === "1" ? true : q === "0" ? false : DESKTOP_MODE;
+    document.body.classList.toggle("mrt-desktop", on);
   }, []);
   const [tours, setTours] = useState(() => lsGet("mrt_tours", INITIAL_TOURS));
   const [sharedRatings, setSharedRatings] = useState({});
