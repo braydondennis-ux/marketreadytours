@@ -6599,7 +6599,7 @@ function TourDetailPage(_ref19) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      background: tour.color,
+      background: B.ink,
       padding: "14px 18px",
       display: "flex",
       alignItems: "center",
@@ -6624,19 +6624,25 @@ function TourDetailPage(_ref19) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 6,
       color: "rgba(255,255,255,.7)",
       fontSize: 11,
       textTransform: "uppercase",
       letterSpacing: 1
     }
-  }, tour.emoji, " ", tour.name), /*#__PURE__*/React.createElement("div", {
+  }, React.createElement(TourDot, { tour: tour, size: 8 }), tour.name), /*#__PURE__*/React.createElement("div", {
     style: {
       color: "#fff",
       fontFamily: "Fraunces, Georgia, serif",
       fontSize: 15,
-      fontWeight: 700
+      fontWeight: 700,
+      display: "flex",
+      alignItems: "center",
+      gap: 6
     }
-  }, "\uD83D\uDDFA\uFE0F Tour Route")), /*#__PURE__*/React.createElement("img", {
+  }, LI("Route", 15), "Tour Route")), /*#__PURE__*/React.createElement("img", {
     src: window.MRT_LOGO_DATA,
     alt: "MRT",
     style: {
@@ -6671,7 +6677,7 @@ function TourDetailPage(_ref19) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      background: tour.color,
+      background: B.ink,
       padding: "14px 18px",
       display: "flex",
       alignItems: "center",
@@ -6696,19 +6702,25 @@ function TourDetailPage(_ref19) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 6,
       color: "rgba(255,255,255,.7)",
       fontSize: 11,
       textTransform: "uppercase",
       letterSpacing: 1
     }
-  }, tour.emoji, " ", tour.name), /*#__PURE__*/React.createElement("div", {
+  }, React.createElement(TourDot, { tour: tour, size: 8 }), tour.name), /*#__PURE__*/React.createElement("div", {
     style: {
       color: "#fff",
       fontFamily: "Fraunces, Georgia, serif",
       fontSize: 15,
-      fontWeight: 700
+      fontWeight: 700,
+      display: "flex",
+      alignItems: "center",
+      gap: 6
     }
-  }, "\uD83D\uDCE3 Invite Campaign")), /*#__PURE__*/React.createElement("img", {
+  }, LI("Megaphone", 15), "Invite Campaign")), /*#__PURE__*/React.createElement("img", {
     src: window.MRT_LOGO_DATA,
     alt: "MRT",
     style: {
@@ -6808,7 +6820,7 @@ function TourDetailPage(_ref19) {
       fontSize: 13,
       marginBottom: 20
     }
-  }, "They'll receive the full invitation with a link to add their listing to the ", tour.emoji, " ", tour.name, " tour."), /*#__PURE__*/React.createElement("div", {
+  }, "They'll receive the full invitation with a link to add their listing to the ", React.createElement(TourDot, { tour: tour, size: 7 }), " ", tour.name, " tour."), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 10
@@ -6874,7 +6886,7 @@ function TourDetailPage(_ref19) {
       color: B.gray,
       fontSize: 13
     }
-  }, "Send an invitation to feature a home on ", /*#__PURE__*/React.createElement("strong", null, tour.emoji, " ", tour.name))), /*#__PURE__*/React.createElement("div", {
+  }, "Send an invitation to feature a home on ", /*#__PURE__*/React.createElement("strong", { style: { display: "inline-flex", alignItems: "center", gap: 5 } }, React.createElement(TourDot, { tour: tour, size: 7 }), tour.name))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -7035,7 +7047,7 @@ function TourDetailPage(_ref19) {
     style: {
       margin: "0 0 10px"
     }
-  }, "We're putting together our ", /*#__PURE__*/React.createElement("strong", null, tour.emoji, " ", tour.name), " tour on ", /*#__PURE__*/React.createElement("strong", null, (tour.date ? new Date(tour.date + "T12:00:00") : new Date()).toLocaleDateString("en-US", {
+  }, "We're putting together our ", /*#__PURE__*/React.createElement("strong", { style: { display: "inline-flex", alignItems: "center", gap: 5 } }, React.createElement(TourDot, { tour: tour, size: 7 }), tour.name), " tour on ", /*#__PURE__*/React.createElement("strong", null, (tour.date ? new Date(tour.date + "T12:00:00") : new Date()).toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -7210,7 +7222,7 @@ function TourDetailPage(_ref19) {
     },
     style: {
       flex: 2,
-      background: inviteSending ? "#9CA3AF" : tour.color,
+      background: inviteSending ? "#9CA3AF" : B.navy,
       color: "#fff",
       border: "none",
       borderRadius: 10,
@@ -7228,7 +7240,7 @@ function TourDetailPage(_ref19) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      background: tour.color,
+      background: B.ink,
       padding: "14px 18px",
       display: "flex",
       alignItems: "center",
@@ -7251,9 +7263,12 @@ function TourDetailPage(_ref19) {
       color: "#fff",
       fontFamily: "Fraunces, Georgia, serif",
       fontSize: 15,
-      fontWeight: 700
+      fontWeight: 700,
+      display: "flex",
+      alignItems: "center",
+      gap: 6
     }
-  }, "Manage: ", tour.emoji, " ", tour.name), tour.code && /*#__PURE__*/React.createElement("div", {
+  }, "Manage:", React.createElement(TourDot, { tour: tour, size: 8 }), tour.name), tour.code && /*#__PURE__*/React.createElement("div", {
     style: {
       marginLeft: "auto",
       background: "rgba(255,255,255,.2)",
@@ -7263,14 +7278,17 @@ function TourDetailPage(_ref19) {
       fontSize: 13,
       fontWeight: 700,
       letterSpacing: 2,
-      cursor: "pointer"
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      gap: 4
     },
     onClick: () => {
       var _navigator$clipboard;
       (_navigator$clipboard = navigator.clipboard) === null || _navigator$clipboard === void 0 || _navigator$clipboard.writeText(tour.code);
     },
     title: "Click to copy"
-  }, "\uD83D\uDD11 ", tour.code)), /*#__PURE__*/React.createElement("div", {
+  }, LI("KeyRound", 12), tour.code)), /*#__PURE__*/React.createElement("div", {
     style: {
       padding: "20px 16px"
     }
@@ -7298,7 +7316,7 @@ function TourDetailPage(_ref19) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      background: tour.color,
+      background: B.navy,
       color: "#fff",
       borderRadius: "50%",
       width: 28,
@@ -7445,7 +7463,7 @@ function TourDetailPage(_ref19) {
       showToast("✅ Listing updated and saved", "success", 2000);
     },
     style: {
-      background: tour.color,
+      background: B.navy,
       color: "#fff",
       border: "none",
       borderRadius: 8,
@@ -7457,7 +7475,7 @@ function TourDetailPage(_ref19) {
   }, "Save Changes"),
   /*#__PURE__*/React.createElement("label",{style:{display:"flex",alignItems:"center",gap:10,cursor:"pointer",padding:"8px 10px",marginTop:6,background:editFields.priceReduced?"#FFF7F0":"#F7F4EF",borderRadius:8,border:"1.5px solid "+(editFields.priceReduced?"#F97316":"#D8D0C8")}},
     /*#__PURE__*/React.createElement("input",{type:"checkbox",checked:!!editFields.priceReduced,onChange:e=>setEditFields(ef=>({...ef,priceReduced:e.target.checked})),style:{width:18,height:18,accentColor:"#F97316",cursor:"pointer"}}),
-    /*#__PURE__*/React.createElement("span",{style:{fontSize:13,fontWeight:700,color:editFields.priceReduced?"#C2410C":B.gray}},"\uD83D\uDD3B Price Reduced")
+    /*#__PURE__*/React.createElement("span",{style:{display:"inline-flex",alignItems:"center",gap:5,fontSize:13,fontWeight:700,color:editFields.priceReduced?"#C2410C":B.gray}},LI("ArrowDown",13),"Price Reduced")
   )), /*#__PURE__*/React.createElement("textarea", {
     placeholder: "Private admin note...",
     rows: 2,
@@ -7491,11 +7509,11 @@ function TourDetailPage(_ref19) {
       fontSize: 13,
       fontWeight: 600
     }
-  }, "\uD83D\uDCCB Maximum of 8 listings reached") : /*#__PURE__*/React.createElement("button", {
+  }, LI("ClipboardList", 13, { marginRight: 5 }), "Maximum of 8 listings reached") : /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowAddForm(true),
     style: {
       width: "100%",
-      background: tour.color,
+      background: B.navy,
       color: "#fff",
       border: "none",
       borderRadius: 12,
@@ -7517,7 +7535,7 @@ function TourDetailPage(_ref19) {
     className: "btn-hover",
     style: {
       width: "100%",
-      background: tour.color,
+      background: B.navy,
       color: "#fff",
       border: "none",
       borderRadius: 12,
@@ -7804,7 +7822,7 @@ function TourDetailPage(_ref19) {
     }
   }, sendingCancel ? "⏳ Sending..." : cancelMsg.type === "cancel" ? "Send Cancellation" : "Send Reschedule Notice")))))), /*#__PURE__*/React.createElement("div", {
     style: {
-      background: tour.color,
+      background: B.ink,
       padding: "16px 18px",
       position: "sticky",
       top: 0,
@@ -7892,9 +7910,12 @@ function TourDetailPage(_ref19) {
       fontFamily: "Fraunces, Georgia, serif",
       fontSize: 20,
       fontWeight: 700,
-      marginTop: 8
+      marginTop: 8,
+      display: "flex",
+      alignItems: "center",
+      gap: 9
     }
-  }, tour.emoji, " ", tour.name), isAdmin && /*#__PURE__*/React.createElement("div", {
+  }, React.createElement(TourDot, { tour: tour, size: 12 }), React.createElement("span", { style: { marginLeft: 0, fontFamily: "Fraunces, Georgia, serif" } }, tour.name)), isAdmin && /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,
@@ -8130,11 +8151,11 @@ function TourDetailPage(_ref19) {
   }, (tour.sponsors || []).filter(sp => sp.paid && sp.tourLead).map(sp => /*#__PURE__*/React.createElement("div", {
     key: sp.id + "lead",
     style: {
-      background: "linear-gradient(135deg, #0D0D0D 0%, #243F6B 50%, #0D0D0D 100%)",
+      background: "linear-gradient(135deg, " + B.navy + " 0%, " + B.navyDark + " 100%)",
       borderRadius: 16,
       padding: "18px",
       marginBottom: 14,
-      border: "2px solid " + B.gold,
+      border: "1px solid " + B.gold,
       boxShadow: "0 4px 20px rgba(27,58,107,.25)",
       position: "relative",
       overflow: "hidden"
@@ -8144,17 +8165,16 @@ function TourDetailPage(_ref19) {
       position: "absolute",
       top: 0,
       right: 0,
-      background: B.goldDeep,
-      color: "#fff",
+      background: B.gold,
+      color: B.ink,
       fontSize: 11.5,
       fontWeight: 900,
       padding: "5px 14px 5px 18px",
       borderRadius: "0 0 0 16px",
       letterSpacing: .8,
-      textShadow: "0 1px 2px rgba(0,0,0,.3)",
       textTransform: "uppercase"
     }
-  }, "\uD83C\uDFC5 Tour Lead"), /*#__PURE__*/React.createElement("div", {
+  }, "Tour Lead"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "center",
@@ -8207,12 +8227,7 @@ function TourDetailPage(_ref19) {
       justifyContent: "center",
       flexShrink: 0
     }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 28,
-      color: "#fff"
-    }
-  }, "\uD83C\uDFC5")), /*#__PURE__*/React.createElement("div", {
+  }, LI("Award", 28, { color: "#fff" })), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
       minWidth: 0
@@ -8337,12 +8352,11 @@ function TourDetailPage(_ref19) {
   }, LI("Star", 13, { color: B.gold }), "Tour Sponsors"), (tour.sponsors || []).filter(sp => sp.paid && !sp.tourLead).map(sp => /*#__PURE__*/React.createElement("div", {
     key: sp.id,
     style: {
-      background: "linear-gradient(135deg, #F8F6F0 0%, #fff 100%)",
+      background: B.paper,
       borderRadius: 14,
       padding: "16px",
       marginBottom: 10,
-      border: "1.5px solid #D8D0C8",
-      boxShadow: "0 2px 8px rgba(0,0,0,.05)"
+      border: "1px solid " + B.line
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -8396,12 +8410,7 @@ function TourDetailPage(_ref19) {
       justifyContent: "center",
       flexShrink: 0
     }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 24,
-      color: "#fff"
-    }
-  }, "\u2B50")), /*#__PURE__*/React.createElement("div", {
+  }, LI("Star", 24, { color: "#fff" })), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
       minWidth: 0
@@ -8524,10 +8533,9 @@ function TourDetailPage(_ref19) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 48,
       marginBottom: 12
     }
-  }, "\uD83C\uDFE1"), /*#__PURE__*/React.createElement("p", null, "No listings yet.", isAdmin ? " Tap ⚙️ to add some." : "")), /*#__PURE__*/React.createElement("div", { className: "mrt-list mrt-list-listings" }, sorted.map(listing => {
+  }, LI("Home", 40, { color: B.gray })), /*#__PURE__*/React.createElement("p", null, "No listings yet.", isAdmin ? " Tap the gear icon to add some." : "")), /*#__PURE__*/React.createElement("div", { className: "mrt-list mrt-list-listings" }, sorted.map(listing => {
     var _tour$favorites, _tour$ratings5, _tour$ratings6, _tour$notes;
     const isFav = ((_tour$favorites = tour.favorites) === null || _tour$favorites === void 0 ? void 0 : _tour$favorites[listing.id]) || false;
     const isRated = ((_tour$ratings5 = tour.ratings) === null || _tour$ratings5 === void 0 ? void 0 : _tour$ratings5[listing.id]) && Object.values(tour.ratings[listing.id]).some(v => v > 0);
@@ -8535,7 +8543,7 @@ function TourDetailPage(_ref19) {
     const note = ((_tour$notes = tour.notes) === null || _tour$notes === void 0 ? void 0 : _tour$notes[listing.id]) || "";
     return /*#__PURE__*/React.createElement("div", {
       key: listing.id,
-      className: "card-hover",
+      className: "card-hover mrt-press",
       style: {
         background: "#fff",
         borderRadius: 16,
@@ -8567,7 +8575,7 @@ function TourDetailPage(_ref19) {
         position: "absolute",
         top: 12,
         left: 12,
-        background: tour.color,
+        background: "rgba(23,19,15,.72)",
         color: "#fff",
         borderRadius: 8,
         padding: "4px 11px",
@@ -8609,16 +8617,16 @@ function TourDetailPage(_ref19) {
         position: "absolute",
         bottom: 10,
         right: 12,
-        background: "rgba(0,0,0,.75)",
+        background: "rgba(20,16,12,.55)",
         borderRadius: 10,
-        padding: "5px 10px",
+        padding: "6px 12px",
         backdropFilter: "blur(6px)",
         WebkitBackdropFilter: "blur(6px)"
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
-        fontSize: 15,
-        fontWeight: 800,
+        fontSize: 20,
+        fontWeight: 600,
         fontFamily: "Fraunces, Georgia, serif",
         color: "#fff"
       }
@@ -8717,14 +8725,14 @@ function TourDetailPage(_ref19) {
       const _ppsf = listing.sqft > 0 ? Math.round(listing.price / listing.sqft) : 0;
       const _dom = Number(listing.dom) || 0;
       const _chips = [
-        {els:[LI("BedDouble",12,{color:B.gray})," ",listing.beds," bd"],bg:B.lightGray,c:B.dark},
-        {els:[LI("Bath",12,{color:B.gray})," ",listing.baths," ba"],bg:B.lightGray,c:B.dark},
-        {els:[LI("Ruler",12,{color:B.gray})," ",listing.sqft.toLocaleString()," sqft"],bg:B.lightGray,c:B.dark},
-        {els:[LI("CalendarDays",12,{color:_dom>60?"#9B1C1C":_dom>30?"#92400E":B.gray})," ",_dom," DOM"],bg:_dom>60?"#FEE2E2":_dom>30?"#FEF3C7":B.lightGray,c:_dom>60?"#9B1C1C":_dom>30?"#92400E":B.dark},
-        ...(_ppsf>0?[{els:["$",_ppsf.toLocaleString(),"/sqft"],bg:"#EFF6FF",c:"#1B3A6B"}]:[]),
-        ...(listing.priceReduced?[{els:[LI("ArrowDown",12,{color:"#C2410C"})," Reduced"],bg:"#FFF7F0",c:"#C2410C"}]:[]),
+        {els:[LI("BedDouble",12,{color:B.gray})," ",listing.beds," bd"],bg:"#FBF9F4",bd:B.line,c:B.gray},
+        {els:[LI("Bath",12,{color:B.gray})," ",listing.baths," ba"],bg:"#FBF9F4",bd:B.line,c:B.gray},
+        {els:[LI("Ruler",12,{color:B.gray})," ",listing.sqft.toLocaleString()," sqft"],bg:"#FBF9F4",bd:B.line,c:B.gray},
+        {els:[LI("CalendarDays",12,{color:_dom>60?"#9B1C1C":_dom>30?"#92400E":B.gray})," ",_dom," DOM"],bg:_dom>60?"#FEE2E2":_dom>30?"#FEF3C7":"#FBF9F4",bd:_dom>60?"#F5B5B5":_dom>30?"#F5D48A":B.line,c:_dom>60?"#9B1C1C":_dom>30?"#92400E":B.gray},
+        ...(_ppsf>0?[{els:["$",_ppsf.toLocaleString(),"/sqft"],bg:"var(--mrt-chip-navy-bg)",bd:"var(--mrt-chip-navy-border)",c:B.navy}]:[]),
+        ...(listing.priceReduced?[{els:[LI("ArrowDown",12,{color:"#C2410C"})," Reduced"],bg:"#FFF7F0",bd:"#F3C89A",c:"#C2410C"}]:[]),
       ];
-      return _chips.map((chip,i)=>/*#__PURE__*/React.createElement("span",{key:i,style:{background:chip.bg,borderRadius:6,padding:"4px 9px",color:chip.c,fontWeight:600,fontSize:12,display:"inline-flex",alignItems:"center",gap:3}},...chip.els));
+      return _chips.map((chip,i)=>/*#__PURE__*/React.createElement("span",{key:i,style:{background:chip.bg,border:"1px solid "+chip.bd,borderRadius:8,padding:"6px 9px",color:chip.c,fontWeight:600,fontSize:12,display:"inline-flex",alignItems:"center",gap:3}},...chip.els));
     })()), note && /*#__PURE__*/React.createElement("div", {
       style: {
         background: "#F5EDD8",
@@ -8735,12 +8743,12 @@ function TourDetailPage(_ref19) {
         fontSize: 12,
         color: "#7A5A28"
       }
-    }, "\uD83D\uDCDD ", /*#__PURE__*/React.createElement("strong", null, "Agent Note:"), " ", note), isRated && /*#__PURE__*/React.createElement(React.Fragment, null,
-      /*#__PURE__*/React.createElement("div", {style:{marginBottom:4}}, starBar(avg, tour.color)),
+    }, LI("StickyNote", 12, { marginRight: 4 }), /*#__PURE__*/React.createElement("strong", null, "Agent Note:"), " ", note), isRated && /*#__PURE__*/React.createElement(React.Fragment, null,
+      /*#__PURE__*/React.createElement("div", {style:{marginBottom:4}}, starBar(avg, B.gold)),
       (() => {
         const _rs=(tour.ratingSubmissions||{})[listing.id];
         const _n=Array.isArray(_rs)?_rs.length:Object.keys(_rs||{}).length;
-        return _n>0?/*#__PURE__*/React.createElement("div",{style:{fontSize:11,color:B.gray,marginBottom:10,fontWeight:600}},"\uD83D\uDC65 ",_n===1?"1 agent rated":_n+" agents rated"):null;
+        return _n>0?/*#__PURE__*/React.createElement("div",{style:{fontSize:11,color:B.gray,marginBottom:10,fontWeight:600,display:"inline-flex",alignItems:"center",gap:4}},LI("Users",11),_n===1?"1 agent rated":_n+" agents rated"):null;
       })()
     ), /*#__PURE__*/React.createElement("div", {
       style: {
@@ -8748,12 +8756,12 @@ function TourDetailPage(_ref19) {
         color: B.gray,
         marginBottom: 10
       }
-    }, /*#__PURE__*/React.createElement("span", {
+    }, LI("User", 12, { color: B.gray, marginRight: 4 }), /*#__PURE__*/React.createElement("span", {
       style: {
         color: B.dark,
         fontWeight: 600
       }
-    }, listing.agent), " \xB7 Listing Agent", listing.agentEmail ? /*#__PURE__*/React.createElement("a", {href: "mailto:" + listing.agentEmail, style: {color: "#1B3A6B", textDecoration: "none", marginLeft: 6, fontWeight: 500}}, "\u2709\uFE0F") : null, listing.agentPhone ? /*#__PURE__*/React.createElement("a", {href: "tel:" + listing.agentPhone, style: {color: "#1B3A6B", textDecoration: "none", marginLeft: 6, fontWeight: 500}}, "\uD83D\uDCDE " + listing.agentPhone) : null), /*#__PURE__*/React.createElement("div", {
+    }, listing.agent), " \xB7 Listing Agent", listing.agentEmail ? /*#__PURE__*/React.createElement("a", {href: "mailto:" + listing.agentEmail, style: {color: B.navy, textDecoration: "none", marginLeft: 6, fontWeight: 500, display: "inline-flex", verticalAlign: "middle"}}, LI("Mail", 12)) : null, listing.agentPhone ? /*#__PURE__*/React.createElement("a", {href: "tel:" + listing.agentPhone, style: {color: B.navy, textDecoration: "none", marginLeft: 6, fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 3}}, LI("Phone", 12), listing.agentPhone) : null), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         gap: 8
@@ -8785,7 +8793,7 @@ function TourDetailPage(_ref19) {
       },
       style: {
         flex: 1,
-        background: isRated ? "#2D6A4F" : tour.color,
+        background: isRated ? "#1F7A4D" : B.navy,
         color: "#fff",
         border: "none",
         borderRadius: 10,
