@@ -10202,21 +10202,17 @@ function ToursDashboard(_ref26) {
       padding: 6
     }
   }), !isAdmin && /*#__PURE__*/React.createElement("button", {
+    className: "mrt-btn mrt-btn--ghost mrt-btn--sm mrt-press",
     onClick: onAdminLogin,
     style: {
-      background: B.primary,
-      border: "none",
-      color: "#fff",
-      borderRadius: 8,
-      padding: "8px 13px",
-      cursor: "pointer",
-      fontSize: 12,
-      fontWeight: 600,
+      display: "flex",
+      alignItems: "center",
+      gap: 6,
       marginTop: 8,
       flexShrink: 0,
       whiteSpace: "nowrap"
     }
-  }, "\uD83D\uDD10 Login")), /*#__PURE__*/React.createElement("div", {
+  }, LI("Lock", 14), "Login")), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "center",
@@ -10257,12 +10253,13 @@ function ToursDashboard(_ref26) {
       marginTop: 12
     }
   }, isSuperAdmin && /*#__PURE__*/React.createElement("button", {
+    className: "mrt-btn--ghost mrt-press",
     onClick: onTeamPage,
     style: {
       flex: 1,
-      background: B.primary,
-      border: "none",
-      color: "#fff",
+      background: "transparent",
+      border: "1px solid var(--mrt-hair-2)",
+      color: B.ink,
       borderRadius: 10,
       padding: "12px 4px",
       cursor: "pointer",
@@ -10283,16 +10280,17 @@ function ToursDashboard(_ref26) {
   }, "Team"), /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 11,
-      opacity: .7,
+      color: B.muted,
       lineHeight: 1.2
     }
   }, "Manage Admins")), /*#__PURE__*/React.createElement("button", {
+    className: "mrt-btn--ghost mrt-press",
     onClick: onRequestsPage,
     style: {
       flex: 1,
-      background: B.primary,
-      border: "none",
-      color: "#fff",
+      background: "transparent",
+      border: "1px solid var(--mrt-hair-2)",
+      color: B.ink,
       borderRadius: 10,
       padding: "12px 4px",
       cursor: "pointer",
@@ -10314,7 +10312,7 @@ function ToursDashboard(_ref26) {
   }, "Requests"), /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 11,
-      opacity: .7,
+      color: B.muted,
       lineHeight: 1.2
     }
   }, "Listing Reviews"), ((_ref27 = listingRequests || []) === null || _ref27 === void 0 ? void 0 : _ref27.filter(r => r.status === "pending").length) > 0 && /*#__PURE__*/React.createElement("span", {
@@ -10334,12 +10332,13 @@ function ToursDashboard(_ref26) {
       justifyContent: "center"
     }
   }, (listingRequests || []).filter(r => r.status === "pending").length)), /*#__PURE__*/React.createElement("button", {
+    className: "mrt-btn--ghost mrt-press",
     onClick: () => setShowCreate(true),
     style: {
       flex: 1,
-      background: B.gold,
-      border: "none",
-      color: "#fff",
+      background: "transparent",
+      border: "1px solid var(--mrt-hair-2)",
+      color: B.ink,
       borderRadius: 10,
       padding: "12px 4px",
       cursor: "pointer",
@@ -10352,7 +10351,7 @@ function ToursDashboard(_ref26) {
     style: {
       fontSize: 22
     }
-  }, LI("Plus", 21)), /*#__PURE__*/React.createElement("span", {
+  }, LI("Plus", 21, { color: B.goldDeep })), /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 12,
       fontWeight: 700
@@ -10360,17 +10359,18 @@ function ToursDashboard(_ref26) {
   }, "New Tour"), /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 11,
-      opacity: .85,
+      color: B.muted,
       lineHeight: 1.2
     }
   }, "Create & Schedule")), /*#__PURE__*/React.createElement("button", {
+    className: "mrt-btn--ghost mrt-press",
     onClick: onLogout,
     title: "Sign out (".concat((currentUser === null || currentUser === void 0 ? void 0 : currentUser.name) || "", ")"),
     style: {
       flex: 1,
-      background: B.primary,
-      border: "none",
-      color: "#fff",
+      background: "transparent",
+      border: "1px solid var(--mrt-hair-2)",
+      color: B.ink,
       borderRadius: 10,
       padding: "12px 4px",
       cursor: "pointer",
@@ -10391,7 +10391,7 @@ function ToursDashboard(_ref26) {
   }, "Logout"), /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 11,
-      opacity: .7,
+      color: B.muted,
       lineHeight: 1.2
     }
   }, "Sign Out")))), /*#__PURE__*/React.createElement("div", {
@@ -10405,11 +10405,12 @@ function ToursDashboard(_ref26) {
       flex: 1
     }
   }), /*#__PURE__*/React.createElement("button", {
+    className: "mrt-btn--ghost mrt-press",
     onClick: () => window.showCalendarView(),
     style: {
-      background: B.primary,
-      border: "none",
-      color: "#fff",
+      background: "transparent",
+      border: "1px solid var(--mrt-hair-2)",
+      color: B.ink,
       fontWeight: 700,
       fontSize: 12,
       padding: "6px 14px",
@@ -10422,6 +10423,7 @@ function ToursDashboard(_ref26) {
       gap: 4
     }
   }, LI("Calendar", 14), "Calendar"), /*#__PURE__*/React.createElement("button", {
+    className: "mrt-btn--ghost mrt-press",
     onClick: () => {
       setShowRequestForm(r => !r);
       setTimeout(() => {
@@ -10433,9 +10435,9 @@ function ToursDashboard(_ref26) {
       }, 100);
     },
     style: {
-      background: B.gold,
-      border: "none",
-      color: "#fff",
+      background: "transparent",
+      border: "1px solid var(--mrt-hair-2)",
+      color: B.ink,
       fontWeight: 700,
       fontSize: 12,
       padding: "6px 14px",
@@ -10448,11 +10450,12 @@ function ToursDashboard(_ref26) {
       gap: 4
     }
   }, LI("Send", 14), "Request Tour"), /*#__PURE__*/React.createElement("button", {
+    className: "mrt-btn--ghost mrt-press",
     onClick: () => window.showHowItWorks(),
     style: {
-      background: "#8A8078",
-      border: "none",
-      color: "#fff",
+      background: "transparent",
+      border: "1px solid var(--mrt-hair-2)",
+      color: B.ink,
       fontWeight: 700,
       fontSize: 12,
       padding: "6px 14px",
@@ -10496,7 +10499,7 @@ function ToursDashboard(_ref26) {
       fontWeight: 700,
       cursor: "pointer"
     }
-  }, "\uD83D\uDCE6 ", showArchived ? "Hide Archived" : "Archived (" + archivedTours.length + ")"), isAdmin && /*#__PURE__*/React.createElement("span", {
+  }, LI("Archive", 12, { marginRight: 4 }), showArchived ? "Hide Archived" : "Archived (" + archivedTours.length + ")"), isAdmin && /*#__PURE__*/React.createElement("span", {
     style: {
       color: B.gold,
       marginLeft: 6
@@ -10519,10 +10522,11 @@ function ToursDashboard(_ref26) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 56,
-      marginBottom: 16
+      marginBottom: 16,
+      display: "flex",
+      justifyContent: "center"
     }
-  }, "\uD83D\uDCC5"), /*#__PURE__*/React.createElement("h3", {
+  }, LI("Calendar", 48, { color: B.line })), /*#__PURE__*/React.createElement("h3", {
     style: {
       color: B.primary,
       fontFamily: "Fraunces, Georgia, serif",
@@ -10537,19 +10541,19 @@ function ToursDashboard(_ref26) {
     const favCount = Object.values(tour.favorites || {}).filter(Boolean).length;
     const _tMs=tour.date?new Date(tour.date+"T00:00:00").getTime():null;
     const _dAway=_tMs!==null?Math.round((_tMs-new Date().setHours(0,0,0,0))/86400000):null;
-    const _badge=_dAway===0?{l:"\uD83D\uDD34 LIVE TODAY",bg:"#DC2626"}
-      :_dAway===1?{l:"\uD83D\uDCC5 Tomorrow",bg:"#D97706"}
-      :_dAway!==null&&_dAway>0&&_dAway<=6?{l:"\uD83D\uDD52 In "+_dAway+" days",bg:"rgba(0,0,0,.3)"}
-      :_dAway!==null&&_dAway<0?{l:"\u2705 Completed",bg:"rgba(0,0,0,.2)"}
+    const _badge=_dAway===0?{l:"LIVE TODAY",bg:"#DC2626",live:true}
+      :_dAway===1?{l:"Tomorrow",bg:"#D97706"}
+      :_dAway!==null&&_dAway>0&&_dAway<=6?{l:"In "+_dAway+" days",bg:"rgba(0,0,0,.3)"}
+      :_dAway!==null&&_dAway<0?{l:"Completed",bg:"rgba(0,0,0,.2)"}
       :null;
     return /*#__PURE__*/React.createElement("div", {
       key: tour.id,
-      className: "card-hover",
+      className: "mrt-press",
       style: {
         background: "#fff",
         borderRadius: 18,
         overflow: "hidden",
-        boxShadow: _dAway===0?"0 0 0 3px #DC2626,0 6px 28px rgba(220,38,38,.25)":"0 4px 24px rgba(0,0,0,.10)",
+        boxShadow: _dAway===0?"0 0 0 2px "+B.red+",0 6px 28px rgba(155,28,28,.18)":"0 4px 24px rgba(0,0,0,.10)",
         border: "1px solid rgba(0,0,0,.05)"
       }
     }, /*#__PURE__*/React.createElement("div", {
@@ -10559,7 +10563,7 @@ function ToursDashboard(_ref26) {
         display: "flex",
         alignItems: "flex-start",
         justifyContent: "space-between",
-        borderLeft: "3px solid " + tour.color,
+        borderLeft: "3px solid " + tourHue(tour),
         borderBottom: "1px solid " + B.line
       }
     }, /*#__PURE__*/React.createElement("div", {
@@ -10570,15 +10574,17 @@ function ToursDashboard(_ref26) {
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
-        fontSize: 30,
         flexShrink: 0,
-        marginTop: 1
+        marginTop: 7
       }
-    }, /*#__PURE__*/React.createElement(TourIcon, {
-      emoji: tour.emoji,
-      size: 30
+    }, /*#__PURE__*/React.createElement(TourDot, {
+      tour: tour,
+      size: 12
     })), /*#__PURE__*/React.createElement("div", null,
-      _badge&&/*#__PURE__*/React.createElement("div",{style:{display:"inline-block",background:_badge.bg,color:"#fff",fontSize:9.5,fontWeight:800,borderRadius:5,padding:"2px 8px",marginBottom:5,letterSpacing:.6,textTransform:"uppercase"}},_badge.l),
+      _badge&&(_badge.live?/*#__PURE__*/React.createElement("div",{style:{display:"inline-flex",alignItems:"center",gap:6,marginBottom:6}},
+        /*#__PURE__*/React.createElement("span",{className:"mrt-live-dot",style:{width:7,height:7,borderRadius:"50%",background:B.red,display:"inline-block",flexShrink:0}}),
+        /*#__PURE__*/React.createElement("span",{style:{fontSize:11,fontWeight:800,letterSpacing:.5,textTransform:"uppercase",color:B.red}},"Live today")
+      ):/*#__PURE__*/React.createElement("div",{style:{display:"inline-block",background:_badge.bg,color:"#fff",fontSize:9.5,fontWeight:800,borderRadius:5,padding:"2px 8px",marginBottom:5,letterSpacing:.6,textTransform:"uppercase"}},_badge.l)),
       /*#__PURE__*/React.createElement("div", {
       style: {
         color: B.ink,
@@ -10610,36 +10616,24 @@ function ToursDashboard(_ref26) {
         flexWrap: "wrap"
       }
     }, /*#__PURE__*/React.createElement("span", {
+      className: "mrt-pill",
       style: {
-        display: "flex", alignItems: "center", gap: 4,
-        background: B.cream,
-        border: "1px solid " + B.line,
-        borderRadius: 7,
-        padding: "3px 9px",
-        fontSize: 12,
-        fontWeight: 600,
+        background: "#fff",
+        border: "1px solid var(--mrt-hair)",
         color: B.muted
       }
     }, LI("MapPin", 12, { color: B.gray }), (tour.listings || []).length, " stops"), /*#__PURE__*/React.createElement("span", {
+      className: "mrt-pill",
       style: {
-        display: "flex", alignItems: "center", gap: 4,
-        background: ratedCount > 0 ? "#FBF6EA" : B.cream,
-        border: "1px solid " + (ratedCount > 0 ? "#EBDCBB" : B.line),
-        borderRadius: 7,
-        padding: "3px 9px",
-        fontSize: 12,
-        fontWeight: 600,
+        background: ratedCount > 0 ? "#FBF6EA" : "#fff",
+        border: "1px solid " + (ratedCount > 0 ? "#EBDCBB" : "var(--mrt-hair)"),
         color: ratedCount > 0 ? B.goldDeep : B.muted
       }
     }, LI("Star", 12, { color: ratedCount > 0 ? B.goldDeep : B.gray }), ratedCount, " rated"), favCount > 0 && /*#__PURE__*/React.createElement("span", {
+      className: "mrt-pill",
       style: {
-        display: "flex", alignItems: "center", gap: 4,
         background: "#FBEDEC",
         border: "1px solid #F2D9D7",
-        borderRadius: 7,
-        padding: "3px 9px",
-        fontSize: 12,
-        fontWeight: 600,
         color: "#A23B38"
       }
     }, LI("Heart", 12, { color: "#A23B38" }), favCount)))), isAdmin && /*#__PURE__*/React.createElement("div",{style:{display:"flex",gap:4,flexShrink:0,marginTop:1}},
@@ -10699,7 +10693,7 @@ function ToursDashboard(_ref26) {
           position: "absolute",
           top: 3,
           left: 3,
-          background: tour.color,
+          background: "rgba(23,19,15,.72)",
           color: "#fff",
           borderRadius: 4,
           padding: "1px 5px",
@@ -10730,14 +10724,14 @@ function ToursDashboard(_ref26) {
         padding: "14px 18px"
       }
     }, /*#__PURE__*/React.createElement("button", {
-      className: "btn-hover",
+      className: "btn-hover mrt-press",
       onClick: () => {
         setActiveTourId(tour.id);
         window.location.hash = "/tour/" + tour.id;
       },
       style: {
         width: "100%",
-        background: tour.color,
+        background: B.navy,
         color: "#fff",
         border: "none",
         borderRadius: 12,
@@ -10745,9 +10739,13 @@ function ToursDashboard(_ref26) {
         fontWeight: 700,
         fontSize: 15,
         cursor: "pointer",
-        boxShadow: "0 4px 14px ".concat(tour.color, "66")
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 6,
+        boxShadow: "0 4px 14px rgba(27,58,107,.28)"
       }
-    }, "Open Tour \u2192")));
+    }, "Open Tour", LI("ArrowRight", 16))));
   })), showRequestForm && /*#__PURE__*/React.createElement(RequestATourInlineForm, {
     ref: requestFormRef,
     onClose: () => setShowRequestForm(false),
