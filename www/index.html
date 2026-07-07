@@ -138,6 +138,9 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
 .mrt-chip{display:inline-flex;align-items:center;gap:5px;font:600 11px/1 var(--mrt-font-body);color:var(--mrt-muted);padding:6px 9px;background:#FBF9F4;border:1px solid var(--mrt-hair);border-radius:var(--mrt-radius-chip);}
 .mrt-field{border:1px solid var(--mrt-hair-2);border-radius:var(--mrt-radius-field);padding:12px 14px;font:500 14px/1.2 var(--mrt-font-body);color:var(--mrt-ink);background:var(--mrt-paper);width:100%;}
 .mrt-field:focus{outline:none;border-color:var(--mrt-navy);box-shadow:0 0 0 3px rgba(27,58,107,.14);}
+/* Summary screen: 10 category bars in two columns on wider viewports, one on mobile */
+.mrt-cat-grid{display:grid;grid-template-columns:1fr;gap:10px 24px;}
+@media(min-width:480px){.mrt-cat-grid{grid-template-columns:1fr 1fr;}}
 .tour-navy{--tc:var(--tour-navy);}.tour-pine{--tc:var(--tour-pine);}.tour-clay{--tc:var(--tour-clay);}
 .tour-plum{--tc:var(--tour-plum);}.tour-teal{--tc:var(--tour-teal);}.tour-ochre{--tc:var(--tour-ochre);}
 .tour-dot{width:10px;height:10px;border-radius:3px;background:var(--tc);display:inline-block;}
@@ -2452,13 +2455,17 @@ function RankingPage(_ref8) {
 function SummaryDashboard(_ref9) {
   let {
     tour,
-    onBack
+    onBack,
+    onEmailAgents,
+    emailSending
   } = _ref9;
   const listings = tour.listings || [];
   const hasAny = listings.some(l => {
     var _tour$ratings3;
     return ((_tour$ratings3 = tour.ratings) === null || _tour$ratings3 === void 0 ? void 0 : _tour$ratings3[l.id]) && Object.values(tour.ratings[l.id]).some(v => v > 0);
   });
+  const [expanded, setExpanded] = useState({});
+  const hue = tourHue(tour);
   return /*#__PURE__*/React.createElement("div", {
     style: {
       background: B.cream,
@@ -2486,14 +2493,17 @@ function SummaryDashboard(_ref9) {
       cursor: "pointer",
       fontSize: 22
     }
-  }, "\u2190"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, "←"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       color: "rgba(255,255,255,.7)",
       fontSize: 11,
       textTransform: "uppercase",
-      letterSpacing: 1
+      letterSpacing: 1,
+      display: "flex",
+      alignItems: "center",
+      gap: 6
     }
-  }, tour.emoji, " ", tour.name), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(TourDot, { tour: tour, size: 8 }), tour.name), /*#__PURE__*/React.createElement("div", {
     style: {
       color: "#fff",
       fontFamily: "Fraunces, Georgia, serif",
@@ -2520,78 +2530,220 @@ function SummaryDashboard(_ref9) {
       gap: 16
     }
   }, !hasAny && /*#__PURE__*/React.createElement("div", {
+    className: "mrt-card mrt-card--soft",
     style: {
       textAlign: "center",
-      padding: "60px 20px",
-      color: B.gray
+      padding: "56px 24px",
+      color: "var(--mrt-muted)"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      marginBottom: 12,
-      color: B.muted
+      marginBottom: 14,
+      color: "var(--mrt-muted-2)",
+      display: "flex",
+      justifyContent: "center"
     }
-  }, LI("BarChart3", 48)), /*#__PURE__*/React.createElement("p", null, "No ratings submitted yet.", /*#__PURE__*/React.createElement("br", null), "Ratings will appear here as attendees submit them.")), /*#__PURE__*/React.createElement("div", { className: "mrt-list mrt-list-summary" }, hasAny && listings.map(listing => {
-    const _rSubs=(tour.ratingSubmissions||{})[listing.id];
-    const _allSubs=Array.isArray(_rSubs)?_rSubs:Object.values(_rSubs||{});
+  }, LI("BarChart3", 40)), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 14,
+      lineHeight: 1.6,
+      margin: 0
+    }
+  }, "No ratings submitted yet.", /*#__PURE__*/React.createElement("br", null), "Ratings will appear here as attendees submit them.")), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-list mrt-list-summary"
+  }, hasAny && listings.map((listing, listingIdx) => {
+    const _rSubs = (tour.ratingSubmissions || {})[listing.id];
+    const _allSubs = Array.isArray(_rSubs) ? _rSubs : Object.values(_rSubs || {});
     let r;
-    if(_allSubs.length>1){
-      const _kk=['curbAppeal','landscape','cleanliness','flooring','paint','showability','price','kitchen','bedrooms','windows'];
-      r={};
-      _kk.forEach(k=>{const vv=_allSubs.map(s=>Number(s[k])||0).filter(v=>v>0);r[k]=vv.length?vv.reduce((a,b)=>a+b,0)/vv.length:0;});
+    if (_allSubs.length > 1) {
+      const _kk = ['curbAppeal', 'landscape', 'cleanliness', 'flooring', 'paint', 'showability', 'price', 'kitchen', 'bedrooms', 'windows'];
+      r = {};
+      _kk.forEach(k => {
+        const vv = _allSubs.map(s => Number(s[k]) || 0).filter(v => v > 0);
+        r[k] = vv.length ? vv.reduce((a, b) => a + b, 0) / vv.length : 0;
+      });
     } else {
       var _tour$ratings4;
-      r=((_tour$ratings4=tour.ratings)===null||_tour$ratings4===void 0?void 0:_tour$ratings4[listing.id])||{};
+      r = ((_tour$ratings4 = tour.ratings) === null || _tour$ratings4 === void 0 ? void 0 : _tour$ratings4[listing.id]) || {};
     }
-    const _rCount=_allSubs.length;
-    const avg=avgRating(r);
+    const _rCount = _allSubs.length;
+    const avg = avgRating(r);
     if (!avg) return null;
+
+    // Agent free-text feedback captured with each rating submission — surfaced as pull-quotes.
+    const listingNotes = _allSubs.map(s => s && s.suggestions).filter(Boolean);
+
+    // The single lowest-scoring category gets a quiet gold flag on its bar.
+    const catVals = RATING_CATS.map(cat => ({
+      key: cat.key,
+      v: r[cat.key] || 0
+    }));
+    const ratedVals = catVals.filter(c => c.v > 0);
+    const lowestKey = ratedVals.length ? ratedVals.reduce((min, c) => c.v < min.v ? c : min, ratedVals[0]).key : null;
+
+    const isOpen = listingIdx === 0 || !!expanded[listing.id];
+
+    if (!isOpen) {
+      // Additional homes beyond the first collapse to a calm hairline row.
+      return /*#__PURE__*/React.createElement("div", {
+        key: listing.id,
+        className: "mrt-card mrt-press",
+        onClick: () => setExpanded(e => ({
+          ...e,
+          [listing.id]: true
+        })),
+        style: {
+          padding: "12px 16px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          cursor: "pointer",
+          borderLeft: "3px solid " + hue
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          minWidth: 0,
+          display: "flex",
+          flexDirection: "column",
+          gap: 2
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontFamily: "Fraunces, Georgia, serif",
+          fontSize: 14,
+          fontWeight: 600,
+          color: "var(--mrt-ink)",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis"
+        }
+      }, listing.address), /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: 11,
+          color: "var(--mrt-muted)"
+        }
+      }, _rCount, " agent", _rCount !== 1 ? "s" : "", " rated")), /*#__PURE__*/React.createElement("div", {
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          flexShrink: 0
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          width: 64,
+          height: 5,
+          background: "var(--mrt-hair)",
+          borderRadius: 3,
+          overflow: "hidden"
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          width: avg / 5 * 100 + "%",
+          height: "100%",
+          background: "var(--mrt-navy)",
+          borderRadius: 3
+        }
+      })), /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontFamily: "Fraunces, Georgia, serif",
+          fontWeight: 700,
+          fontSize: 16,
+          color: "var(--mrt-gold-deep)"
+        }
+      }, avg.toFixed(1)), /*#__PURE__*/React.createElement("span", {
+        style: {
+          color: "var(--mrt-muted-2)",
+          display: "flex"
+        }
+      }, LI("ChevronDown", 15))));
+    }
+
     return /*#__PURE__*/React.createElement("div", {
       key: listing.id,
+      className: "mrt-card mrt-card--soft",
       style: {
-        background: "#fff",
-        borderRadius: 16,
         overflow: "hidden",
-        boxShadow: "0 4px 24px rgba(0,0,0,.10)"
+        borderLeft: "4px solid " + hue
       }
     }, /*#__PURE__*/React.createElement("div", {
+      onClick: listingIdx > 0 ? () => setExpanded(e => ({
+        ...e,
+        [listing.id]: false
+      })) : undefined,
       style: {
-        background: tour.color,
-        padding: "10px 16px",
+        padding: "16px 18px 8px",
         display: "flex",
+        alignItems: "flex-start",
         justifyContent: "space-between",
-        alignItems: "center"
+        gap: 12,
+        cursor: listingIdx > 0 ? "pointer" : "default"
       }
-    }, /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      className: "mrt-eyebrow",
       style: {
-        color: "#fff",
+        marginBottom: 4
+      }
+    }, "Stop ", listingIdx + 1), /*#__PURE__*/React.createElement("div", {
+      style: {
         fontFamily: "Fraunces, Georgia, serif",
+        fontSize: 17,
+        fontWeight: 600,
+        color: "var(--mrt-ink)"
+      }
+    }, listing.address)), listingIdx > 0 && /*#__PURE__*/React.createElement("div", {
+      style: {
+        color: "var(--mrt-muted-2)",
+        marginTop: 4,
+        display: "flex"
+      }
+    }, LI("ChevronDown", 16, {
+      transform: "rotate(180deg)"
+    }))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: "4px 18px 14px",
+        display: "flex",
+        alignItems: "baseline",
+        gap: 10,
+        flexWrap: "wrap"
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontFamily: "Fraunces, Georgia, serif",
+        fontWeight: 700,
+        fontSize: 44,
+        lineHeight: 1,
+        color: "var(--mrt-gold-deep)"
+      }
+    }, avg.toFixed(1)), /*#__PURE__*/React.createElement("span", {
+      style: {
         fontSize: 13,
-        fontWeight: 700
+        color: "var(--mrt-muted)",
+        fontWeight: 600
       }
-    },
-      listing.address,
-      _rCount>1&&/*#__PURE__*/React.createElement("div",{style:{color:"rgba(255,255,255,.8)",fontSize:11,marginTop:2,fontWeight:400}},
-        "\u2205 avg of ",_rCount," ratings")
-    ), /*#__PURE__*/React.createElement("div", {
+    }, "out of 5.0"), /*#__PURE__*/React.createElement("span", {
       style: {
-        background: "rgba(255,255,255,.2)",
-        borderRadius: 8,
-        padding: "3px 10px",
-        color: "#fff",
-        fontWeight: 800,
-        fontSize: 14
+        fontSize: 12,
+        color: "var(--mrt-muted)",
+        marginLeft: "auto"
       }
-    }, avg.toFixed(1), "\u2605")), /*#__PURE__*/React.createElement("div", {
+    }, _rCount, " agent", _rCount !== 1 ? "s" : "", " rated")), /*#__PURE__*/React.createElement("div", {
       style: {
-        padding: "14px 16px"
+        height: 1,
+        background: "var(--mrt-hair)",
+        margin: "0 18px"
+      }
+    }), /*#__PURE__*/React.createElement("div", {
+      className: "mrt-cat-grid",
+      style: {
+        padding: "16px 18px"
       }
     }, RATING_CATS.map(cat => {
       const v = r[cat.key] || 0;
+      const isLowest = cat.key === lowestKey;
       return /*#__PURE__*/React.createElement("div", {
-        key: cat.key,
-        style: {
-          marginBottom: 10
-        }
+        key: cat.key
       }, /*#__PURE__*/React.createElement("div", {
         style: {
           display: "flex",
@@ -2601,17 +2753,79 @@ function SummaryDashboard(_ref9) {
       }, /*#__PURE__*/React.createElement("span", {
         style: {
           fontSize: 12,
-          color: B.dark,
+          color: "var(--mrt-ink)",
           fontWeight: 500
         }
       }, cat.label), /*#__PURE__*/React.createElement("span", {
         style: {
           fontSize: 12,
-          color: B.gray
+          color: "var(--mrt-muted)"
         }
-      }, v > 0 ? "".concat(v, "/5") : "—")), starBar(v, tour.color));
-    })));
-  }))));
+      }, v > 0 ? v + "/5" : "—")), /*#__PURE__*/React.createElement("div", {
+        style: {
+          height: 6,
+          background: "var(--mrt-hair)",
+          borderRadius: 3,
+          overflow: "hidden"
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          width: v / 5 * 100 + "%",
+          height: "100%",
+          background: isLowest ? "var(--mrt-gold)" : "var(--mrt-navy)",
+          borderRadius: 3,
+          transition: "width .4s"
+        }
+      })));
+    })), listingNotes.length > 0 && /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: "4px 18px 18px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 10
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "mrt-eyebrow",
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 6
+      }
+    }, LI("MessageSquare", 12), "Agent notes"), listingNotes.map((note, ni) => /*#__PURE__*/React.createElement("div", {
+      key: ni,
+      style: {
+        borderLeft: "3px solid var(--mrt-gold)",
+        paddingLeft: 12,
+        fontSize: 13,
+        color: "var(--mrt-muted)",
+        lineHeight: 1.55
+      }
+    }, note))));
+  })), hasAny && /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 10,
+      flexWrap: "wrap",
+      marginTop: 4
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "mrt-btn mrt-btn--navy mrt-press",
+    disabled: emailSending,
+    onClick: onEmailAgents,
+    style: {
+      flex: 1,
+      minWidth: 200,
+      opacity: emailSending ? .7 : 1,
+      cursor: emailSending ? "default" : "pointer"
+    }
+  }, LI("Mail", 16), emailSending ? "Sending…" : "Email to listing agents"), /*#__PURE__*/React.createElement("button", {
+    className: "mrt-btn mrt-btn--ghost mrt-press",
+    onClick: () => window.print(),
+    style: {
+      flex: 1,
+      minWidth: 160
+    }
+  }, LI("Download", 16), "Download PDF"))));
 }
 /* ── AGENT BRANDING MODAL ── */
 function AgentBrandingModal(_ref0) {
@@ -6768,7 +6982,9 @@ function TourDetailPage(_ref19) {
   });
   if (subpage === "summary") return /*#__PURE__*/React.createElement(SummaryDashboard, {
     tour: tour,
-    onBack: () => setSubpage("list")
+    onBack: () => setSubpage("list"),
+    onEmailAgents: sendPostTourFollowUp,
+    emailSending: sendingFollowUp
   });
   if (subpage === "campaign" && isAdmin) return /*#__PURE__*/React.createElement("div", {
     style: {
