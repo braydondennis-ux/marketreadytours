@@ -1,0 +1,143 @@
+/* ============================================================
+   MarketReady Tours — Design Tokens (Direction A "Quiet Luxury")
+   Drop this into index.html and re-point ad-hoc colors to these vars.
+   ============================================================ */
+:root {
+  /* --- Core palette / roles --- */
+  --mrt-ink:        #17130F; /* primary text, dark bands */
+  --mrt-ink-2:      #241D16; /* raised dark surfaces (tiles on ink) */
+  --mrt-navy:       #1B3A6B; /* PRIMARY: CTAs, active states, links */
+  --mrt-navy-2:     #14294B; /* navy pressed / gradient end */
+  --mrt-gold:       #C9A55A; /* ACCENT ONLY: detail, premium cue, logo */
+  --mrt-gold-deep:  #9A7826; /* gold text on light (contrast-safe) */
+  --mrt-gold-light: #E8D5A3; /* gold hairlines, tints */
+  --mrt-cream:      #F7F4EF; /* page ground */
+  --mrt-paper:      #FFFDFA; /* cards / surfaces */
+  --mrt-muted:      #6B6259; /* secondary text */
+  --mrt-muted-2:    #8A8177; /* tertiary text, placeholders */
+  --mrt-hair:       #EAE3D6; /* hairline dividers/borders */
+  --mrt-hair-2:     #E0D8C8; /* slightly stronger hairline (inputs) */
+  --mrt-red:        #9B1C1C; /* alerts, live, destructive */
+
+  /* --- Semantic surfaces --- */
+  --mrt-chip-navy-bg:     #EEF3FA; /* $/sqft chip */
+  --mrt-chip-navy-border: #CDD8E8;
+  --mrt-success:          #1F7A4D; /* "Paid" / "Synced" */
+  --mrt-success-bg:       #E6F2EA;
+  --mrt-success-border:   #BFE0CD;
+  --mrt-gold-chip-bg:     #FBF5E8; /* "Pending", gold pills */
+  --mrt-neutral-chip-bg:  #EFE9DD; /* segmented control track, medallions */
+
+  /* --- Tamed per-tour accent palette (6 hues, matched chroma) --- */
+  /* Use ONLY as: a dot, a 3–5px left spine, a soft tint. NEVER a full card
+     or button fill. This is the single biggest consistency rule. */
+  --tour-navy:  #1B3A6B;
+  --tour-pine:  #2E5748;
+  --tour-clay:  #9B5A41;
+  --tour-plum:  #63406B;
+  --tour-teal:  #2B5A5E;
+  --tour-ochre: #8A6D22;
+
+  /* --- Typography --- */
+  --mrt-font-display: "Fraunces", Georgia, serif;   /* prices, addresses, headings, scores */
+  --mrt-font-body:    "Hanken Grotesk", system-ui, sans-serif; /* all UI, labels, buttons */
+
+  /* --- Radius --- */
+  --mrt-radius-card:   16px;
+  --mrt-radius-modal:  18px;
+  --mrt-radius-btn:    12px;
+  --mrt-radius-btn-sm: 10px;
+  --mrt-radius-chip:   8px;
+  --mrt-radius-field:  12px;
+  --mrt-radius-pill:   999px;
+
+  /* --- Elevation --- */
+  /* Prefer hairline borders over shadow. One soft shadow for raised cards: */
+  --mrt-shadow-soft: 0 1px 2px rgba(20,16,12,.03), 0 14px 30px -18px rgba(20,16,12,.18);
+  --mrt-shadow-pop:  0 18px 36px -18px rgba(20,16,12,.34); /* hover lift */
+  --mrt-shadow-gold: 0 10px 30px -14px rgba(154,120,38,.40); /* #1 ranking / medallion */
+
+  /* --- Motion --- */
+  --mrt-ease:      cubic-bezier(.2,.7,.3,1);
+  --mrt-ease-pop:  cubic-bezier(.2,.8,.3,1.4);
+  --mrt-dur-press: .14s;
+}
+
+/* --- Google Fonts (add to <head>) ---
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..900&family=Hanken+Grotesk:wght@400..800&display=swap" rel="stylesheet">
+*/
+
+/* ============================================================
+   Reference component styles (recreate with your codebase's patterns)
+   ============================================================ */
+
+/* Eyebrow label */
+.mrt-eyebrow { font: 600 11px/1 var(--mrt-font-body); letter-spacing:.18em;
+  text-transform:uppercase; color: var(--mrt-gold-deep); }
+
+/* Card */
+.mrt-card { background: var(--mrt-paper); border:1px solid var(--mrt-hair);
+  border-radius: var(--mrt-radius-card); }
+.mrt-card--soft { box-shadow: var(--mrt-shadow-soft); }
+
+/* Buttons */
+.mrt-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  font:600 15px/1 var(--mrt-font-body); border-radius:var(--mrt-radius-btn);
+  padding:14px 20px; border:1px solid transparent; cursor:pointer; }
+.mrt-btn--sm    { padding:10px 14px; font-size:13px; border-radius:var(--mrt-radius-btn-sm); }
+.mrt-btn--navy  { background:var(--mrt-navy);  color:#fff; }               /* PRIMARY */
+.mrt-btn--ink   { background:var(--mrt-ink);   color:#fff; }               /* primary on cream, editorial */
+.mrt-btn--ghost { background:transparent; color:var(--mrt-ink); border-color:var(--mrt-hair-2); }
+.mrt-btn--gold  { background:var(--mrt-gold);  color:var(--mrt-ink-2); }   /* accent action only */
+
+/* Pill / chip */
+.mrt-pill  { display:inline-flex; align-items:center; gap:6px; font:600 12px/1 var(--mrt-font-body);
+  padding:7px 10px; border-radius:var(--mrt-radius-pill); background:#fff;
+  border:1px solid var(--mrt-hair); color:var(--mrt-ink); }
+.mrt-chip  { display:inline-flex; align-items:center; gap:5px; font:600 11px/1 var(--mrt-font-body);
+  color:var(--mrt-muted); padding:6px 9px; background:#FBF9F4;
+  border:1px solid var(--mrt-hair); border-radius:var(--mrt-radius-chip); }
+
+/* Input field */
+.mrt-field { border:1px solid var(--mrt-hair-2); border-radius:var(--mrt-radius-field);
+  padding:12px 14px; font:500 14px/1.2 var(--mrt-font-body); color:var(--mrt-ink);
+  background:var(--mrt-paper); width:100%; }
+.mrt-field:focus { outline:none; border-color:var(--mrt-navy);
+  box-shadow:0 0 0 3px rgba(27,58,107,.14); }
+
+/* Per-tour accent helpers */
+.tour-navy  { --tc: var(--tour-navy);  }
+.tour-pine  { --tc: var(--tour-pine);  }
+.tour-clay  { --tc: var(--tour-clay);  }
+.tour-plum  { --tc: var(--tour-plum);  }
+.tour-teal  { --tc: var(--tour-teal);  }
+.tour-ochre { --tc: var(--tour-ochre); }
+.tour-dot   { width:10px; height:10px; border-radius:3px; background:var(--tc); display:inline-block; }
+.tour-spine { background:var(--tc); }  /* 3px (Dashboard) or 5px (Tour Detail/cards) left rail */
+
+/* ============================================================
+   Motion (production-ready)
+   ============================================================ */
+.mrt-press { transition: transform var(--mrt-dur-press) var(--mrt-ease),
+             box-shadow var(--mrt-dur-press) ease; }
+.mrt-press:hover  { transform: translateY(-3px); box-shadow: var(--mrt-shadow-pop); }
+.mrt-press:active { transform: translateY(-1px) scale(.99); box-shadow:0 8px 18px -12px rgba(20,16,12,.34); }
+
+/* Live badge pulse */
+.mrt-live-dot { animation: mrt-live-pulse 1.8s ease-out infinite; }
+@keyframes mrt-live-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(155,28,28,.40); }
+  50%     { box-shadow: 0 0 0 5px rgba(155,28,28,0); }
+}
+
+/* Star fill — fire ONCE per star on tap/select (recommended in-app) */
+.mrt-star-pop { transform-origin:center; animation: mrt-pop .5s var(--mrt-ease-pop) both; }
+@keyframes mrt-pop {
+  0%   { transform: scale(.4); opacity:0; }
+  55%  { transform: scale(1.25); }
+  100% { transform: scale(1); opacity:1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mrt-press, .mrt-live-dot, .mrt-star-pop { animation:none !important; transition:none !important; }
+}
