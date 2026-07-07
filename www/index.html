@@ -889,7 +889,7 @@ function QRModal(_ref4) {
   }, "Scan to join this tour on your phone"), /*#__PURE__*/React.createElement("button", {
     onClick: onClose,
     style: {
-      background: tour.color,
+      background: B.navy,
       color: "#fff",
       border: "none",
       borderRadius: 10,
@@ -2255,7 +2255,7 @@ function RankingPage(_ref8) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      background: tour.color,
+      background: B.ink,
       padding: "14px 18px",
       display: "flex",
       alignItems: "center",
@@ -2469,7 +2469,7 @@ function SummaryDashboard(_ref9) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      background: tour.color,
+      background: B.ink,
       padding: "14px 18px",
       display: "flex",
       alignItems: "center",
@@ -13860,7 +13860,11 @@ function App() {
       color: _fb ? "#A0C8B0" : "#D4A0A0",
       border: "1px solid ".concat(_fb ? "rgba(45,106,79,.3)" : "rgba(155,28,28,.3)")
     }
-  }, _fb ? fbReady.current ? "🟢 Synced" : "🟡 Connecting..." : "🔴 Local only"), showLogin && !currentUser && /*#__PURE__*/React.createElement(LoginPage, {
+  }, /*#__PURE__*/React.createElement("span", {
+    style: { display: "inline-flex", alignItems: "center", gap: 5 }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: { width: 6, height: 6, borderRadius: "50%", display: "inline-block", background: _fb ? fbReady.current ? "#1F7A4D" : "#C9A55A" : "#9B1C1C" }
+  }), _fb ? fbReady.current ? "Synced" : "Connecting..." : "Local only")), showLogin && !currentUser && /*#__PURE__*/React.createElement(LoginPage, {
     onLogin: u => {
       setCurrentUser(u);
       setShowLogin(false);
