@@ -563,6 +563,23 @@ const TourIcon = _ref => {
     }
   }, emoji);
 };
+/* ── Per-tour accent system (Quiet Luxury): each tour = one of 6 tamed hues,
+   shown ONLY as a dot / left spine / soft tint — never a full card or button fill. ── */
+const TOUR_ACCENTS = ["#1B3A6B", "#2E5748", "#9B5A41", "#63406B", "#2B5A5E", "#8A6D22"]; // navy pine clay plum teal ochre
+const tourHue = tour => {
+  const c = tour && tour.color;
+  if (TOUR_ACCENTS.includes(c)) return c;
+  const s = String((tour && (tour.id || tour.name)) || "");
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return TOUR_ACCENTS[h % TOUR_ACCENTS.length];
+};
+const TourDot = _ref0 => {
+  let { tour, size = 10 } = _ref0;
+  return React.createElement("span", {
+    style: { width: size, height: size, borderRadius: Math.max(2, Math.round(size * 0.3)), background: tourHue(tour), display: "inline-block", flexShrink: 0 }
+  });
+};
 /* ── helpers ── */
 const avgRating = ratingObj => {
   if (!ratingObj) return 0;
