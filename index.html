@@ -10255,6 +10255,7 @@ function ToursDashboard(_ref26) {
       display: "flex",
       justifyContent: "space-between",
       alignItems: "center",
+      flexWrap: "wrap",
       gap: 10
     }
   }, /*#__PURE__*/React.createElement("img", {
@@ -10464,12 +10465,15 @@ function ToursDashboard(_ref26) {
   }, "Sign Out")))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
-      overflowX: "auto",
+      flexWrap: "wrap",
+      justifyContent: "flex-end",
+      rowGap: 4,
       paddingBottom: 0
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      flex: 1
+      flex: "1 1 0",
+      minWidth: 0
     }
   }), /*#__PURE__*/React.createElement("button", {
     className: "mrt-btn--ghost mrt-press",
@@ -11494,8 +11498,10 @@ function PublicMasthead(_ref) {
     style: {
       display: "flex",
       alignItems: "center",
-      gap: 20,
-      overflowX: "auto"
+      flexWrap: "wrap",
+      justifyContent: "flex-end",
+      rowGap: 8,
+      gap: 20
     }
   }, navBtn("How it works", () => window.showHowItWorks && window.showHowItWorks()), navBtn("Sponsor", () => {
     window.location.hash = "/sponsor-signup";
