@@ -128,6 +128,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
     /* scrollbar-immune (no vw, no overflow-clip so sticky still works): background fills the full-width shell; padding recenters inner content to the 1200 well + 18px */
     padding-left:max(18px, calc(50% - 582px)) !important; padding-right:max(18px, calc(50% - 582px)) !important; }
   body.mrt-desktop .mrt-masthead-links{ display:flex !important; }/* horizontal masthead nav is desktop-only */
+  body.mrt-desktop .mrt-hdr-logo{ height:80px !important; max-width:none !important; width:auto !important; }  /* consistent header logo size across every page */
   body.mrt-desktop .mrt-syncpill{ bottom:10px !important; }        /* tab bar gone on desktop → drop pill to corner */
   body.mrt-desktop .mrt-seg--capped{ max-width:1200px !important; margin-left:auto !important; margin-right:auto !important; }
   body.mrt-desktop .mrt-list-tours{ align-items:stretch !important; }
@@ -2336,6 +2337,7 @@ function RankingPage(_ref8) {
       fontWeight: 700
     }
   }, "Home Rankings")), /*#__PURE__*/React.createElement("img", {
+    className: "mrt-hdr-logo",
     src: window.MRT_LOGO_DATA,
     alt: "MarketReady Tours",
     style: {
@@ -2551,6 +2553,7 @@ function SummaryDashboard(_ref9) {
       fontWeight: 700
     }
   }, "Rating Summary")), /*#__PURE__*/React.createElement("img", {
+    className: "mrt-hdr-logo",
     src: window.MRT_LOGO_DATA,
     alt: "MarketReady Tours",
     style: {
@@ -8079,6 +8082,7 @@ function TourDetailPage(_ref19) {
       flex: 1
     }
   }, /*#__PURE__*/React.createElement("img", {
+    className: "mrt-hdr-logo",
     src: window.MRT_LOGO_DATA,
     alt: "MarketReady Tours",
     style: {
@@ -10348,6 +10352,7 @@ function ToursDashboard(_ref26) {
       gap: 10
     }
   }, /*#__PURE__*/React.createElement("img", {
+    className: "mrt-hdr-logo",
     src: window.MRT_LOGO_DATA,
     alt: "MarketReady Tours",
     style: {
@@ -11147,6 +11152,7 @@ function TeamPage(_ref28) {
       fontWeight: 700
     }
   }, "Team Management")), /*#__PURE__*/React.createElement("img", {
+    className: "mrt-hdr-logo",
     src: window.MRT_LOGO_DATA,
     alt: "MarketReady Tours",
     style: {
@@ -12513,6 +12519,7 @@ function ListingRequestsAdmin(_ref34) {
       marginLeft: 6
     }
   }, pendingTourReqs))), /*#__PURE__*/React.createElement("img", {
+    className: "mrt-hdr-logo",
     src: window.MRT_LOGO_DATA,
     alt: "MarketReady Tours",
     style: {
