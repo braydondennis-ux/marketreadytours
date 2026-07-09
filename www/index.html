@@ -128,7 +128,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
     /* scrollbar-immune (no vw, no overflow-clip so sticky still works): background fills the full-width shell; padding recenters inner content to the 1200 well + 18px */
     padding-left:max(18px, calc(50% - 582px)) !important; padding-right:max(18px, calc(50% - 582px)) !important; }
   body.mrt-desktop .mrt-masthead-links{ display:flex !important; }/* horizontal masthead nav is desktop-only */
-  body.mrt-desktop .mrt-hdr-logo{ height:80px !important; max-width:none !important; width:auto !important; }  /* consistent header logo size across every page */
+  body.mrt-desktop .mrt-hdr-logo{ height:80px !important; max-width:none !important; width:auto !important; display:block !important; margin-left:auto !important; margin-right:0 !important; }  /* consistent header logo: same size AND pinned to the right edge of the 1200 well on every page (display:block so margin-left:auto right-aligns even in non-flex containers) */
   body.mrt-desktop .mrt-syncpill{ bottom:10px !important; }        /* tab bar gone on desktop → drop pill to corner */
   body.mrt-desktop .mrt-seg--capped{ max-width:1200px !important; margin-left:auto !important; margin-right:auto !important; }
   body.mrt-desktop .mrt-list-tours{ align-items:stretch !important; }
