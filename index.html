@@ -106,6 +106,17 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
   body.mrt-desktop .mrt-list-team,
   body.mrt-desktop .mrt-list-requests{ grid-template-columns:repeat(auto-fill,minmax(380px,1fr)) !important; gap:18px !important; }
   body.mrt-desktop .mrt-list-sponsors{ grid-column:1 / -1 !important; }
+  /* Dashboard tour cards: stack thumbnails above a full-width "Open Tour" button (matches mock) */
+  body.mrt-desktop .mrt-tourcard-foot{ flex-direction:column !important; align-items:stretch !important; }
+  body.mrt-desktop .mrt-tourcard-thumbs{ flex-wrap:wrap !important; }
+  body.mrt-desktop .mrt-tourcard-open{ width:100% !important; padding:13px 0 !important; font-size:15px !important; }
+}
+/* Mobile: compact "Open" label (icon carries the rest); desktop restores "Open Tour" */
+.mrt-tourcard-open .mrt-open-full{ display:none; }
+.mrt-tourcard-open .mrt-open-short{ display:inline; }
+@media (min-width:1024px){
+  body.mrt-desktop .mrt-tourcard-open .mrt-open-full{ display:inline; }
+  body.mrt-desktop .mrt-tourcard-open .mrt-open-short{ display:none; }
 }
 /* ══ DESIGN TOKENS — Direction A "Quiet Luxury" (docs/design/design-tokens.css) ══ */
 :root{
@@ -10550,42 +10561,44 @@ function ToursDashboard(_ref26) {
     style: {
       display: "flex",
       justifyContent: "space-between",
-      alignItems: "center"
+      alignItems: "flex-end",
+      flexWrap: "wrap",
+      gap: 12
     }
-  }, /*#__PURE__*/React.createElement("span", {
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "mrt-eyebrow",
     style: {
-      color: B.gray,
-      fontSize: 13
+      display: "flex",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: 4,
+      marginBottom: 6
     }
-  }, filtered.length, " ", filtered.length === 1 ? "tour" : "tours", " ", showArchived ? "archived" : filterDate === "upcoming" ? "upcoming" : "scheduled", isAdmin && archivedTours.length > 0 && /*#__PURE__*/React.createElement("button", {
-    onClick: () => setShowArchived(a => !a),
+  }, showArchived ? "PAST" : "UPCOMING", " \xB7 ", filtered.length, " ", filtered.length === 1 ? "TOUR" : "TOURS", isAdmin && /*#__PURE__*/React.createElement("span", {
     style: {
-      marginLeft: 10,
-      background: showArchived ? B.gold : "transparent",
-      color: showArchived ? "#fff" : B.gray,
-      border: "1.5px solid " + (showArchived ? B.gold : "#D8D0C8"),
-      borderRadius: 12,
-      padding: "2px 10px",
-      fontSize: 11,
-      fontWeight: 700,
-      cursor: "pointer"
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 3
     }
-  }, LI("Archive", 12, { marginRight: 4 }), showArchived ? "Hide Archived" : "Archived (" + archivedTours.length + ")"), isAdmin && /*#__PURE__*/React.createElement("span", {
+  }, " \xB7 ", isSuperAdmin ? "SUPER ADMIN" : ((currentUser === null || currentUser === void 0 ? void 0 : currentUser.name) || "ADMIN").toUpperCase())), /*#__PURE__*/React.createElement("h2", {
     style: {
-      color: B.gold,
-      marginLeft: 6
-    }
-  }, "\xB7 ", isSuperAdmin ? React.createElement("span",{style:{display:"flex",alignItems:"center",gap:4}},LI("Crown",14),"Super Admin") : React.createElement("span",{style:{display:"flex",alignItems:"center",gap:4}},LI("User",14),(currentUser === null || currentUser === void 0 ? void 0 : currentUser.name) || "Sub-Admin"))), /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: B.primary,
+      fontFamily: "Fraunces, Georgia, serif",
       fontWeight: 600,
-      fontSize: 13
+      fontSize: 30,
+      letterSpacing: "-.01em",
+      color: B.ink,
+      margin: 0
     }
-  }, showArchived ? "Archived Tours" : filterDate === "upcoming" ? "Today & Future" : new Date(filterDate + "T12:00:00").toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric"
-  }))), filtered.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }, showArchived ? "Past tours" : "Your tours")), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-seg",
+    style: { flexShrink: 0 }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setShowArchived(false),
+    className: "mrt-seg__btn" + (!showArchived ? " mrt-seg__btn--active" : "")
+  }, "Upcoming"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setShowArchived(true),
+    className: "mrt-seg__btn" + (showArchived ? " mrt-seg__btn--active" : "")
+  }, "Past"))), filtered.length === 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
       padding: "60px 20px",
@@ -10619,18 +10632,15 @@ function ToursDashboard(_ref26) {
       :null;
     return /*#__PURE__*/React.createElement("div", {
       key: tour.id,
-      className: "mrt-press",
+      className: "mrt-card mrt-card--soft mrt-press",
       style: {
-        background: "#fff",
-        borderRadius: 18,
         overflow: "hidden",
-        boxShadow: _dAway===0?"0 0 0 2px "+B.red+",0 6px 28px rgba(155,28,28,.18)":"0 4px 24px rgba(0,0,0,.10)",
-        border: "1px solid rgba(0,0,0,.05)"
+        boxShadow: _dAway===0?"0 0 0 2px "+B.red+",0 6px 28px rgba(155,28,28,.18)":"var(--mrt-shadow-soft)"
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
         background: B.paper,
-        padding: "17px 18px 16px",
+        padding: "16px 16px 14px",
         display: "flex",
         alignItems: "flex-start",
         justifyContent: "space-between",
@@ -10641,7 +10651,7 @@ function ToursDashboard(_ref26) {
       style: {
         display: "flex",
         alignItems: "flex-start",
-        gap: 13
+        gap: 11
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
@@ -10650,7 +10660,7 @@ function ToursDashboard(_ref26) {
       }
     }, /*#__PURE__*/React.createElement(TourDot, {
       tour: tour,
-      size: 12
+      size: 10
     })), /*#__PURE__*/React.createElement("div", null,
       _badge&&(_badge.live?/*#__PURE__*/React.createElement("div",{style:{display:"inline-flex",alignItems:"center",gap:6,marginBottom:6}},
         /*#__PURE__*/React.createElement("span",{className:"mrt-live-dot",style:{width:7,height:7,borderRadius:"50%",background:B.red,display:"inline-block",flexShrink:0}}),
@@ -10660,39 +10670,34 @@ function ToursDashboard(_ref26) {
       style: {
         color: B.ink,
         fontFamily: "Fraunces, Georgia, serif",
-        fontSize: 19,
-        fontWeight: 700,
+        fontSize: 18,
+        fontWeight: 600,
         letterSpacing: "-.01em",
         lineHeight: 1.15
       }
     }, tour.name), /*#__PURE__*/React.createElement("div", {
       style: {
-        color: B.ink,
-        fontSize: 13,
-        fontWeight: 700,
+        color: B.muted,
+        fontSize: 12.5,
+        fontWeight: 600,
         marginTop: 5,
         display: "flex",
         alignItems: "center",
         gap: 6
       }
-    }, LI("Calendar", 13, { color: B.gray }), (tour.date ? new Date(tour.date + "T12:00:00") : new Date()).toLocaleDateString("en-US", {
+    }, LI("Calendar", 12, { color: B.gray }), (tour.date ? new Date(tour.date + "T12:00:00") : new Date()).toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
       day: "numeric"
-    }), /*#__PURE__*/React.createElement("span", { style: { opacity: .4 } }, "\u00B7"), LI("Clock", 13, { color: B.gray }), tour.time), /*#__PURE__*/React.createElement("div", {
+    }), /*#__PURE__*/React.createElement("span", { style: { opacity: .4 } }, "\u00B7"), LI("Clock", 12, { color: B.gray }), tour.time), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
-        gap: 7,
+        gap: 6,
         marginTop: 9,
         flexWrap: "wrap"
       }
     }, /*#__PURE__*/React.createElement("span", {
-      className: "mrt-pill",
-      style: {
-        background: "#fff",
-        border: "1px solid var(--mrt-hair)",
-        color: B.muted
-      }
+      className: "mrt-pill"
     }, LI("MapPin", 12, { color: B.gray }), (tour.listings || []).length, " stops"), /*#__PURE__*/React.createElement("span", {
       className: "mrt-pill",
       style: {
@@ -10726,38 +10731,41 @@ function ToursDashboard(_ref26) {
         className:"btn-hover",
         style:{background:"transparent",border:"1px solid #EAD4D2",color:"#A23B38",borderRadius:9,width:34,height:34,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}
       },LI("Trash2",16,{color:"#A23B38"}))
-    )), (tour.listings || []).length > 0 && /*#__PURE__*/React.createElement("div", {
+    )), /*#__PURE__*/React.createElement("div", {
+      className: "mrt-tourcard-foot",
+      style: {
+        padding: "14px 16px",
+        display: "flex",
+        alignItems: "center",
+        gap: 12
+      }
+    }, (tour.listings || []).length > 0 && /*#__PURE__*/React.createElement("div", {
+      className: "mrt-tourcard-thumbs",
       style: {
         display: "flex",
         overflowX: "auto",
-        padding: "12px 14px",
-        background: B.lightGray
+        gap: 8,
+        flex: "1 1 auto",
+        minWidth: 0
       }
     }, [...(tour.listings || [])].sort((a, b) => a.order - b.order).map((l, i) => {
       var _tour$favorites2;
       return /*#__PURE__*/React.createElement("div", {
         key: l.id,
         style: {
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 4,
-          minWidth: 72,
-          marginRight: 10
-        }
-      }, /*#__PURE__*/React.createElement("div", {
-        style: {
-          position: "relative"
+          position: "relative",
+          flexShrink: 0
         }
       }, /*#__PURE__*/React.createElement("img", {
         src: (l.photos || [])[0],
         alt: "",
         style: {
-          width: 64,
-          height: 50,
+          width: 52,
+          height: 52,
           objectFit: "cover",
-          borderRadius: 8,
-          display: "block"
+          borderRadius: 10,
+          display: "block",
+          border: "1px solid " + B.line
         }
       }), /*#__PURE__*/React.createElement("div", {
         style: {
@@ -10768,55 +10776,41 @@ function ToursDashboard(_ref26) {
           color: "#fff",
           borderRadius: 4,
           padding: "1px 5px",
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: 800
         }
       }, "#", i + 1), ((_tour$favorites2 = tour.favorites) === null || _tour$favorites2 === void 0 ? void 0 : _tour$favorites2[l.id]) && /*#__PURE__*/React.createElement("div", {
         style: {
           position: "absolute",
-          top: 2,
-          right: 2,
-          fontSize: 10
+          bottom: 3,
+          right: 3,
+          fontSize: 10,
+          lineHeight: 0
         }
-      }, LI("Heart", 12, { fill: "#A23B38", color: "#A23B38" }))), /*#__PURE__*/React.createElement("div", {
-        style: {
-          fontSize: 12,
-          fontWeight: 600,
-          color: B.muted,
-          textAlign: "center",
-          maxWidth: 76,
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap"
-        }
-      }, l.address.split(" ").slice(0, 3).join(" ")));
-    })), /*#__PURE__*/React.createElement("div", {
-      style: {
-        padding: "14px 18px"
-      }
-    }, /*#__PURE__*/React.createElement("button", {
-      className: "btn-hover mrt-press",
+      }, LI("Heart", 11, { fill: "#A23B38", color: "#A23B38" })));
+    })), /*#__PURE__*/React.createElement("button", {
+      className: "btn-hover mrt-press mrt-tourcard-open",
       onClick: () => {
         setActiveTourId(tour.id);
         window.location.hash = "/tour/" + tour.id;
       },
       style: {
-        width: "100%",
         background: B.navy,
         color: "#fff",
         border: "none",
         borderRadius: 12,
-        padding: "13px 0",
+        padding: "12px 18px",
         fontWeight: 700,
-        fontSize: 15,
+        fontSize: 14,
         cursor: "pointer",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         gap: 6,
+        flexShrink: 0,
         boxShadow: "0 4px 14px rgba(27,58,107,.28)"
       }
-    }, "Open Tour", LI("ArrowRight", 16))));
+    }, /*#__PURE__*/React.createElement("span", { className: "mrt-open-full" }, "Open Tour"), /*#__PURE__*/React.createElement("span", { className: "mrt-open-short" }, "Open"), LI("ArrowRight", 15))));
   })), showRequestForm && /*#__PURE__*/React.createElement(RequestATourInlineForm, {
     ref: requestFormRef,
     onClose: () => setShowRequestForm(false),
