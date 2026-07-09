@@ -8392,6 +8392,12 @@ function TourDetailPage(_ref19) {
       minWidth: 0
     }
   }, /*#__PURE__*/React.createElement("div", {
+    className: "mrt-eyebrow",
+    style: {
+      color: B.lightGold,
+      marginBottom: 2
+    }
+  }, "Presenting Sponsor"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontWeight: 800,
       fontSize: 18,
@@ -8475,7 +8481,7 @@ function TourDetailPage(_ref19) {
       fontSize: 12,
       textDecoration: "none"
     }
-  }, LI("Mail", 14), "Email"), sp.url && /*#__PURE__*/React.createElement("a", {
+  }, LI("Mail", 14), "Contact sponsor"), sp.url && /*#__PURE__*/React.createElement("a", {
     href: sp.url,
     target: "_blank",
     rel: "noreferrer",
@@ -8684,7 +8690,19 @@ function TourDetailPage(_ref19) {
       flexDirection: "column",
       gap: 16
     }
-  }, sorted.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }, sorted.length > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "baseline",
+      justifyContent: "space-between"
+    }
+  }, /*#__PURE__*/React.createElement("span", { className: "mrt-eyebrow" }, "The Stops"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      color: B.gray,
+      fontWeight: 600
+    }
+  }, sorted.length, sorted.length === 1 ? " listing" : " listings")), sorted.length === 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
       padding: "60px 20px",
@@ -8866,7 +8884,32 @@ function TourDetailPage(_ref19) {
         fontFamily: "Fraunces, Georgia, serif",
         flex: 1
       }
-    }, listing.address)),/*#__PURE__*/React.createElement("div", {
+    }, listing.address), isRated ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 4,
+        flexShrink: 0,
+        marginLeft: 8
+      }
+    }, LI("Star", 13, { fill: "#C9A55A", color: "#C9A55A" }), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 13,
+        fontWeight: 700,
+        color: B.dark
+      }
+    }, avg.toFixed(1))) : /*#__PURE__*/React.createElement("span", {
+      className: "mrt-pill",
+      style: {
+        flexShrink: 0,
+        marginLeft: 8,
+        fontSize: 11,
+        color: B.gray,
+        background: B.paper,
+        border: "1px solid " + B.line,
+        padding: "3px 9px"
+      }
+    }, "Not rated")),/*#__PURE__*/React.createElement("div", {
       style: {
         color: B.gray,
         fontSize: 12,
