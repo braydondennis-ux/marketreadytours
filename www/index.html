@@ -119,6 +119,10 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
   body.mrt-desktop .mrt-tourcard-open{ width:100% !important; padding:13px 0 !important; font-size:15px !important; }
   /* refine pass: chrome + desktop-layout fixes */
   body.mrt-desktop .mrt-tabbar{ display:none !important; }        /* bottom tab bar is mobile-only */
+  /* Full-bleed page headers: background spans edge-to-edge, inner content stays in the 1200 well
+     (every header uses 18px horizontal padding, so content position is unchanged — only the bar widens). */
+  body.mrt-desktop .mrt-appbar{ margin-left:calc(50% - 50vw) !important; margin-right:calc(50% - 50vw) !important;
+    padding-left:calc(50vw - 50% + 18px) !important; padding-right:calc(50vw - 50% + 18px) !important; max-width:none !important; }
   body.mrt-desktop .mrt-masthead-links{ display:flex !important; }/* horizontal masthead nav is desktop-only */
   body.mrt-desktop .mrt-syncpill{ bottom:10px !important; }        /* tab bar gone on desktop → drop pill to corner */
   body.mrt-desktop .mrt-seg--capped{ max-width:1200px !important; margin-left:auto !important; margin-right:auto !important; }
@@ -2289,6 +2293,7 @@ function RankingPage(_ref8) {
       paddingBottom: 40
     }
   }, /*#__PURE__*/React.createElement("div", {
+    className: "mrt-appbar",
     style: {
       background: B.ink,
       padding: "14px 18px",
@@ -2503,6 +2508,7 @@ function SummaryDashboard(_ref9) {
       paddingBottom: 40
     }
   }, /*#__PURE__*/React.createElement("div", {
+    className: "mrt-appbar",
     style: {
       background: B.ink,
       padding: "14px 18px",
@@ -7995,6 +8001,7 @@ function TourDetailPage(_ref19) {
       cursor: sendingCancel ? "default" : "pointer"
     }
   }, sendingCancel ? "⏳ Sending..." : cancelMsg.type === "cancel" ? "Send Cancellation" : "Send Reschedule Notice")))))), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-appbar",
     style: {
       background: B.ink,
       padding: "16px 18px",
@@ -10314,6 +10321,7 @@ function ToursDashboard(_ref26) {
       cursor: "pointer"
     }
   }, "Delete")))), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-appbar",
     style: {
       background: "#fff",
       padding: "9px 18px 0",
@@ -10699,8 +10707,22 @@ function ToursDashboard(_ref26) {
     return /*#__PURE__*/React.createElement("div", {
       key: tour.id,
       className: "mrt-card mrt-card--soft mrt-press",
+      onClick: () => {
+        setActiveTourId(tour.id);
+        window.location.hash = "/tour/" + tour.id;
+      },
+      role: "button",
+      tabIndex: 0,
+      onKeyDown: e => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          setActiveTourId(tour.id);
+          window.location.hash = "/tour/" + tour.id;
+        }
+      },
       style: {
         overflow: "hidden",
+        cursor: "pointer",
         boxShadow: _dAway===0?"0 0 0 2px "+B.red+",0 6px 28px rgba(155,28,28,.18)":"var(--mrt-shadow-soft)"
       }
     }, /*#__PURE__*/React.createElement("div", {
@@ -11084,6 +11106,7 @@ function TeamPage(_ref28) {
       color: "#fff"
     }
   }, "Remove")))), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-appbar",
     style: {
       background: B.primary,
       padding: "14px 18px",
@@ -12425,6 +12448,7 @@ function ListingRequestsAdmin(_ref34) {
       paddingBottom: 40
     }
   }, /*#__PURE__*/React.createElement("div", {
+    className: "mrt-appbar",
     style: {
       background: B.primary,
       padding: "14px 18px",
