@@ -1440,6 +1440,7 @@ function RatingPage(_ref7) {
   const [done, setDone] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [raterName, setRaterName] = useState("");
+  const [detailsOpen, setDetailsOpen] = useState(false); // UI-only: collapses Buyer/Seller Est., neighborhood info, name, suggested price, photo upload
   const fileRef = useRef(null);
   // Code gate — unlocked once per tour per session
   const sessionKey = "mrt_unlocked_" + tour.id;
@@ -1477,31 +1478,35 @@ function RatingPage(_ref7) {
   }, /*#__PURE__*/React.createElement("div", {
     className: "mrt-eyebrow",
     style: {
-      marginBottom: 16
+      marginBottom: 16,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6
     }
-  }, "Private Tour"), /*#__PURE__*/React.createElement("div", {
+  }, React.createElement(TourDot, { tour: tour, size: 7 }), tour.name, " \xB7 Private Tour"), /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 10,
       color: B.navy,
       display: "flex",
       justifyContent: "center"
     }
-  }, LI("Lock", 32)), /*#__PURE__*/React.createElement("h2", {
+  }, LI("KeyRound", 32)), /*#__PURE__*/React.createElement("h2", {
     style: {
       color: B.ink,
       fontFamily: "var(--mrt-font-display)",
-      fontSize: 22,
+      fontSize: 24,
       fontWeight: 600,
       margin: "0 0 8px"
     }
-  }, "Enter Tour Code"), /*#__PURE__*/React.createElement("p", {
+  }, "Enter access code"), /*#__PURE__*/React.createElement("p", {
     style: {
       color: B.gray,
       fontSize: 13,
       lineHeight: 1.6,
       margin: "0 0 28px"
     }
-  }, "Enter the 4-digit code from your agent. Your rating stays anonymous to other attendees."), /*#__PURE__*/React.createElement("div", {
+  }, "Ask your host agent for the 4-digit code to unlock ratings for this tour."), /*#__PURE__*/React.createElement("div", {
     style: {
       position: "relative",
       marginBottom: 16
@@ -1563,9 +1568,19 @@ function RatingPage(_ref7) {
     className: "mrt-btn mrt-btn--navy mrt-press",
     style: {
       width: "100%",
+      marginBottom: 16
+    }
+  }, "Unlock tour", LI("ArrowRight", 16)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      color: "var(--mrt-muted)",
+      fontSize: 12,
       marginBottom: 12
     }
-  }, "Unlock", LI("ArrowRight", 16)), /*#__PURE__*/React.createElement("button", {
+  }, LI("ShieldCheck", 13, {color:"var(--mrt-muted)"}), "Your ratings stay anonymous to other attendees"), /*#__PURE__*/React.createElement("button", {
     onClick: onBack,
     style: {
       background: "none",
@@ -1743,6 +1758,7 @@ function RatingPage(_ref7) {
   const allPhotos = [...(listing.photos || []), ...photos.map(p => p.url)];
   const ratedCount = RATING_CATS.filter(cat => (ratings[cat.key] || 0) > 0).length;
   const progressPct = Math.round(ratedCount / RATING_CATS.length * 100);
+  const totalStops = (tour.listings || []).length || 1;
   return /*#__PURE__*/React.createElement("div", {
     className: "mrt-col",
     style: {
@@ -1755,56 +1771,54 @@ function RatingPage(_ref7) {
     onClose: () => setShowGallery(false)
   }), /*#__PURE__*/React.createElement("div", {
     style: {
-      background: B.ink,
-      padding: "14px 18px",
+      background: "var(--mrt-paper)",
+      borderBottom: "1px solid var(--mrt-hair)",
+      padding: "14px 16px",
       display: "flex",
       alignItems: "center",
+      justifyContent: "space-between",
       gap: 12,
       position: "sticky",
       top: 0,
-      zIndex: 100,
-      boxShadow: "0 2px 8px rgba(0,0,0,.2)"
+      zIndex: 100
     }
   }, /*#__PURE__*/React.createElement("button", {
     onClick: onBack,
+    "aria-label": "Back",
+    className: "mrt-press",
     style: {
       background: "none",
       border: "none",
-      color: "#fff",
+      color: B.ink,
       cursor: "pointer",
-      fontSize: 22,
-      display: "flex",
-      alignItems: "center"
-    }
-  }, LI("ArrowLeft", 20, {color:"#fff"})), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      color: "rgba(255,255,255,.65)",
-      fontSize: 11,
-      textTransform: "uppercase",
-      letterSpacing: 1,
       display: "flex",
       alignItems: "center",
-      gap: 6
+      padding: 4
     }
-  }, React.createElement(TourDot, { tour: tour, size: 7 }), tour.name, " \xB7 Stop #", listing.order), /*#__PURE__*/React.createElement("div", {
+  }, LI("ArrowLeft", 20, {color:B.ink})), /*#__PURE__*/React.createElement("div", {
     style: {
-      color: "#fff",
-      fontFamily: "var(--mrt-font-display)",
-      fontSize: 15,
-      fontWeight: 600
+      display: "flex",
+      alignItems: "center",
+      gap: 7,
+      fontSize: 12,
+      fontWeight: 700,
+      letterSpacing: 1,
+      textTransform: "uppercase",
+      color: B.ink
     }
-  }, "Rate This Home")), /*#__PURE__*/React.createElement("img", {
-    src: window.MRT_LOGO_DATA,
-    alt: "MarketReady Tours",
+  }, React.createElement(TourDot, { tour: tour, size: 7 }), "Stop ", listing.order + 1, " of ", totalStops), /*#__PURE__*/React.createElement("button", {
+    onClick: onBack,
+    className: "mrt-press",
     style: {
-      height: 40,
-      objectFit: "contain",
-      borderRadius: 6,
-      marginLeft: "auto",
-      background: "#fff",
-      padding: 3
+      background: "none",
+      border: "none",
+      color: "var(--mrt-muted)",
+      cursor: "pointer",
+      fontSize: 14,
+      fontWeight: 600,
+      padding: 4
     }
-  })), /*#__PURE__*/React.createElement("div", {
+  }, "Skip")), /*#__PURE__*/React.createElement("div", {
     style: {
       margin: "14px 14px 0"
     }
@@ -1813,8 +1827,8 @@ function RatingPage(_ref7) {
     style: {
       padding: 14,
       display: "flex",
-      gap: 14,
-      alignItems: "flex-start"
+      gap: 12,
+      alignItems: "center"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -1831,27 +1845,13 @@ function RatingPage(_ref7) {
     alt: listing.address,
     loading: "lazy",
     style: {
-      width: 84,
-      height: 84,
+      width: 48,
+      height: 48,
       objectFit: "cover",
       borderRadius: "var(--mrt-radius-chip)",
       display: "block"
     }
-  }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      bottom: 4,
-      right: 4,
-      background: "rgba(23,19,15,.72)",
-      color: "#fff",
-      borderRadius: 999,
-      padding: "2px 6px",
-      fontSize: 10,
-      display: "flex",
-      alignItems: "center",
-      gap: 3
-    }
-  }, LI("Camera", 10, {color:"#fff"}), allPhotos.length)), /*#__PURE__*/React.createElement("div", {
+  })), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
       minWidth: 0
@@ -1859,81 +1859,37 @@ function RatingPage(_ref7) {
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontFamily: "var(--mrt-font-display)",
-      fontSize: 17,
+      fontSize: 18,
       fontWeight: 600,
       color: B.ink,
-      lineHeight: 1.25
+      lineHeight: 1.2,
+      whiteSpace: "nowrap",
+      overflow: "hidden",
+      textOverflow: "ellipsis"
     }
   }, listing.address), /*#__PURE__*/React.createElement("div", {
     style: {
       color: B.gray,
-      fontSize: 12,
-      marginTop: 2,
-      marginBottom: 8
+      fontSize: 13,
+      marginTop: 2
     }
-  }, listing.city), /*#__PURE__*/React.createElement("div", {
+  }, listing.city, " \xB7 ", /*#__PURE__*/React.createElement("strong", {
     style: {
-      fontFamily: "var(--mrt-font-display)",
-      fontSize: 20,
-      fontWeight: 600,
-      color: B.navy,
-      marginBottom: 8
+      color: B.gray,
+      fontWeight: 700
     }
-  }, "$", listing.price.toLocaleString()), /*#__PURE__*/React.createElement("div", {
+  }, "$", listing.price.toLocaleString()))))), /*#__PURE__*/React.createElement("div", {
     style: {
-      display: "flex",
-      gap: 6,
-      flexWrap: "wrap"
-    }
-  }, [[LI("BedDouble",11,{color:B.gray}), listing.beds + " bd"], [LI("Bath",11,{color:B.gray}), listing.baths + " ba"], [LI("Ruler",11,{color:B.gray}), listing.sqft.toLocaleString() + " sqft"], [LI("Calendar",11,{color:B.gray}), listing.dom + " DOM"]].map((pair, i) => /*#__PURE__*/React.createElement("span", {
-    key: i,
-    className: "mrt-chip"
-  }, pair[0], pair[1]))))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      marginTop: 10,
-      padding: "0 2px"
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 12,
-      color: B.gray
-    }
-  }, "Listed by ", listing.agent), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 8
-    }
-  }, /*#__PURE__*/React.createElement("a", {
-    href: "https://www.marketreadytours.com",
-    target: "_blank",
-    className: "mrt-btn mrt-btn--ghost mrt-btn--sm mrt-press",
-    style: {
-      textDecoration: "none"
-    }
-  }, "Buyer Est."), /*#__PURE__*/React.createElement("a", {
-    href: "https://www.marketreadytours.com",
-    target: "_blank",
-    className: "mrt-btn mrt-btn--gold mrt-btn--sm mrt-press",
-    style: {
-      textDecoration: "none"
-    }
-  }, "Seller Est.")))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      margin: "18px 14px 0"
+      margin: "14px 14px 0"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
-      justifyContent: "space-between",
+      justifyContent: "flex-end",
       alignItems: "center",
       marginBottom: 6
     }
   }, /*#__PURE__*/React.createElement("span", {
-    className: "mrt-eyebrow"
-  }, "Your Rating"), /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 12,
       color: B.gray,
@@ -1956,7 +1912,7 @@ function RatingPage(_ref7) {
     }
   }))), /*#__PURE__*/React.createElement("div", {
     style: {
-      margin: "14px 14px 0",
+      margin: "18px 14px 0",
       display: "flex",
       flexDirection: "column",
       gap: 14
@@ -1964,39 +1920,112 @@ function RatingPage(_ref7) {
   }, /*#__PURE__*/React.createElement("div", {
     className: "mrt-card mrt-card--soft",
     style: {
-      padding: 18
+      padding: "4px 18px"
     }
-  }, /*#__PURE__*/React.createElement("h3", {
+  }, RATING_CATS.map((cat, i) => {
+    const rated = (ratings[cat.key] || 0) > 0;
+    return /*#__PURE__*/React.createElement("div", {
+      key: cat.key,
+      style: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "14px 0",
+        borderBottom: i < RATING_CATS.length - 1 ? "1px solid var(--mrt-hair)" : "none"
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontFamily: "var(--mrt-font-body)",
+        fontSize: 15,
+        color: rated ? B.ink : "var(--mrt-muted-2)",
+        fontWeight: 500,
+        minWidth: 110,
+        transition: "color .2s var(--mrt-ease)"
+      }
+    }, cat.label), /*#__PURE__*/React.createElement(Stars, {
+      value: ratings[cat.key] || 0,
+      onChange: v => setRatings(r => ({
+        ...r,
+        [cat.key]: v
+      }))
+    }));
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-card mrt-card--soft",
+    style: {
+      padding: "16px 18px"
+    }
+  }, /*#__PURE__*/React.createElement("label", {
     className: "mrt-eyebrow",
     style: {
-      marginBottom: 16,
-      display: "block"
+      display: "block",
+      marginBottom: 8
     }
-  }, "Rate Each Category"), RATING_CATS.map(cat => /*#__PURE__*/React.createElement("div", {
-    key: cat.key,
+  }, "Note for the listing agent \xB7 Optional"), /*#__PURE__*/React.createElement("textarea", {
+    maxLength: 500,
+    placeholder: "e.g. Great natural light in the kitchen; primary bath feels dated...",
+    rows: 3,
+    value: suggestions,
+    onChange: e => setSuggestions(e.target.value),
+    className: "mrt-field",
+    style: {
+      resize: "vertical",
+      lineHeight: 1.5
+    }
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setDetailsOpen(o => !o),
+    className: "mrt-press",
+    style: {
+      width: "100%",
+      background: "var(--mrt-paper)",
+      border: "1px solid var(--mrt-hair)",
+      borderRadius: "var(--mrt-radius-card)",
+      padding: "14px 18px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      cursor: "pointer",
+      color: B.ink,
+      fontSize: 13,
+      fontWeight: 700,
+      letterSpacing: ".04em",
+      textTransform: "uppercase"
+    }
+  }, /*#__PURE__*/React.createElement("span", null, "Additional details (optional)"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "var(--mrt-muted-2)",
+      display: "flex",
+      transform: detailsOpen ? "rotate(180deg)" : "none",
+      transition: "transform .2s var(--mrt-ease)"
+    }
+  }, LI("ChevronDown", 16))), detailsOpen && /*#__PURE__*/React.createElement("div", {
+    className: "fade-in",
     style: {
       display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      paddingBottom: 12,
-      marginBottom: 12,
-      borderBottom: "1px solid var(--mrt-hair)"
+      flexDirection: "column",
+      gap: 14
     }
-  }, /*#__PURE__*/React.createElement("span", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontFamily: "var(--mrt-font-body)",
-      fontSize: 15,
-      color: B.ink,
-      fontWeight: 500,
-      minWidth: 110
+      display: "flex",
+      gap: 8
     }
-  }, cat.label), /*#__PURE__*/React.createElement(Stars, {
-    value: ratings[cat.key] || 0,
-    onChange: v => setRatings(r => ({
-      ...r,
-      [cat.key]: v
-    }))
-  })))), /*#__PURE__*/React.createElement(NeighborhoodPanel, {
+  }, /*#__PURE__*/React.createElement("a", {
+    href: "https://www.marketreadytours.com",
+    target: "_blank",
+    className: "mrt-btn mrt-btn--ghost mrt-btn--sm mrt-press",
+    style: {
+      textDecoration: "none",
+      flex: 1
+    }
+  }, "Buyer Est."), /*#__PURE__*/React.createElement("a", {
+    href: "https://www.marketreadytours.com",
+    target: "_blank",
+    className: "mrt-btn mrt-btn--gold mrt-btn--sm mrt-press",
+    style: {
+      textDecoration: "none",
+      flex: 1
+    }
+  }, "Seller Est.")), /*#__PURE__*/React.createElement(NeighborhoodPanel, {
     address: listing.address,
     city: listing.city
   }), /*#__PURE__*/React.createElement("div", {
@@ -2016,27 +2045,7 @@ function RatingPage(_ref7) {
     placeholder: "e.g. Jane Smith",
     value: raterName,
     onChange: e => setRaterName(e.target.value),
-    className: "mrt-field",
-    style: {
-      marginBottom: 18
-    }
-  }), /*#__PURE__*/React.createElement("label", {
-    className: "mrt-eyebrow",
-    style: {
-      display: "block",
-      marginBottom: 8
-    }
-  }, "Notes (optional)"), /*#__PURE__*/React.createElement("textarea", {
-    maxLength: 500,
-    placeholder: "e.g. Update master bath, repaint exterior...",
-    rows: 3,
-    value: suggestions,
-    onChange: e => setSuggestions(e.target.value),
-    className: "mrt-field",
-    style: {
-      resize: "vertical",
-      lineHeight: 1.5
-    }
+    className: "mrt-field"
   })), /*#__PURE__*/React.createElement("div", {
     className: "mrt-card mrt-card--soft",
     style: {
@@ -2184,7 +2193,7 @@ function RatingPage(_ref7) {
       justifyContent: "center",
       fontWeight: 700
     }
-  }, LI("X", 12, {color:"#fff"})))))), submitError && /*#__PURE__*/React.createElement("div", {
+  }, LI("X", 12, {color:"#fff"}))))))), submitError && /*#__PURE__*/React.createElement("div", {
     style: {
       background: "#F5E8E8",
       border: "1px solid #D4A0A0",
@@ -2236,7 +2245,7 @@ function RatingPage(_ref7) {
       borderRadius: "50%",
       animation: "spin .8s linear infinite"
     }
-  }), "Sending to ", listing.agent, "...") : /*#__PURE__*/React.createElement(React.Fragment, null, "Submit Rating ", LI("Check", 16))), /*#__PURE__*/React.createElement("p", {
+  }), "Sending to ", listing.agent, "...") : /*#__PURE__*/React.createElement(React.Fragment, null, "Submit & go to next stop ", LI("ArrowRight", 16))), /*#__PURE__*/React.createElement("p", {
     style: {
       textAlign: "center",
       fontSize: 11,
