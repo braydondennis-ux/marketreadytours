@@ -76,6 +76,8 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
 @supports(padding:env(safe-area-inset-bottom)){body{padding-bottom:env(safe-area-inset-bottom)}.mrt-scroll-pad{padding-bottom:calc(90px + env(safe-area-inset-bottom))!important}}
 /* Sync status pill: bottom-left so it never collides with the top-right header logo (mobile sits above the tab bar) */
 .mrt-syncpill{ top:auto !important; right:auto !important; left:8px !important; bottom:calc(72px + env(safe-area-inset-bottom,0px)) !important; }
+/* Public masthead horizontal nav links: desktop-only — on mobile the bottom tab bar is the nav (avoids duplicate desktop top nav) */
+.mrt-masthead-links{ display:none; }
 /* ══ DESKTOP LAYER (>=1024px AND body.mrt-desktop only) ═══════════════════
    Everything here is double-gated: it cannot affect phones, portrait tablets,
    or the Capacitor iOS app (all < 1024px), and DESKTOP_MODE=false removes the
@@ -114,6 +116,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
   body.mrt-desktop .mrt-tourcard-open{ width:100% !important; padding:13px 0 !important; font-size:15px !important; }
   /* refine pass: chrome + desktop-layout fixes */
   body.mrt-desktop .mrt-tabbar{ display:none !important; }        /* bottom tab bar is mobile-only */
+  body.mrt-desktop .mrt-masthead-links{ display:flex !important; }/* horizontal masthead nav is desktop-only */
   body.mrt-desktop .mrt-syncpill{ bottom:10px !important; }        /* tab bar gone on desktop → drop pill to corner */
   body.mrt-desktop .mrt-seg--capped{ max-width:1080px !important; margin-left:auto !important; margin-right:auto !important; }
   body.mrt-desktop .mrt-list-tours{ align-items:stretch !important; }
@@ -11557,11 +11560,14 @@ function PublicMasthead(_ref) {
       rowGap: 8,
       gap: 20
     }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "mrt-masthead-links",
+    style: { alignItems: "center", gap: 20, flexWrap: "wrap" }
   }, navBtn("How it works", () => window.showHowItWorks && window.showHowItWorks()), navBtn("Sponsor", () => {
     window.location.hash = "/sponsor-signup";
   }), navBtn("Contact", () => {
     window.location.hash = "/contact";
-  }), /*#__PURE__*/React.createElement("button", {
+  })), /*#__PURE__*/React.createElement("button", {
     type: "button",
     className: "mrt-btn mrt-btn--ghost mrt-btn--sm mrt-press",
     onClick: onBack
