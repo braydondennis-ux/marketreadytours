@@ -99,16 +99,19 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
     gap:20px !important;
     align-items:start;
   }
-  body.mrt-desktop .mrt-dash-col{ max-width:1120px !important; margin-left:auto !important; margin-right:auto !important; }
+  /* Unified desktop content width: EVERY app page caps at the same 1200px, centered — one consistent
+     content well / left+right edge across pages. Grid floors are tuned so each page keeps the column
+     count it had before (only the frame widened), not so the layout reflows. */
+  body.mrt-desktop .mrt-dash-col{ max-width:1200px !important; margin-left:auto !important; margin-right:auto !important; }
   body.mrt-desktop .mrt-list-tours{ grid-template-columns:repeat(auto-fill,minmax(340px,1fr)) !important; gap:22px !important; }
-  body.mrt-desktop .mrt-detail-col{ max-width:1000px !important; margin-left:auto !important; margin-right:auto !important; }
-  body.mrt-desktop .mrt-list-listings{ grid-template-columns:repeat(auto-fill,minmax(360px,1fr)) !important; gap:20px !important; }
-  body.mrt-desktop .mrt-summary-col{ max-width:960px !important; margin-left:auto !important; margin-right:auto !important; }
-  body.mrt-desktop .mrt-list-summary{ grid-template-columns:repeat(auto-fill,minmax(400px,1fr)) !important; gap:18px !important; }
-  body.mrt-desktop .mrt-admin-col{ max-width:1080px !important; margin-left:auto !important; margin-right:auto !important; }
+  body.mrt-desktop .mrt-detail-col{ max-width:1200px !important; margin-left:auto !important; margin-right:auto !important; }
+  body.mrt-desktop .mrt-list-listings{ grid-template-columns:repeat(auto-fill,minmax(520px,1fr)) !important; gap:20px !important; }
+  body.mrt-desktop .mrt-summary-col{ max-width:1200px !important; margin-left:auto !important; margin-right:auto !important; }
+  body.mrt-desktop .mrt-list-summary{ grid-template-columns:repeat(auto-fill,minmax(520px,1fr)) !important; gap:18px !important; }
+  body.mrt-desktop .mrt-admin-col{ max-width:1200px !important; margin-left:auto !important; margin-right:auto !important; }
   body.mrt-desktop .mrt-list-sponsors,
-  body.mrt-desktop .mrt-list-team,
-  body.mrt-desktop .mrt-list-requests{ grid-template-columns:repeat(auto-fill,minmax(380px,1fr)) !important; gap:18px !important; }
+  body.mrt-desktop .mrt-list-requests{ grid-template-columns:repeat(auto-fill,minmax(520px,1fr)) !important; gap:18px !important; }
+  body.mrt-desktop .mrt-list-team{ grid-template-columns:repeat(auto-fill,minmax(340px,1fr)) !important; gap:18px !important; }
   body.mrt-desktop .mrt-list-sponsors{ grid-column:1 / -1 !important; }
   /* Dashboard tour cards: stack thumbnails above a full-width "Open Tour" button (matches mock) */
   body.mrt-desktop .mrt-tourcard-foot{ flex-direction:column !important; align-items:stretch !important; }
@@ -118,7 +121,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
   body.mrt-desktop .mrt-tabbar{ display:none !important; }        /* bottom tab bar is mobile-only */
   body.mrt-desktop .mrt-masthead-links{ display:flex !important; }/* horizontal masthead nav is desktop-only */
   body.mrt-desktop .mrt-syncpill{ bottom:10px !important; }        /* tab bar gone on desktop → drop pill to corner */
-  body.mrt-desktop .mrt-seg--capped{ max-width:1080px !important; margin-left:auto !important; margin-right:auto !important; }
+  body.mrt-desktop .mrt-seg--capped{ max-width:1200px !important; margin-left:auto !important; margin-right:auto !important; }
   body.mrt-desktop .mrt-list-tours{ align-items:stretch !important; }
   body.mrt-desktop .mrt-list-tours > .mrt-card{ display:flex !important; flex-direction:column !important; }
   body.mrt-desktop .mrt-tourcard-foot{ margin-top:auto !important; }
@@ -2335,7 +2338,7 @@ function RankingPage(_ref8) {
       padding: 3
     }
   })), /*#__PURE__*/React.createElement("div", {
-    className: "mrt-col",
+    className: "mrt-summary-col",
     style: {
       padding: "20px 14px",
       display: "flex",
@@ -13509,12 +13512,20 @@ function mergeSharedIntoTours(tours, ratings, favorites) {
 /* ── APP ROOT ── */
 function App() {
   const [page, setPage] = useState(() => {
+    // Mirror the onHash resolver below so a direct load / refresh of any deep link routes the same
+    // as navigating to it in-app (previously only a few routes resolved on first load → fell to dashboard).
     const h = window.location.hash.slice(2) || "";
-    if (h.startsWith("request/")) return "request";
-    if (h === "request") return "request";
+    if (h === "sponsors" || h === "sponsor-signup") return "sponsor-signup";
+    if (h === "team") return "team";
+    if (h === "requests" || h === "requests-admin") return "requests-admin";
     if (h === "tour-signup") return "tour-signup";
     if (h === "request-tour") return "dashboard";
     if (h.startsWith("not-interested")) return "not-interested";
+    if (h.startsWith("request/")) return "request";
+    if (h === "request") return "request";
+    if (h === "contact") return "contact";
+    if (h === "payment-success") return "payment-success";
+    if (h === "payment-cancel") return "payment-cancel";
     if (h.startsWith("tour/")) return "dashboard";
     return "dashboard";
   });
