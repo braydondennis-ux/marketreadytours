@@ -80,6 +80,8 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
 .mrt-masthead-links{ display:none; }
 /* Persistent global top nav bar is desktop-only; hidden on mobile (mobile keeps its per-page headers + bottom tab bar) */
 .mrt-topnav{ display:none; }
+/* Desktop-only Login in the dashboard action row (mobile keeps Login next to the logo) */
+.mrt-dash-login-action{ display:none !important; }
 /* ══ DESKTOP LAYER (>=1024px AND body.mrt-desktop only) ═══════════════════
    Everything here is double-gated: it cannot affect phones, portrait tablets,
    or the Capacitor iOS app (all < 1024px), and DESKTOP_MODE=false removes the
@@ -136,6 +138,9 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
   /* Persistent global top nav bar — full-width, sticky, logo-only; identical on every page. Desktop only. */
   body.mrt-desktop .mrt-topnav{ position:sticky; top:0; z-index:300; display:flex; align-items:center; height:64px; width:100%; background:var(--mrt-paper); border-bottom:1px solid var(--mrt-hair); padding-left:max(18px, calc(50% - 582px)); padding-right:max(18px, calc(50% - 582px)); }
   body.mrt-desktop .mrt-topnav-logo{ height:48px !important; width:auto !important; }
+  /* Dashboard: the logo row is empty on desktop (logo is in the nav bar); hide it so the tagline sits at the top. Mobile keeps the logo here. */
+  body.mrt-desktop .mrt-dash-logorow{ display:none !important; }
+  body.mrt-desktop .mrt-dash-login-action{ display:flex !important; }  /* desktop Login joins the Calendar/Request/FAQ action row */
   /* The nav bar is the sole stationary element; page headers scroll with content (avoids a sticky-offset gap in tour detail's overflow:hidden container) */
   body.mrt-desktop .mrt-appbar{ position:static !important; }
   body.mrt-desktop .mrt-syncpill{ bottom:10px !important; }        /* tab bar gone on desktop → drop pill to corner */
@@ -10354,6 +10359,7 @@ function ToursDashboard(_ref26) {
       paddingBottom: 14
     }
   }, /*#__PURE__*/React.createElement("div", {
+    className: "mrt-dash-logorow",
     style: {
       display: "flex",
       justifyContent: "space-between",
@@ -10579,7 +10585,25 @@ function ToursDashboard(_ref26) {
       flex: "1 1 0",
       minWidth: 0
     }
-  }), /*#__PURE__*/React.createElement("button", {
+  }), !isAdmin && /*#__PURE__*/React.createElement("button", {
+    className: "mrt-btn--ghost mrt-press mrt-dash-login-action",
+    onClick: onAdminLogin,
+    style: {
+      background: "transparent",
+      border: "1px solid var(--mrt-hair-2)",
+      color: B.ink,
+      fontWeight: 700,
+      fontSize: 12,
+      padding: "6px 14px",
+      cursor: "pointer",
+      whiteSpace: "nowrap",
+      borderRadius: 8,
+      margin: "4px 2px",
+      display: "flex",
+      alignItems: "center",
+      gap: 4
+    }
+  }, LI("Lock", 14), "Login"), /*#__PURE__*/React.createElement("button", {
     className: "mrt-btn--ghost mrt-press",
     onClick: () => window.showCalendarView(),
     style: {
