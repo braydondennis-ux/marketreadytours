@@ -13831,14 +13831,12 @@ function App() {
     const _dbBase = (!window._MRT_LOCAL && typeof _fbConfig !== "undefined" && _fbConfig && _fbConfig.databaseURL) ? _fbConfig.databaseURL.replace(/\/+$/, "") : null;
     let _restTimer = _dbBase ? setTimeout(() => {
       if (fbReady.current) return;
-      Object.keys(paths).forEach(path => {
+      Promise.all(Object.keys(paths).map(path =>
         fetch(_dbBase + "/" + path + ".json").then(r => r.ok ? r.json() : null).then(raw => {
-          if (fbReady.current) return;
+          if (fbReady.current) return;            // SDK won the race mid-flight — don't overwrite
           if (raw !== null && raw !== undefined) { try { paths[path](fbToArr(raw)); } catch (e) {} }
-        }).catch(() => {});
-      });
-      fbReady.current = true;
-      setFbLoaded(true);
+        }).catch(() => {})
+      )).then(() => { if (!fbReady.current) { fbReady.current = true; setFbLoaded(true); } });
     }, 4000) : null;
     loadAll().then(() => {
       if (_restTimer) clearTimeout(_restTimer);
