@@ -78,6 +78,8 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
 .mrt-syncpill{ top:auto !important; right:auto !important; left:8px !important; bottom:calc(72px + env(safe-area-inset-bottom,0px)) !important; }
 /* Public masthead horizontal nav links: desktop-only — on mobile the bottom tab bar is the nav (avoids duplicate desktop top nav) */
 .mrt-masthead-links{ display:none; }
+/* Persistent global top nav bar is desktop-only; hidden on mobile (mobile keeps its per-page headers + bottom tab bar) */
+.mrt-topnav{ display:none; }
 /* ══ DESKTOP LAYER (>=1024px AND body.mrt-desktop only) ═══════════════════
    Everything here is double-gated: it cannot affect phones, portrait tablets,
    or the Capacitor iOS app (all < 1024px), and DESKTOP_MODE=false removes the
@@ -128,8 +130,14 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
     /* scrollbar-immune (no vw, no overflow-clip so sticky still works): background fills the full-width shell; padding recenters inner content to the 1200 well + 18px */
     padding-left:max(18px, calc(50% - 582px)) !important; padding-right:max(18px, calc(50% - 582px)) !important; }
   body.mrt-desktop .mrt-masthead-links{ display:flex !important; }/* horizontal masthead nav is desktop-only */
-  body.mrt-desktop .mrt-hdr-logo{ height:80px !important; max-width:none !important; width:auto !important; display:block !important; order:-1 !important; margin:0 !important; }  /* consistent header logo: same size AND pinned to the LEFT edge of the 1200 well on every page (order:-1 makes it the first/leftmost item in the flex-row headers) */
-  body.mrt-desktop .mrt-td-logowrap{ order:-1 !important; flex:0 0 auto !important; }  /* tour-detail logo is nested in a flex:1 wrapper — pull the wrapper first so its logo left-aligns like the rest */
+  /* Logo now lives in the persistent global top nav bar → hide the per-header logos on desktop */
+  body.mrt-desktop .mrt-appbar .mrt-hdr-logo{ display:none !important; }
+  body.mrt-desktop .mrt-td-logowrap{ display:none !important; }
+  /* Persistent global top nav bar — full-width, sticky, logo-only; identical on every page. Desktop only. */
+  body.mrt-desktop .mrt-topnav{ position:sticky; top:0; z-index:300; display:flex; align-items:center; height:64px; width:100%; background:var(--mrt-paper); border-bottom:1px solid var(--mrt-hair); padding-left:max(18px, calc(50% - 582px)); padding-right:max(18px, calc(50% - 582px)); }
+  body.mrt-desktop .mrt-topnav-logo{ height:48px !important; width:auto !important; }
+  /* The nav bar is the sole stationary element; page headers scroll with content (avoids a sticky-offset gap in tour detail's overflow:hidden container) */
+  body.mrt-desktop .mrt-appbar{ position:static !important; }
   body.mrt-desktop .mrt-syncpill{ bottom:10px !important; }        /* tab bar gone on desktop → drop pill to corner */
   body.mrt-desktop .mrt-seg--capped{ max-width:1200px !important; margin-left:auto !important; margin-right:auto !important; }
   body.mrt-desktop .mrt-list-tours{ align-items:stretch !important; }
@@ -13963,6 +13971,14 @@ function App() {
       minHeight: "100vh"
     }
   }, /*#__PURE__*/React.createElement(ToastContainer, null), /*#__PURE__*/React.createElement(OfflineBanner, null), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-topnav"
+  }, /*#__PURE__*/React.createElement("img", {
+    className: "mrt-topnav-logo",
+    src: window.MRT_LOGO_DATA,
+    alt: "MarketReady Tours",
+    onClick: () => { setActiveTourId(null); setPage("dashboard"); window.location.hash = "/"; },
+    style: { height: 48, width: "auto", objectFit: "contain", cursor: "pointer" }
+  })), /*#__PURE__*/React.createElement("div", {
     id: "fb-status",
     className: "mrt-syncpill",
     style: {
