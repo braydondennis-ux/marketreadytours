@@ -82,6 +82,8 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
 .mrt-topnav{ display:none; }
 /* Desktop-only Login in the dashboard action row (mobile keeps Login next to the logo) */
 .mrt-dash-login-action{ display:none !important; }
+/* Desktop-only #1 tagline in the dashboard action row (mobile keeps it on its own line) */
+.mrt-dash-tagline-action{ display:none; }
 /* ══ DESKTOP LAYER (>=1024px AND body.mrt-desktop only) ═══════════════════
    Everything here is double-gated: it cannot affect phones, portrait tablets,
    or the Capacitor iOS app (all < 1024px), and DESKTOP_MODE=false removes the
@@ -138,9 +140,15 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
   /* Persistent global top nav bar — full-width, sticky, logo-only; identical on every page. Desktop only. */
   body.mrt-desktop .mrt-topnav{ position:sticky; top:0; z-index:300; display:flex; align-items:center; height:64px; width:100%; background:var(--mrt-paper); border-bottom:1px solid var(--mrt-hair); padding-left:max(18px, calc(50% - 582px)); padding-right:max(18px, calc(50% - 582px)); }
   body.mrt-desktop .mrt-topnav-logo{ height:48px !important; width:auto !important; }
+  body.mrt-desktop .mrt-topnav-links{ margin-left:auto; display:flex; align-items:center; gap:2px; }
+  body.mrt-desktop .mrt-topnav-link{ background:none; border:none; cursor:pointer; font:600 13.5px/1 var(--mrt-font-body); color:var(--mrt-muted); padding:9px 13px; border-radius:8px; white-space:nowrap; transition:color .15s ease, background .15s ease; }
+  body.mrt-desktop .mrt-topnav-link:hover{ color:var(--mrt-ink); background:var(--mrt-cream); }
+  body.mrt-desktop .mrt-topnav-link.is-active{ color:var(--mrt-navy); font-weight:700; }
   /* Dashboard: the logo row is empty on desktop (logo is in the nav bar); hide it so the tagline sits at the top. Mobile keeps the logo here. */
   body.mrt-desktop .mrt-dash-logorow{ display:none !important; }
   body.mrt-desktop .mrt-dash-login-action{ display:flex !important; }  /* desktop Login joins the Calendar/Request/FAQ action row */
+  body.mrt-desktop .mrt-dash-tagline-action{ display:flex !important; }  /* desktop: #1 tagline sits on the same line as the action buttons */
+  body.mrt-desktop .mrt-dash-tagline-row{ display:none !important; }     /* ...so hide the standalone tagline line (kept for mobile) */
   /* The nav bar is the sole stationary element; page headers scroll with content (avoids a sticky-offset gap in tour detail's overflow:hidden container) */
   body.mrt-desktop .mrt-appbar{ position:static !important; }
   body.mrt-desktop .mrt-syncpill{ bottom:10px !important; }        /* tab bar gone on desktop → drop pill to corner */
@@ -10391,6 +10399,7 @@ function ToursDashboard(_ref26) {
       whiteSpace: "nowrap"
     }
   }, LI("Lock", 14), "Login")), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-dash-tagline-row",
     style: {
       display: "flex",
       alignItems: "center",
@@ -10585,7 +10594,14 @@ function ToursDashboard(_ref26) {
       flex: "1 1 0",
       minWidth: 0
     }
-  }), !isAdmin && /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "mrt-dash-tagline-action",
+    style: { alignItems: "center", gap: 8 }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: { background: B.goldDeep, color: "#fff", borderRadius: 5, padding: "2px 7px", fontSize: 11, fontWeight: 800, letterSpacing: .3, flexShrink: 0 }
+  }, "#1"), /*#__PURE__*/React.createElement("span", {
+    style: { color: B.gray, fontSize: 11, fontWeight: 600, letterSpacing: 1.6, textTransform: "uppercase", whiteSpace: "nowrap" }
+  }, "Real Estate Home Tours App"))), !isAdmin && /*#__PURE__*/React.createElement("button", {
     className: "mrt-btn--ghost mrt-press mrt-dash-login-action",
     onClick: onAdminLogin,
     style: {
@@ -14002,7 +14018,15 @@ function App() {
     alt: "MarketReady Tours",
     onClick: () => { setActiveTourId(null); setPage("dashboard"); window.location.hash = "/"; },
     style: { height: 48, width: "auto", objectFit: "contain", cursor: "pointer" }
-  })), /*#__PURE__*/React.createElement("div", {
+  }), /*#__PURE__*/React.createElement("nav", {
+    className: "mrt-topnav-links"
+  }, [{ label: "Tours", pg: "dashboard", h: "/" }, { label: "Sponsor", pg: "sponsor-signup", h: "/sponsor-signup" }, { label: "Tour Sign Up", pg: "tour-signup", h: "/tour-signup" }, { label: "List Home", pg: "request", h: "/request" }, { label: "Contact", pg: "contact", h: "/contact" }].map(function (it) {
+    return /*#__PURE__*/React.createElement("button", {
+      key: it.label,
+      onClick: function () { setActiveTourId(null); setPage(it.pg); window.location.hash = it.h; },
+      className: "mrt-topnav-link" + (page === it.pg ? " is-active" : "")
+    }, it.label);
+  }))), /*#__PURE__*/React.createElement("div", {
     id: "fb-status",
     className: "mrt-syncpill",
     style: {
