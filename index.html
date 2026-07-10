@@ -84,6 +84,13 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
 .mrt-dash-login-action{ display:none !important; }
 /* Desktop-only #1 tagline in the dashboard action row (mobile keeps it on its own line) */
 .mrt-dash-tagline-action{ display:none; }
+/* Mobile: keep the logo ONLY on the dashboard/home header; drop it from internal page headers (tour detail,
+   rankings, summary, team, requests) so it stops jumping in size/position when you open a tour. */
+@media (max-width:1023px){
+  .mrt-appbar .mrt-hdr-logo{ display:none !important; }
+  .mrt-td-logowrap{ display:none !important; }
+  .mrt-dash-logorow .mrt-hdr-logo{ display:inline !important; }
+}
 /* ══ DESKTOP LAYER (>=1024px AND body.mrt-desktop only) ═══════════════════
    Everything here is double-gated: it cannot affect phones, portrait tablets,
    or the Capacitor iOS app (all < 1024px), and DESKTOP_MODE=false removes the
