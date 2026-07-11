@@ -72,7 +72,7 @@ textarea,input,select{font-family:inherit}
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 .fade-in{animation:fadeIn .35s cubic-bezier(.4,0,.2,1)}
 /* Subtle staggered entrance for tour cards on first load (fill:both so the stagger delay stays hidden) */
-.mrt-fade-stagger{animation:fadeIn .34s cubic-bezier(.2,.7,.3,1) both}
+.mrt-fade-stagger{animation:fadeIn .5s cubic-bezier(.2,.7,.3,1) both}
 input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!important;box-shadow:0 0 0 3px rgba(201,165,90,.15)!important}
 /* iOS safe-area: pads the page bottom away from the home indicator */
 @supports(padding:env(safe-area-inset-bottom)){body{padding-bottom:env(safe-area-inset-bottom)}.mrt-scroll-pad{padding-bottom:calc(90px + env(safe-area-inset-bottom))!important}}
@@ -10006,7 +10006,7 @@ function ToursDashboard(_ref26) {
   const didAnimateRef = useRef(false);
   useEffect(() => {
     if (tours.length > 0 && !didAnimateRef.current) {
-      const _t = setTimeout(() => { didAnimateRef.current = true; }, 900);
+      const _t = setTimeout(() => { didAnimateRef.current = true; }, 1600);
       return () => clearTimeout(_t);
     }
   }, [tours.length > 0]);
@@ -10834,7 +10834,7 @@ function ToursDashboard(_ref26) {
       style: {
         overflow: "hidden",
         cursor: "pointer",
-        animationDelay: didAnimateRef.current ? void 0 : (Math.min(_i, 8) * 0.05) + "s",
+        animationDelay: didAnimateRef.current ? void 0 : (Math.min(_i, 10) * 0.09) + "s",
         boxShadow: _dAway===0?"0 0 0 2px "+B.red+",0 6px 28px rgba(155,28,28,.18)":"var(--mrt-shadow-soft)"
       }
     }, /*#__PURE__*/React.createElement("div", {
