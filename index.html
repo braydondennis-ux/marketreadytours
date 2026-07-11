@@ -9980,6 +9980,7 @@ function ToursDashboard(_ref26) {
   var _ref27;
   let {
     tours,
+    fbLoaded,
     setTours,
     isAdmin,
     isSuperAdmin,
@@ -10738,7 +10739,39 @@ function ToursDashboard(_ref26) {
   }, "Upcoming"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowArchived(true),
     className: "mrt-seg__btn" + (showArchived ? " mrt-seg__btn--active" : "")
-  }, "Past"))), filtered.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }, "Past"))), filtered.length === 0 && ((typeof _fb !== "undefined" && _fb && !fbLoaded) ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      padding: "60px 20px",
+      color: B.gray
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 16,
+      display: "flex",
+      justifyContent: "center"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: "inline-block",
+      width: 30,
+      height: 30,
+      border: "3px solid var(--mrt-hair)",
+      borderTopColor: "var(--mrt-navy)",
+      borderRadius: "50%",
+      animation: "spin .8s linear infinite"
+    }
+  })), /*#__PURE__*/React.createElement("h3", {
+    style: {
+      color: B.primary,
+      fontFamily: "Fraunces, Georgia, serif",
+      marginBottom: 8
+    }
+  }, "Loading tours…"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 14
+    }
+  }, "Fetching the latest schedule…")) : /*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
       padding: "60px 20px",
@@ -10760,7 +10793,7 @@ function ToursDashboard(_ref26) {
     style: {
       fontSize: 14
     }
-  }, showArchived ? "No archived tours." : isAdmin ? 'Tap "+ New Tour" to create one.' : "Check with your admin for the schedule.")), /*#__PURE__*/React.createElement("div", { className: "mrt-list mrt-list-tours" }, filtered.map(tour => {
+  }, showArchived ? "No archived tours." : isAdmin ? 'Tap "+ New Tour" to create one.' : "Check with your admin for the schedule."))), /*#__PURE__*/React.createElement("div", { className: "mrt-list mrt-list-tours" }, filtered.map(tour => {
     const ratedCount = Object.keys(tour.ratings || {}).length;
     const favCount = Object.values(tour.favorites || {}).filter(Boolean).length;
     const _tMs=tour.date?new Date(tour.date+"T00:00:00").getTime():null;
@@ -14083,6 +14116,7 @@ function App() {
     subAdmins: subAdmins
   }), page === "dashboard" && /*#__PURE__*/React.createElement(ToursDashboard, {
     tours: mergedTours,
+    fbLoaded: fbLoaded,
     setTours: setTours,
     isAdmin: isAnyAdmin,
     isSuperAdmin: isSuperAdmin,
