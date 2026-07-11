@@ -71,6 +71,8 @@ textarea,input,select{font-family:inherit}
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 .fade-in{animation:fadeIn .35s cubic-bezier(.4,0,.2,1)}
+/* Subtle staggered entrance for tour cards on first load (fill:both so the stagger delay stays hidden) */
+.mrt-fade-stagger{animation:fadeIn .34s cubic-bezier(.2,.7,.3,1) both}
 input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!important;box-shadow:0 0 0 3px rgba(201,165,90,.15)!important}
 /* iOS safe-area: pads the page bottom away from the home indicator */
 @supports(padding:env(safe-area-inset-bottom)){body{padding-bottom:env(safe-area-inset-bottom)}.mrt-scroll-pad{padding-bottom:calc(90px + env(safe-area-inset-bottom))!important}}
@@ -224,7 +226,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
 @keyframes mrt-live-pulse{0%,100%{box-shadow:0 0 0 0 rgba(155,28,28,.40);}50%{box-shadow:0 0 0 5px rgba(155,28,28,0);}}
 .mrt-star-pop{transform-origin:center;animation:mrt-pop .5s var(--mrt-ease-pop) both;}
 @keyframes mrt-pop{0%{transform:scale(.4);opacity:0;}55%{transform:scale(1.25);}100%{transform:scale(1);opacity:1;}}
-@media (prefers-reduced-motion:reduce){.mrt-press,.mrt-live-dot,.mrt-star-pop{animation:none!important;transition:none!important;}}
+@media (prefers-reduced-motion:reduce){.mrt-press,.mrt-live-dot,.mrt-star-pop,.mrt-fade-stagger{animation:none!important;transition:none!important;}}
 </style>
 </head>
 <body>
@@ -9998,6 +10000,16 @@ function ToursDashboard(_ref26) {
   } = _ref26;
   const [filterDate, setFilterDate] = useState("upcoming");
   const [showArchived, setShowArchived] = useState(false);
+  // Fade the tour cards in once, on first load only. Ref (not state) so it survives re-renders.
+  // Lock it ~900ms AFTER tours first appear — long enough for the entrance to play — so the
+  // cached→Firebase-sync double render during that window keeps the class instead of stripping it.
+  const didAnimateRef = useRef(false);
+  useEffect(() => {
+    if (tours.length > 0 && !didAnimateRef.current) {
+      const _t = setTimeout(() => { didAnimateRef.current = true; }, 900);
+      return () => clearTimeout(_t);
+    }
+  }, [tours.length > 0]);
   const [showRequestForm, setShowRequestForm] = useState(() => window.location.hash.slice(2) === "request-tour");
   const requestFormRef = React.useRef(null);
   const [activeTourId, setActiveTourId] = useState(initialTourId || null);
@@ -10793,7 +10805,7 @@ function ToursDashboard(_ref26) {
     style: {
       fontSize: 14
     }
-  }, showArchived ? "No archived tours." : isAdmin ? 'Tap "+ New Tour" to create one.' : "Check with your admin for the schedule."))), /*#__PURE__*/React.createElement("div", { className: "mrt-list mrt-list-tours" }, filtered.map(tour => {
+  }, showArchived ? "No archived tours." : isAdmin ? 'Tap "+ New Tour" to create one.' : "Check with your admin for the schedule."))), /*#__PURE__*/React.createElement("div", { className: "mrt-list mrt-list-tours" }, filtered.map((tour, _i) => {
     const ratedCount = Object.keys(tour.ratings || {}).length;
     const favCount = Object.values(tour.favorites || {}).filter(Boolean).length;
     const _tMs=tour.date?new Date(tour.date+"T00:00:00").getTime():null;
@@ -10805,7 +10817,7 @@ function ToursDashboard(_ref26) {
       :null;
     return /*#__PURE__*/React.createElement("div", {
       key: tour.id,
-      className: "mrt-card mrt-card--soft mrt-press",
+      className: "mrt-card mrt-card--soft mrt-press" + (didAnimateRef.current ? "" : " mrt-fade-stagger"),
       onClick: () => {
         setActiveTourId(tour.id);
         window.location.hash = "/tour/" + tour.id;
@@ -10822,6 +10834,7 @@ function ToursDashboard(_ref26) {
       style: {
         overflow: "hidden",
         cursor: "pointer",
+        animationDelay: didAnimateRef.current ? void 0 : (Math.min(_i, 8) * 0.05) + "s",
         boxShadow: _dAway===0?"0 0 0 2px "+B.red+",0 6px 28px rgba(155,28,28,.18)":"var(--mrt-shadow-soft)"
       }
     }, /*#__PURE__*/React.createElement("div", {
