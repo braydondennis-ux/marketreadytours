@@ -38,6 +38,18 @@
 <script>
 window._mapsLoaded=false;
 window._mapsCallbacks=[];
+window._mapsErrorCallbacks=[];
+window._mapsAuthFailed=false;
+// Google calls this global if the Maps key is invalid/unauthorized for this domain
+// (e.g. RefererNotAllowedMapError). Route it to our own placeholder instead of Google's overlay.
+window.gm_authFailure=function(){
+  window._mapsAuthFailed=true;
+  window._mapsErrorCallbacks.forEach(function(fn){try{fn();}catch(e){}});
+};
+window.onMapsError=function(cb){
+  if(window._mapsAuthFailed){if(cb)cb();return;}
+  if(cb)window._mapsErrorCallbacks.push(cb);
+};
 window.loadGoogleMaps=function(cb){
   if(window.google&&window.google.maps){if(cb)cb();return;}
   if(cb)window._mapsCallbacks.push(cb);
@@ -49,6 +61,12 @@ window.loadGoogleMaps=function(cb){
     window._mapsCallbacks=[];
   };
   var s=document.createElement('script');
+  // REMINDER: this is Braydon's PROD Maps key, restricted by HTTP referrer.
+  // The map shows "Map preview unavailable" on the *.vercel.app demo because that
+  // domain isn't in the key's allowed referrers. To make the demo map work, add
+  //   https://*.vercel.app/*
+  // to this key's Website restrictions in Google Cloud Console (Braydon's project),
+  // OR wire a separate demo key here selected by hostname. Prod is unaffected either way.
   s.src='https://maps.googleapis.com/maps/api/js?key=AIzaSyBoPhoNQ5C84nS79QDV36R93APg4Pizo_E&libraries=places&callback=_gmapsReady';
   s.async=true;s.defer=true;
   document.head.appendChild(s);
@@ -5977,6 +5995,7 @@ function RouteMapView(_ref18) {
   const markersRef = useRef([]);
   useEffect(() => {
     if (!sorted.length) return;
+    window.onMapsError && window.onMapsError(() => setMapError(true));
     window.loadGoogleMaps(() => setMapReady(true));
   }, []);
   useEffect(() => {
@@ -6282,20 +6301,23 @@ function RouteMapView(_ref18) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 40
+      color: B.gold,
+      display: "flex"
     }
-  }, "\uD83D\uDDFA\uFE0F"), /*#__PURE__*/React.createElement("p", {
+  }, LI("MapPinOff", 38)), /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 14,
       fontWeight: 600,
       color: B.dark
     }
-  }, "Map unavailable"), /*#__PURE__*/React.createElement("p", {
+  }, "Map preview unavailable"), /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 12,
-      color: B.gray
+      color: B.gray,
+      maxWidth: 260,
+      lineHeight: 1.45
     }
-  }, "Open in Google Maps to see the full route")), /*#__PURE__*/React.createElement("div", {
+  }, "The route stops are listed above. Open in Google Maps for turn-by-turn directions.")), /*#__PURE__*/React.createElement("div", {
     ref: mapRef,
     style: {
       width: "100%",
