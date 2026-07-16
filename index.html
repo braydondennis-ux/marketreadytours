@@ -33,6 +33,8 @@ textarea,input,select{font-family:inherit}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .fade-in{animation:fadeIn .3s ease}
+.pac-container{z-index:999999!important;position:fixed!important;}
+.pac-container:after{display:none!important}
 </style>
 </head>
 <body>
@@ -1115,12 +1117,57 @@ function AddListingForm({ tourColor, onAdd, onCancel }) {
 const [fields, setFields] = useState({
   address:"", city:"", beds:"", baths:"", sqft:"", dom:"", price:"", agent:"", photos:[]
 });
+const [confirmed, setConfirmed] = useState(false);
 const [status, setStatus] = useState("");
+const inputRef = useRef(null);
+const acRef = useRef(null);
+
+// Reposition pac-container to stay anchored to input after scroll
+const reposPac = () => {
+  const pac = document.querySelector('.pac-container');
+  if(!pac || !inputRef.current) return;
+  const r = inputRef.current.getBoundingClientRect();
+  pac.style.left = r.left + 'px';
+  pac.style.top = (r.bottom + 2) + 'px';
+  pac.style.width = r.width + 'px';
+};
+
+useEffect(()=>{
+  if(!inputRef.current) return;
+  const tryInit = () => {
+    if(!window.google?.maps?.places) return false;
+    const ac = new window.google.maps.places.Autocomplete(inputRef.current, {
+      types:["address"],
+      componentRestrictions:{country:"us"},
+      fields:["address_components","formatted_address"]
+    });
+    ac.addListener("place_changed", ()=>{
+      const place = ac.getPlace();
+      if(!place?.address_components){ setStatus("❌ Could not get address. Try again."); return; }
+      const get = t => (place.address_components.find(c=>c.types.includes(t))||{}).long_name||"";
+      const getS = t => (place.address_components.find(c=>c.types.includes(t))||{}).short_name||"";
+      const address = (get("street_number")+" "+get("route")).trim();
+      const cityStr = (get("locality")||get("sublocality"))+", "+getS("administrative_area_level_1")+" "+get("postal_code");
+      setFields(f=>({...f, address, city:cityStr.trim()}));
+      setConfirmed(true);
+      setStatus("✅ Address confirmed! Fill in details below.");
+    });
+    // Reposition on input events
+    inputRef.current.addEventListener('input', reposPac);
+    inputRef.current.addEventListener('focus', reposPac);
+    acRef.current = ac;
+    return true;
+  };
+  if(!tryInit()){
+    const iv = setInterval(()=>{ if(tryInit()) clearInterval(iv); }, 200);
+    setTimeout(()=>clearInterval(iv), 8000);
+  }
+  return ()=>{ inputRef.current?.removeEventListener('input', reposPac); };
+},[]);
 
 const handleAdd = () => {
-  if(!fields.address || fields.address.trim().length < 3) {
-    setStatus("⚠️ Please enter a property address.");
-    return;
+  if(!fields.address || fields.address.trim().length < 3){
+    setStatus("⚠️ Please enter a property address."); return;
   }
   onAdd({
     ...fields,
@@ -1135,90 +1182,101 @@ const handleAdd = () => {
   });
 };
 
-const fieldLabels = [
-  ["address","Property Address *"],["city","City, State ZIP"],
-  ["agent","Listing Agent"],["price","List Price ($)"],
-  ["beds","Beds"],["baths","Baths"],["sqft","Sq Ft"],["dom","Days on Market"]
-];
+const clearAddr = () => {
+  setConfirmed(false);
+  setFields(f=>({...f, address:"", city:""}));
+  setStatus("");
+  if(inputRef.current) inputRef.current.value = "";
+  setTimeout(()=>inputRef.current?.focus(), 50);
+};
+
+const fieldLabels = [["beds","Beds"],["baths","Baths"],["sqft","Sq Ft"],["dom","Days on Market"],["price","List Price ($)"],["agent","Listing Agent"]];
 
 return (
 <div style={{background:"#fff", borderRadius:14, padding:16, border:`2px solid ${tourColor}40`}}>
 <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:14}}>
-  <span style={{fontSize:20}}>🏠</span>
+  <span style={{fontSize:20}}>🔍</span>
   <h4 style={{color:B.primary, fontSize:14, fontWeight:700, margin:0}}>Add New Listing</h4>
 </div>
-<div style={{display:"flex", flexDirection:"column", gap:8, marginBottom:12}}>
-{fieldLabels.map(([f, label])=>(
-  <div key={f}>
-    <label style={{display:"block", fontSize:10, fontWeight:700, textTransform:"uppercase",
-      letterSpacing:.5, color:B.gray, marginBottom:4}}>{label}</label>
-    <input
-      value={fields[f]||""}
-      onChange={e=>setFields(fi=>({...fi,[f]:e.target.value}))}
-      placeholder={label}
-      style={{width:"100%", border:"1.5px solid #E5E7EB", borderRadius:8,
-        padding:"10px 12px", fontSize:14, outline:"none", background:B.cream,
-        boxSizing:"border-box"}}
+<div style={{marginBottom:10}}>
+  <label style={{display:"block", fontSize:11, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, color:B.gray, marginBottom:6}}>Property Address *</label>
+  <div style={{position:"relative"}}>
+    <input ref={inputRef} type="text" placeholder="Start typing an address..."
+      defaultValue=""
+      onChange={e=>{ if(confirmed){ setConfirmed(false); setFields(f=>({...f,address:e.target.value,city:""})); } else { reposPac(); } }}
+      onFocus={reposPac}
+      style={{width:"100%", border:`1.5px solid ${confirmed?"#059669":"#E5E7EB"}`,
+      borderRadius:9, padding:"11px 36px 11px 12px", fontSize:14,
+      outline:"none", background:confirmed?"#F0FDF4":"#fff", boxSizing:"border-box"}}
     />
+    {confirmed&&(
+      <button onClick={clearAddr} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",
+        background:"#DC2626",color:"#fff",border:"none",borderRadius:"50%",width:22,height:22,
+        cursor:"pointer",fontSize:11,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+    )}
+  </div>
+  {status&&(
+    <div style={{marginTop:6,padding:"8px 12px",borderRadius:8,fontSize:12,
+      background:status.startsWith("✅")?"#F0FDF4":status.startsWith("❌")?"#FEF2F2":"#FFFBEB",
+      color:status.startsWith("✅")?"#065F46":status.startsWith("❌")?"#DC2626":"#92400E",
+      border:`1px solid ${status.startsWith("✅")?"#BBF7D0":status.startsWith("❌")?"#FECACA":"#FDE68A"}`}}>
+      {status}
+    </div>
+  )}
+</div>
+{/* Detail fields */}
+<div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:8}}>
+{fieldLabels.map(([f,label])=>(
+  <div key={f}>
+    <label style={{display:"block",fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,color:B.gray,marginBottom:4}}>{label}</label>
+    <input value={fields[f]||""} onChange={e=>setFields(fi=>({...fi,[f]:e.target.value}))}
+      placeholder={label}
+      style={{width:"100%",border:"1.5px solid #E5E7EB",borderRadius:8,padding:"9px 10px",fontSize:14,outline:"none",background:B.cream}}/>
   </div>
 ))}
 </div>
-{status && (
-  <div style={{marginBottom:10, padding:"8px 12px", borderRadius:8, fontSize:12,
-    background: status.startsWith("⚠") ? "#FFFBEB" : "#FEF2F2",
-    color: status.startsWith("⚠") ? "#92400E" : "#DC2626",
-    border: `1px solid ${status.startsWith("⚠") ? "#FDE68A" : "#FECACA"}`}}>
-    {status}
-  </div>
-)}
-{/* Photo upload */}
+<div style={{marginBottom:12}}>
+  <label style={{display:"block",fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,color:B.gray,marginBottom:4}}>City, State ZIP</label>
+  <input value={fields.city||""} onChange={e=>setFields(fi=>({...fi,city:e.target.value}))}
+    style={{width:"100%",border:"1.5px solid #E5E7EB",borderRadius:8,padding:"9px 10px",fontSize:14,outline:"none",background:B.cream}}/>
+</div>
+{/* Photos */}
 <div style={{marginBottom:14}}>
-  <label style={{display:"block", fontSize:10, fontWeight:700, textTransform:"uppercase",
-    letterSpacing:.5, color:B.gray, marginBottom:6}}>Photos</label>
-  <label style={{display:"flex", alignItems:"center", gap:8, background:B.cream,
-    border:"1.5px dashed #D1D5DB", borderRadius:9, padding:"10px 14px",
-    cursor:"pointer", fontSize:13, color:B.gray}}>
+  <label style={{display:"block",fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,color:B.gray,marginBottom:6}}>Photos</label>
+  <label style={{display:"flex",alignItems:"center",gap:8,background:B.cream,border:"1.5px dashed #D1D5DB",
+    borderRadius:9,padding:"10px 14px",cursor:"pointer",fontSize:13,color:B.gray}}>
     <span style={{fontSize:20}}>📷</span> Add Photos
     <input type="file" accept="image/*" multiple style={{display:"none"}}
       onChange={e=>{
-        const files = Array.from(e.target.files);
+        const files=Array.from(e.target.files);
         if(!files.length) return;
-        Promise.all(files.map(f => new Promise((res,rej)=>{
-          const reader = new FileReader();
-          reader.onload = ev => res(ev.target.result);
-          reader.onerror = rej;
-          reader.readAsDataURL(f);
-        }))).then(urls => setFields(fi=>({...fi,photos:[...(fi.photos||[]),...urls]})));
-      }}
-    />
+        Promise.all(files.map(f=>new Promise((res,rej)=>{
+          const r=new FileReader();r.onload=ev=>res(ev.target.result);r.onerror=rej;r.readAsDataURL(f);
+        }))).then(urls=>setFields(fi=>({...fi,photos:[...(fi.photos||[]),...urls]})));
+      }}/>
   </label>
-  {fields.photos?.length > 0 && (
-    <div style={{display:"flex", gap:6, flexWrap:"wrap", marginTop:8}}>
+  {fields.photos?.length>0&&(
+    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:8}}>
       {fields.photos.map((p,i)=>(
         <div key={i} style={{position:"relative"}}>
-          <img src={p} alt="" style={{width:56, height:56, objectFit:"cover", borderRadius:8}}/>
+          <img src={p} alt="" style={{width:56,height:56,objectFit:"cover",borderRadius:8}}/>
           <button onClick={()=>setFields(fi=>({...fi,photos:fi.photos.filter((_,j)=>j!==i)}))}
-            style={{position:"absolute",top:-4,right:-4,background:"#DC2626",color:"#fff",
-            border:"none",borderRadius:"50%",width:18,height:18,cursor:"pointer",fontSize:10,
-            fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+            style={{position:"absolute",top:-4,right:-4,background:"#DC2626",color:"#fff",border:"none",
+            borderRadius:"50%",width:18,height:18,cursor:"pointer",fontSize:10,fontWeight:700,
+            display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
         </div>
       ))}
     </div>
   )}
 </div>
-<div style={{display:"flex", gap:10}}>
+<div style={{display:"flex",gap:10}}>
   <button onClick={onCancel}
-    style={{flex:1, background:"#F3F4F6", border:"none", borderRadius:9, padding:"11px 0",
-    fontWeight:600, fontSize:13, cursor:"pointer", color:B.dark}}>
-    Cancel
-  </button>
-  <button onClick={handleAdd} className="btn-hover"
-    disabled={!fields.address}
-    style={{flex:2, background: fields.address ? tourColor : "#9CA3AF",
-    color:"#fff", border:"none", borderRadius:9, padding:"11px 0",
-    fontWeight:700, fontSize:13, cursor: fields.address ? "pointer" : "default"}}>
-    ✓ Add Listing
-  </button>
+    style={{flex:1,background:"#F3F4F6",border:"none",borderRadius:9,padding:"11px 0",
+    fontWeight:600,fontSize:13,cursor:"pointer",color:B.dark}}>Cancel</button>
+  <button onClick={handleAdd} className="btn-hover" disabled={!fields.address}
+    style={{flex:2,background:fields.address?tourColor:"#9CA3AF",color:"#fff",border:"none",
+    borderRadius:9,padding:"11px 0",fontWeight:700,fontSize:13,
+    cursor:fields.address?"pointer":"default"}}>✓ Add Listing</button>
 </div>
 </div>
 );
