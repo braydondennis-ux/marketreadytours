@@ -176,6 +176,12 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
   /* Dashboard: the logo row is empty on desktop (logo is in the nav bar); hide it so the tagline sits at the top. Mobile keeps the logo here. */
   body.mrt-desktop .mrt-dash-logorow{ display:none !important; }
   body.mrt-desktop .mrt-dash-login-action{ display:flex !important; }  /* desktop Login joins the Calendar/Request/FAQ action row */
+  /* Guest dashboard header: everything in .mrt-dash-hdr-top is hidden on desktop, so drop its
+     leftover padding and balance the action row so the buttons center vertically in the bar
+     (bar has 9px top / 0 bottom padding + 4px button margins → 4px top + 13px bottom evens it out).
+     Admin keeps the wrapper (it holds the quick-action grid) and its original spacing. */
+  body.mrt-desktop .mrt-dash-hdr-top:not(:has(.mrt-dash-adminrow)){ display:none !important; }
+  body.mrt-desktop .mrt-dash-actionrow:has(.mrt-dash-login-action){ padding:4px 0 13px !important; align-items:center; }
   body.mrt-desktop .mrt-dash-tagline-action{ display:none !important; }  /* #1 tagline now lives in the top nav bar next to the logo, so hide the dashboard copies on desktop */
   body.mrt-desktop .mrt-dash-tagline-row{ display:none !important; }     /* (both dashboard tagline lines hidden on desktop; mobile keeps the standalone one) */
   /* The nav bar is the sole stationary element; page headers scroll with content (avoids a sticky-offset gap in tour detail's overflow:hidden container) */
@@ -10440,6 +10446,7 @@ function ToursDashboard(_ref26) {
       borderBottom: "2px solid " + B.gold
     }
   }, /*#__PURE__*/React.createElement("div", {
+    className: "mrt-dash-hdr-top",
     style: {
       paddingBottom: 14
     }
@@ -10511,6 +10518,7 @@ function ToursDashboard(_ref26) {
       textTransform: "uppercase"
     }
   }, "Real Estate Home Tours App"))), isAdmin && /*#__PURE__*/React.createElement("div", {
+    className: "mrt-dash-adminrow",
     style: {
       display: "flex",
       gap: 8,
@@ -10659,6 +10667,7 @@ function ToursDashboard(_ref26) {
       lineHeight: 1.2
     }
   }, "Sign Out")))), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-dash-actionrow",
     style: {
       display: "flex",
       flexWrap: "wrap",
