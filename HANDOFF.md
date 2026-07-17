@@ -1,14 +1,17 @@
 # MarketReady Tours — Project Handoff
 
-_Last updated: 2026-06-29_
+_Last updated: 2026-07-17_
 
 A real-estate "Tour · Rate · Decide" app for agents. This doc is the single source of truth
 for the project's current state, how it's built, what's in flight, and how to ship it.
 
-> **TL;DR status:** A large body of work (shared-data backend + full UI redesign + security
-> hardening) is complete on the **`firebase-shared-backend`** branch and live on an **isolated
-> dev preview only**. It is **NOT merged to `main` and NOT deployed to production** — the live
-> site and production Firebase are untouched.
+> **TL;DR status:** All work now lives on the **`design-refresh`** branch (a superset of
+> `firebase-shared-backend`): shared-data backend + security hardening + the full "Quiet
+> Luxury" visual refresh + **all fixes from the 2026-07-16 demo audit** (16 findings fixed
+> 2026-07-17, commit `b28eb73`; only M5/M7/L5 deferred — see §2b). Live on the **isolated
+> dev preview only**. It is **NOT merged to `main` and NOT deployed to production** — the
+> live site and production Firebase are untouched. **Demo meeting ~2026-07-24; prod go-live
+> may be approved after it.**
 
 ---
 
@@ -66,6 +69,45 @@ detail, public forms, rating flow, login, all admin screens); calmer cards; read
 
 ---
 
+## 2b. What's done on `design-refresh` (July — current working branch)
+
+Branch contains everything above **plus**:
+
+**A. "Quiet Luxury" visual refresh** (screens P1–P10, July 7–8): navy/ink/cream/gold palette,
+Fraunces + Hanken Grotesk, Lucide icons, per-tour color tamed to dot + spine. Then surgical
+UX passes: unified 1200px desktop content well, full-bleed page headers, ONE global desktop
+top-nav bar (per-page header logos hidden on desktop), mobile = per-page headers + bottom tab
+bar, deep-link routing fixed. Details: `docs/design/refresh-handoff.md`.
+
+**B. Google Maps fallback** (2026-07-16, `9b2073c`): demo domain isn't whitelisted on the
+referrer-restricted prod Maps key, so map auth failures now render a clean "Map preview
+unavailable" placeholder instead of Google's gray error overlay. To actually show the map on
+the demo, add `https://*.vercel.app/*` to the key's restrictions in Braydon's GCP project.
+
+**C. 2026-07-16 audit — 16 findings FIXED** (2026-07-17, commit `b28eb73`), verified by a
+red/green Playwright behavior suite against the emulator (14/14 green) + live smoke on the
+deployed demo. Highlights:
+- **C1 (critical):** public form REST writes no longer hardcode the **prod** database URL —
+  new `mrtDbRestUrl()` helper resolves emulator/dev/prod by hostname. **Use it for every
+  public-form REST write.**
+- **H1–H5:** last-tour delete persists; public "Request a Tour" persists to
+  `mrt_tour_requests`; sponsor signup shows its confirmation; browser Back works on tour
+  detail (hash is source of truth); stale pre-login sync poll can't revert admin edits.
+- **M1–M4, M6:** contact-form false success, rating crash on missing price/sqft, ghost-admin
+  session, unsanitized email input, blank logged-out admin deep links (now an "Admin access
+  required" screen).
+- **L1–L4, L6:** desktop double header, requests-admin hash, "1 stops"/"Stop #0" labels
+  (stop numbers now 1-based sorted position; seeds fixed), favicon, preview-write debounce +
+  `canSend.clear()` retry-after-failure.
+
+**Deferred (documented, not fixed):** **M5** — `mrt_tours` public-read still exposes tour
+access `code` + agent emails; fix = split into protected `mrt_tours_private/<id>` (data-model
+change). **M7** — verify the send-email Cloud Function authenticates callers (needs prod
+access). **L5** — no spam protection on public intake (captcha/rate-limit before real launch).
+Full audit detail: `docs/HANDOFF-audit-2026-07-16.md`.
+
+---
+
 ## 3. The demo (share this with Braydon)
 
 - **Stable URL:** https://marketready-tours-demo.vercel.app
@@ -76,10 +118,17 @@ detail, public forms, rating flow, login, all admin screens); calmer cards; read
 
 **How the demo backend works:** `index.html` picks the Firebase project by hostname —
 `*.vercel.app` → the **`marketready-tours-dev`** project; the real domain → prod;
-`localhost` → the local emulator. The stable URL is a Vercel alias re-pointed on each deploy:
+`localhost` → the local emulator. The stable URL is a Vercel alias re-pointed on each deploy.
+
+**⚠️ Deploy from the `marketreadytours/` subdirectory, NOT the parent `mrt/`.** The parent
+dir is linked to a different Vercel project (`mrt`) with Deployment Protection ON — aliasing
+a deploy from there puts an SSO login wall on the demo. Sanity-check the alias returns
+HTTP 200, not 302:
 ```
+cd marketreadytours
 URL=$(npx vercel --yes | grep -oE 'https://marketreadytours-[a-z0-9]+-abqeriks-projects.vercel.app')
 npx vercel alias set "${URL#https://}" marketready-tours-demo.vercel.app
+curl -s -o /dev/null -w "%{http_code}" https://marketready-tours-demo.vercel.app/   # → 200
 ```
 Re-seed the dev project with `node scripts/seed-dev.mjs` (creates the demo admin + tours +
 a pending sponsor signup).
@@ -113,7 +162,7 @@ Order matters — **security/rules first, then code**:
    per-tour-conditional, so legacy inline data is preserved until migrated.
 6. Roll back = remove the added rule blocks + revert the Vercel deploy (changes are additive).
 
-Also: **merge `firebase-shared-backend` → `main`** when ready.
+Also: **merge `design-refresh` → `main`** when ready (it contains `firebase-shared-backend`).
 
 ---
 
@@ -136,13 +185,18 @@ Also: **merge `firebase-shared-backend` → `main`** when ready.
 
 ## 7. Open follow-ups / known issues
 
-- **Ship to prod** (section 5) + merge branch to main — biggest pending item.
+- **Demo meeting ~2026-07-24** — demo is ready; prod go-live may be approved after it.
+- **Ship to prod** (section 5) + merge `design-refresh` to main — biggest pending item,
+  gated on Braydon's explicit OK.
+- **Deferred audit items:** M5 (split tour `code`/agent emails into protected
+  `mrt_tours_private/<id>` — also covers the older "Phase 1" world-readable concern), M7
+  (verify send-email CF authenticates callers; needs prod), L5 (spam protection on public
+  intake before real launch). See §2b + `docs/HANDOFF-audit-2026-07-16.md`.
+- **Demo map placeholder** — the Tour Route map shows "Map preview unavailable" on the demo
+  until `https://*.vercel.app/*` is added to the Maps key restrictions (prod domain is fine).
 - **Accepted v1 security tradeoffs** (documented): `mrt_favorites` anon writes aren't
   ownership-scoped (favorite tampering, low value); `mrt_ratings` is public-read (exposes
   voluntary rater names). Hardening = anonymous-auth scoping ("Approach C"), deferred.
-- **Pre-existing, NOT introduced here** (`SECURITY_NOTES` Phase 1): `mrt_tours` and `admins` are
-  world-readable (leak campaignContacts/notes/per-tour code, and the admin email list). Fix =
-  split sensitive fields into `mrt_tours_private/<id>`.
 - **Dead "Invite Campaign"** feature (Instantly.ai short-circuited; only email #1 of the drip
   ever sends). Mass-emailing agents has CAN-SPAM exposure — understand before using.
 - **Root vs `www` drift** — always `cp index.html www/index.html` before committing/deploying.
@@ -153,5 +207,7 @@ Also: **merge `firebase-shared-backend` → `main`** when ready.
 
 ## 8. Reference docs in this repo
 - `SECURITY_NOTES.md` — the security hardening (Phase 0) detail + residual/Phase 1 items.
+- `docs/HANDOFF-audit-2026-07-16.md` — the full demo audit (all findings + fix status).
+- `docs/design/refresh-handoff.md` + `docs/design/design-tokens.css` — the visual refresh.
 - `docs/superpowers/specs/2026-06-24-firebase-shared-backend-design.md` — feature design spec.
 - `docs/superpowers/plans/2026-06-24-firebase-shared-backend.md` — implementation plan.
