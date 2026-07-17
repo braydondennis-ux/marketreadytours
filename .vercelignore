@@ -1,0 +1,7 @@
+node_modules
+ios
+.superpowers
+docs
+.git
+package-lock.json
+scripts

@@ -12,6 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800;9..144,900&family=Hanken+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <title>MarketReady Tours — #1 Real Estate Home Tours App</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏡</text></svg>"/>
 <meta name="description" content="Tour. Rate. Decide. Browse curated home tours, RSVP, preview homes with peers, and submit real-time feedback."/>
 <meta property="og:type" content="website"/>
 <meta property="og:title" content="MarketReady Tours — Curated Home Tours for Real Estate Agents"/>
@@ -161,6 +162,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
     /* scrollbar-immune (no vw, no overflow-clip so sticky still works): background fills the full-width shell; padding recenters inner content to the 1200 well + 18px */
     padding-left:max(18px, calc(50% - 582px)) !important; padding-right:max(18px, calc(50% - 582px)) !important; }
   body.mrt-desktop .mrt-masthead-links{ display:flex !important; }/* horizontal masthead nav is desktop-only */
+  body.mrt-desktop .mrt-masthead-row{ display:none !important; }/* global top nav already carries logo+links+Login on desktop — avoid double header */
   /* Logo now lives in the persistent global top nav bar → hide the per-header logos on desktop */
   body.mrt-desktop .mrt-appbar .mrt-hdr-logo{ display:none !important; }
   body.mrt-desktop .mrt-td-logowrap{ display:none !important; }
@@ -302,6 +304,14 @@ if (window._MRT_LOCAL) {
     if (_fbStorage) _fbStorage.useEmulator("127.0.0.1", 9199);
     console.log("MRT[emu] connected to local Firebase emulators");
   } catch (e) { console.warn("MRT[emu] connect failed", e); }
+}
+
+/* Environment-correct RTDB REST url — raw fetch() bypasses the SDK's emulator redirect,
+   so public-form REST writes must resolve to the same database the SDK is using
+   (emulator on localhost, dev on *.vercel.app, prod only on the real domain). */
+function mrtDbRestUrl(path) {
+  if (window._MRT_LOCAL) return "http://127.0.0.1:9000/" + path + ".json?ns=" + _fbConfig.projectId + "-default-rtdb";
+  return _fbConfig.databaseURL.replace(/\/+$/, "") + "/" + path + ".json";
 }
 
 /* Create a Firebase Auth user via secondary app (so current admin stays signed in) */
@@ -544,6 +554,7 @@ const canSend = function (key) {
   _lastSent[key] = now;
   return true;
 };
+canSend.clear = key => { delete _lastSent[key]; }; // un-stamp after a failed send so a legit retry isn't blocked
 /* ── INPUT SANITIZER — strips HTML/script tags from user input ── */
 const sanitize = str => typeof str === "string" ? str.replace(/<[^>]*>/g, "").replace(/[<>]/g, "").trim().slice(0, 1000) : "";
 let _toastQueue = [];
@@ -1723,6 +1734,11 @@ function RatingPage(_ref7) {
     } // prevent double-submit
     const safeSuggestions = sanitize(suggestions);
     const safeSugPrice = sanitize(sugPrice);
+    // Stop number by sorted position — listing.order is 1-based for app-created listings but
+    // 0-based in some legacy/seed data, so the position in the sorted route is the safe label
+    const _stopSorted = (tour.listings || []).slice().sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+    const _stopIx = _stopSorted.findIndex(l => l.id === listing.id);
+    const stopNumber = _stopIx >= 0 ? _stopIx + 1 : Number(listing.order) || 1;
     setSubmitting(true);
     setSubmitError("");
     try {
@@ -1731,14 +1747,14 @@ function RatingPage(_ref7) {
         "Property Address": listing.address,
         "City": listing.city,
         "Listing Agent": listing.agent,
-        "List Price": "$".concat(listing.price.toLocaleString()),
+        "List Price": "$".concat(Number(listing.price || 0).toLocaleString()),
         "Beds / Baths": "".concat(listing.beds, " bd / ").concat(listing.baths, " ba"),
-        "Square Feet": "".concat(listing.sqft.toLocaleString(), " sqft"),
+        "Square Feet": "".concat(Number(listing.sqft || 0).toLocaleString(), " sqft"),
         "Days on Market": "".concat(listing.dom, " days"),
         "Tour Name": "".concat(tour.emoji, " ").concat(tour.name),
         "Tour Date": tour.date,
         "Tour Time": tour.time,
-        "Stop Number": "#".concat(listing.order),
+        "Stop Number": "#".concat(stopNumber),
         "Rater Name": raterName || "Anonymous",
         "── RATINGS ──": "─────────────────",
         ...Object.fromEntries(RATING_CATS.map(cat => [cat.label, starLabel(ratings[cat.key] || 0)])),
@@ -1754,7 +1770,7 @@ function RatingPage(_ref7) {
       };
       // Build email HTML
       const ratingRows = RATING_CATS.map(cat => "<tr><td style=\"padding:6px 12px;color:#8A8078;font-size:13px\">".concat(cat.label, "</td><td style=\"padding:6px 12px;text-align:right;font-size:14px\">").concat("★".repeat(ratings[cat.key] || 0)).concat("☆".repeat(5 - (ratings[cat.key] || 0)), " ").concat(ratings[cat.key] || 0, "/5</td></tr>")).join("");
-      const emailHtml = "<div style=\"font-family:Georgia,serif;max-width:600px;margin:0 auto;background:#fff\">\n<div style=\"background:#0D0D0D;padding:22px 28px\"><p style=\"margin:0;font-family:Georgia,serif;font-size:24px;font-weight:900;color:#ffffff;letter-spacing:1px\">Market<span style=\"color:#C9A55A\">Ready</span> <span style=\"font-weight:300;font-size:20px;letter-spacing:3px\">Tours</span></p></div>\n<div style=\"background:#C9A55A;height:4px\"></div>\n<div style=\"padding:28px\">\n<h2 style=\"color:#0D0D0D;margin:0 0 4px\">New Rating Submitted</h2>\n<p style=\"color:#8A8078;margin:0 0 20px;font-size:14px\">".concat(tour.emoji, " ").concat(tour.name, " \xB7 Stop #").concat(listing.order, "</p>\n<div style=\"background:#F9FAFB;border-radius:10px;padding:16px 20px;margin-bottom:20px\">\n<div style=\"font-size:15px;font-weight:700;color:#111\">").concat(listing.address, "</div>\n<div style=\"font-size:13px;color:#8A8078\">").concat(listing.city, " \xB7 Listed by ").concat(listing.agent, " \xB7 $").concat(Number(listing.price).toLocaleString(), "</div>\n</div>\n<table style=\"width:100%;border-collapse:collapse;margin-bottom:20px\">").concat(ratingRows, "</table>\n").concat(suggestions ? "<div style=\"margin-bottom:12px\"><strong style=\"font-size:12px;color:#8A8078;text-transform:uppercase;letter-spacing:.5px\">Suggestions</strong><p style=\"margin:4px 0 0;font-size:14px;color:#111\">".concat(suggestions, "</p></div>") : "", "\n<div style=\"margin-bottom:12px\"><strong style=\"font-size:12px;color:#8A8078;text-transform:uppercase;letter-spacing:.5px\">Suggested Price</strong><p style=\"margin:4px 0 0;font-size:14px;font-weight:700;color:#0D0D0D\">").concat(pricedRight ? "✅ Priced Correctly" : sugPrice || "Not provided", "</p></div>\n").concat(photos.filter(p => p.url && p.url.startsWith("https://")).length > 0 ? "<div style=\"margin-top:16px\"><strong style=\"font-size:12px;color:#8A8078;text-transform:uppercase;letter-spacing:.5px\">&#128247; Photos (".concat(photos.filter(p => p.url && p.url.startsWith("https://")).length, ")</strong><div style=\"margin-top:8px\">").concat(photos.filter(p => p.url && p.url.startsWith("https://")).map((p, i) => "<a href=\"".concat(p.url, "\" target=\"_blank\" style=\"display:inline-block;margin:4px 6px 4px 0;background:#0D0D0D;color:#ffffff;text-decoration:none;padding:6px 14px;border-radius:6px;font-size:13px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif\">&#128247; View Photo ").concat(i + 1, "</a>")).join(""), "</div></div>") : "", "\n<p style=\"font-size:11px;color:#9CA3AF;margin-top:24px;border-top:1px solid #F0EDE8;padding-top:12px\">All feedback is provided by licensed real estate agents specializing in the area.</p>\n</div></div>");
+      const emailHtml = "<div style=\"font-family:Georgia,serif;max-width:600px;margin:0 auto;background:#fff\">\n<div style=\"background:#0D0D0D;padding:22px 28px\"><p style=\"margin:0;font-family:Georgia,serif;font-size:24px;font-weight:900;color:#ffffff;letter-spacing:1px\">Market<span style=\"color:#C9A55A\">Ready</span> <span style=\"font-weight:300;font-size:20px;letter-spacing:3px\">Tours</span></p></div>\n<div style=\"background:#C9A55A;height:4px\"></div>\n<div style=\"padding:28px\">\n<h2 style=\"color:#0D0D0D;margin:0 0 4px\">New Rating Submitted</h2>\n<p style=\"color:#8A8078;margin:0 0 20px;font-size:14px\">".concat(tour.emoji, " ").concat(tour.name, " \xB7 Stop #").concat(stopNumber, "</p>\n<div style=\"background:#F9FAFB;border-radius:10px;padding:16px 20px;margin-bottom:20px\">\n<div style=\"font-size:15px;font-weight:700;color:#111\">").concat(listing.address, "</div>\n<div style=\"font-size:13px;color:#8A8078\">").concat(listing.city, " \xB7 Listed by ").concat(listing.agent, " \xB7 $").concat(Number(listing.price).toLocaleString(), "</div>\n</div>\n<table style=\"width:100%;border-collapse:collapse;margin-bottom:20px\">").concat(ratingRows, "</table>\n").concat(safeSuggestions ? "<div style=\"margin-bottom:12px\"><strong style=\"font-size:12px;color:#8A8078;text-transform:uppercase;letter-spacing:.5px\">Suggestions</strong><p style=\"margin:4px 0 0;font-size:14px;color:#111\">".concat(safeSuggestions, "</p></div>") : "", "\n<div style=\"margin-bottom:12px\"><strong style=\"font-size:12px;color:#8A8078;text-transform:uppercase;letter-spacing:.5px\">Suggested Price</strong><p style=\"margin:4px 0 0;font-size:14px;font-weight:700;color:#0D0D0D\">").concat(pricedRight ? "✅ Priced Correctly" : safeSugPrice || "Not provided", "</p></div>\n").concat(photos.filter(p => p.url && p.url.startsWith("https://")).length > 0 ? "<div style=\"margin-top:16px\"><strong style=\"font-size:12px;color:#8A8078;text-transform:uppercase;letter-spacing:.5px\">&#128247; Photos (".concat(photos.filter(p => p.url && p.url.startsWith("https://")).length, ")</strong><div style=\"margin-top:8px\">").concat(photos.filter(p => p.url && p.url.startsWith("https://")).map((p, i) => "<a href=\"".concat(p.url, "\" target=\"_blank\" style=\"display:inline-block;margin:4px 6px 4px 0;background:#0D0D0D;color:#ffffff;text-decoration:none;padding:6px 14px;border-radius:6px;font-size:13px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif\">&#128247; View Photo ").concat(i + 1, "</a>")).join(""), "</div></div>") : "", "\n<p style=\"font-size:11px;color:#9CA3AF;margin-top:24px;border-top:1px solid #F0EDE8;padding-top:12px\">All feedback is provided by licensed real estate agents specializing in the area.</p>\n</div></div>");
       // Fire CF email first — independent of Formspree
       onRatingSubmit(listing.id, ratings, {
         suggestions: safeSuggestions,
@@ -1780,6 +1796,7 @@ function RatingPage(_ref7) {
       setDone(true);
       setTimeout(onBack, 2800);
     } catch (e) {
+      canSend.clear("rating_" + listing.id);
       setSubmitError("Network error — please check your connection.");
       setSubmitting(false);
     }
@@ -8306,7 +8323,7 @@ function TourDetailPage(_ref19) {
     weekday: "short",
     month: "short",
     day: "numeric"
-  }), " \xB7 ", LI("Clock", 14, { marginRight: 5 }), tour.time, " \xB7 ", LI("MapPin", 14, { marginRight: 5 }), sorted.length, " stops"), /*#__PURE__*/React.createElement("div", {
+  }), " \xB7 ", LI("Clock", 14, { marginRight: 5 }), tour.time, " \xB7 ", LI("MapPin", 14, { marginRight: 5 }), sorted.length, sorted.length === 1 ? " stop" : " stops"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "center",
@@ -8795,7 +8812,7 @@ function TourDetailPage(_ref19) {
     style: {
       marginBottom: 12
     }
-  }, LI("Home", 40, { color: B.gray })), /*#__PURE__*/React.createElement("p", null, "No listings yet.", isAdmin ? " Tap the gear icon to add some." : "")), /*#__PURE__*/React.createElement("div", { className: "mrt-list mrt-list-listings" }, sorted.map(listing => {
+  }, LI("Home", 40, { color: B.gray })), /*#__PURE__*/React.createElement("p", null, "No listings yet.", isAdmin ? " Tap the gear icon to add some." : "")), /*#__PURE__*/React.createElement("div", { className: "mrt-list mrt-list-listings" }, sorted.map((listing, _stopIx) => {
     var _tour$favorites, _tour$ratings5, _tour$ratings6, _tour$notes;
     const isFav = ((_tour$favorites = tour.favorites) === null || _tour$favorites === void 0 ? void 0 : _tour$favorites[listing.id]) || false;
     const isRated = ((_tour$ratings5 = tour.ratings) === null || _tour$ratings5 === void 0 ? void 0 : _tour$ratings5[listing.id]) && Object.values(tour.ratings[listing.id]).some(v => v > 0);
@@ -8842,7 +8859,7 @@ function TourDetailPage(_ref19) {
         fontSize: 12,
         fontWeight: 800
       }
-    }, "Stop #", listing.order), /*#__PURE__*/React.createElement("button", {
+    }, "Stop #", _stopIx + 1), /*#__PURE__*/React.createElement("button", {
       onClick: () => toggleFavorite(listing.id),
       style: {
         position: "absolute",
@@ -9681,9 +9698,18 @@ const RequestATourInlineForm = React.forwardRef(function (_ref24, ref) {
         preferredDate: fields.preferredDate || "",
         notes: safeNotes || ""
       };
+      // Persist to Firebase so the admin Attendance tab sees it (guest create-only path)
+      try {
+        await fetchWithTimeout(mrtDbRestUrl("mrt_tour_requests/" + req.id), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(req)
+        }, 10000);
+      } catch (e) { /* team was still notified via Formspree/SMS; local state below */ }
       onSubmit && onSubmit(req);
       setDone(true);
     } catch (e) {
+      canSend.clear("tourRequest_" + fields.email);
       setError("Submission failed. Please check your connection and try again.");
     }
     setSubmitting(false);
@@ -10039,6 +10065,15 @@ function ToursDashboard(_ref26) {
   React.useEffect(() => {
     if (initialTourId && !activeTourId) setActiveTourId(initialTourId);
   }, [initialTourId]);
+  // The hash is the source of truth for the open tour, so browser Back/Forward works
+  React.useEffect(() => {
+    const onHash = () => {
+      const h = window.location.hash.slice(2) || "";
+      setActiveTourId(h.startsWith("tour/") ? h.slice(5) : null);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
   React.useEffect(() => {
     window._getMRTTours = function (ds) {
       return tours.filter(function (t) {
@@ -10920,7 +10955,7 @@ function ToursDashboard(_ref26) {
       }
     }, /*#__PURE__*/React.createElement("span", {
       className: "mrt-pill"
-    }, LI("MapPin", 12, { color: B.gray }), (tour.listings || []).length, " stops"), /*#__PURE__*/React.createElement("span", {
+    }, LI("MapPin", 12, { color: B.gray }), (tour.listings || []).length, (tour.listings || []).length === 1 ? " stop" : " stops"), /*#__PURE__*/React.createElement("span", {
       className: "mrt-pill",
       style: {
         background: ratedCount > 0 ? "#FBF6EA" : "#fff",
@@ -11689,6 +11724,7 @@ function PublicMasthead(_ref) {
       padding: "18px 20px 0"
     }
   }, /*#__PURE__*/React.createElement("div", {
+    className: "mrt-masthead-row",
     style: {
       display: "flex",
       alignItems: "center",
@@ -11936,7 +11972,7 @@ function RequestListingPage(_ref31) {
       // Write directly to Firebase REST API (works without auth for public submissions)
       try {
         const reqKey = requestData.id.replace(/[.#$[\]]/g, "_");
-        await fetchWithTimeout("https://marketready-tours-default-rtdb.firebaseio.com/mrt_listing_requests/" + reqKey + ".json", {
+        await fetchWithTimeout(mrtDbRestUrl("mrt_listing_requests/" + reqKey), {
           method: "PUT",
           headers: {"Content-Type": "application/json"},
           body: JSON.stringify(requestData)
@@ -13199,6 +13235,7 @@ function ContactPage(_ref36) {
     message: ""
   });
   const [sent, setSent] = useState(false);
+  const [sendErr, setSendErr] = useState("");
   return /*#__PURE__*/React.createElement("div", {
     style: {
       background: "var(--mrt-cream)",
@@ -13312,11 +13349,18 @@ function ContactPage(_ref36) {
     })),
     rows: 5,
     style: { resize: "vertical" }
-  }), /*#__PURE__*/React.createElement("button", {
+  }), sendErr && /*#__PURE__*/React.createElement("div", {
+    style: { color: "#B91C1C", fontSize: 13, fontWeight: 600 }
+  }, sendErr), /*#__PURE__*/React.createElement("button", {
     onClick: async () => {
       if (form.name && form.email && form.message) {
+        if (!isValidEmail(form.email)) {
+          setSendErr("Please enter a valid email address.");
+          return;
+        }
+        setSendErr("");
         try {
-          await fetchWithTimeout("https://formspree.io/f/xdallqwa", {
+          const r = await fetchWithTimeout("https://formspree.io/f/xdallqwa", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -13329,9 +13373,12 @@ function ContactPage(_ref36) {
               message: "Name: ".concat(form.name, "\nEmail: ").concat(form.email, "\nPhone: ").concat(form.phone || "Not provided", "\n\n").concat(form.message)
             })
           });
-          sendSMS("New Contact: ".concat(form.name, " - ").concat(form.message.slice(0, 60)));
-        } catch (e) {}
-        setSent(true);
+          if (!r || !r.ok) throw new Error("send failed");
+          try { sendSMS("New Contact: ".concat(form.name, " - ").concat(form.message.slice(0, 60))); } catch (e) {}
+          setSent(true);
+        } catch (e) {
+          setSendErr("Your message didn't send. Please check your connection and try again.");
+        }
       }
     },
     className: "mrt-btn mrt-btn--navy mrt-press",
@@ -13515,7 +13562,7 @@ function SponsorSignupPage(_ref38) {
   }, new Date(t.date + "T12:00:00").toLocaleDateString("en-US", {
     month: "short",
     day: "numeric"
-  }), " · ", t.time, " · ", (t.listings || []).length, " stops")), selectedTour === t.id && LI("Check", 16, { color: "var(--mrt-navy)" }))))), /*#__PURE__*/React.createElement("div", {
+  }), " · ", t.time, " · ", (t.listings || []).length, (t.listings || []).length === 1 ? " stop" : " stops")), selectedTour === t.id && LI("Check", 16, { color: "var(--mrt-navy)" }))))), /*#__PURE__*/React.createElement("div", {
     className: "mrt-card mrt-card--soft",
     style: { padding: 20 }
   }, /*#__PURE__*/React.createElement("div", {
@@ -13823,7 +13870,19 @@ function App() {
         // Try restoring from session (for page refreshes during Firebase load)
         try {
           const s = sessionStorage.getItem("gat_session");
-          if (s) setCurrentUser(JSON.parse(s));else setCurrentUser(null);
+          if (s) {
+            setCurrentUser(JSON.parse(s));
+            // Ghost-admin guard: if Firebase auth hasn't confirmed a user shortly after the
+            // restore, the session is expired — admin UI would render but every write fails.
+            setTimeout(() => {
+              try {
+                if (_fbAuth && !_fbAuth.currentUser) {
+                  sessionStorage.removeItem("gat_session");
+                  setCurrentUser(null);
+                }
+              } catch (e) {}
+            }, 5000);
+          } else setCurrentUser(null);
         } catch (e) {
           setCurrentUser(null);
         }
@@ -13890,10 +13949,14 @@ function App() {
       "mrt_favorites": val => setSharedFavorites(val || {})
     };
     // Load all paths once on mount
+    // effectDead: set on cleanup so in-flight loads from a stale effect instance (e.g. the
+    // pre-login guest poll) can't apply after admin login and silently revert fresh admin edits.
+    let effectDead = false;
     const loadAll = () => Promise.all(
       Object.keys(paths).map(path =>
         _fb.ref(path).once("value").then(snap => {
           try {
+            if (effectDead || fbIgnore.current[path]) return;
             const raw = snap.val();
             if (raw !== null && raw !== undefined) paths[path](fbToArr(raw));
           } catch (e) {}
@@ -13908,7 +13971,7 @@ function App() {
       if (fbReady.current) return;
       Promise.all(Object.keys(paths).map(path =>
         fetch(_dbBase + "/" + path + ".json").then(r => r.ok ? r.json() : null).then(raw => {
-          if (fbReady.current) return;            // SDK won the race mid-flight — don't overwrite
+          if (effectDead || fbReady.current) return; // SDK won the race mid-flight — don't overwrite
           if (raw !== null && raw !== undefined) { try { paths[path](fbToArr(raw)); } catch (e) {} }
         }).catch(() => {})
       )).then(() => { if (!fbReady.current) { fbReady.current = true; setFbLoaded(true); } });
@@ -13938,6 +14001,7 @@ function App() {
       }
     });
     return () => {
+      effectDead = true;
       try {
         if (_restTimer) clearTimeout(_restTimer);
         if (isAnyAdmin) {
@@ -13949,11 +14013,8 @@ function App() {
   }, [isAnyAdmin]);
 
   // Debounced write to Firebase — waits 800ms after last change before writing
-  const fbDeletingTour = useRef(false);
   const fbWrite = (path, data) => {
     if (!_fb || !fbReady.current) return;
-    // Skip bulk tour write immediately after a granular delete to prevent race condition
-    if (path === "mrt_tours" && fbDeletingTour.current) return;
     fbIgnore.current[path] = true;
     clearTimeout(fbWriteTimeout.current[path]);
     fbWriteTimeout.current[path] = setTimeout(() => {
@@ -13966,7 +14027,7 @@ function App() {
     }, 800);
   };
   useEffect(() => {
-    if (!fbLoaded || tours.length === 0 || !isAnyAdmin) return;
+    if (!fbLoaded || !isAnyAdmin) return; // empty tours must write too, or deleting the last tour never persists
     // Drop a tour's shared fields from the mrt_tours write ONLY once that tour's data
     // actually lives in the shared path — otherwise we'd wipe un-migrated inline history
     // (some legacy tours still carry inline ratings/favorites until migration runs).
@@ -13978,7 +14039,7 @@ function App() {
       return out;
     });
     fbWrite("mrt_tours", cleanTours);
-    // Write public preview — only when admin saves, not on every state change
+    // Write public preview — debounced like fbWrite so tour edits don't write per-keystroke
     if (_fb && fbReady.current) {
       const previews = {};
       tours.forEach(t => {
@@ -13994,7 +14055,10 @@ function App() {
           photo: (photo && photo.startsWith("http")) ? photo : null
         };
       });
-      _fb.ref("mrt_tour_previews").set(previews);
+      clearTimeout(fbWriteTimeout.current["mrt_tour_previews"]);
+      fbWriteTimeout.current["mrt_tour_previews"] = setTimeout(() => {
+        try { _fb.ref("mrt_tour_previews").set(previews).catch(() => {}); } catch (e) {}
+      }, 1200);
     }
   }, [tours, fbLoaded, isAnyAdmin]);
   useEffect(() => {
@@ -14162,7 +14226,10 @@ function App() {
       setPage("team");
       window.location.hash = "/team";
     },
-    onRequestsPage: () => setPage("requests-admin"),
+    onRequestsPage: () => {
+      setPage("requests-admin");
+      window.location.hash = "/requests-admin";
+    },
     onRequestTour: () => {
       setPage("request");
       window.location.hash = "/request";
@@ -14179,7 +14246,29 @@ function App() {
       setPage("dashboard");
       window.location.hash = "/";
     }
-  }), page === "team" && isSuperAdmin && /*#__PURE__*/React.createElement(TeamPage, {
+  }), !authLoading && (page === "team" && !isSuperAdmin || page === "requests-admin" && !currentUser) && /*#__PURE__*/React.createElement("div", {
+    style: { minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "mrt-card mrt-card--soft",
+    style: { padding: "36px 28px", textAlign: "center", maxWidth: 420 }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", justifyContent: "center", marginBottom: 12, color: "var(--mrt-navy)" }
+  }, LI("Lock", 26)), /*#__PURE__*/React.createElement("h3", {
+    style: { fontFamily: "var(--mrt-font-display)", fontSize: 20, fontWeight: 600, margin: "0 0 8px", color: "var(--mrt-ink)" }
+  }, "Admin access required"), /*#__PURE__*/React.createElement("p", {
+    style: { color: "var(--mrt-muted)", fontSize: 14, margin: "0 0 18px" }
+  }, "Log in with your admin account to view this page."), /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "mrt-btn mrt-btn--navy mrt-press",
+    onClick: () => setShowLogin(true)
+  }, LI("Lock", 14), "Login"), /*#__PURE__*/React.createElement("button", {
+    className: "mrt-btn mrt-btn--ghost mrt-press",
+    onClick: () => {
+      setPage("dashboard");
+      window.location.hash = "/";
+    }
+  }, "Back to Tours")))), page === "team" && isSuperAdmin && /*#__PURE__*/React.createElement(TeamPage, {
     subAdmins: subAdmins,
     setSubAdmins: setSubAdmins,
     onBack: () => {
@@ -14219,7 +14308,7 @@ function App() {
       const signupId = uid("spreq");
       const record = { ...sp, tourId: undefined, id: signupId, paid: false, createdAt: new Date().toISOString() };
       if (_fb) { try { _fb.ref("mrt_sponsor_signups/" + tourId + "/" + signupId).set(record).catch(() => {}); } catch (e) {} }
-      setPage("dashboard");
+      // Stay on the page — SponsorSignupPage renders its own confirmation screen
     }
   }), page === "requests-admin" && ((currentUser === null || currentUser === void 0 ? void 0 : currentUser.role) === "super" || currentUser) && /*#__PURE__*/React.createElement(ListingRequestsAdmin, {
     requests: listingRequests,
@@ -14618,7 +14707,7 @@ h+='<button onclick="window._openMRTTour(\''+jsId(t.id)+'\')" style="width:100%;
 h+='<div style="font-size:28px">'+esc(t.emoji)+'</div>';
 h+='<div style="flex:1">';
 h+='<div style="font-family:Georgia,serif;font-size:15px;font-weight:700;color:'+esc(t.color)+'">'+esc(t.name)+badge+'</div>';
-h+='<div style="font-size:12px;color:#6B7280;margin-top:2px">🕒 '+esc(t.time)+' · 🏠 '+(t.listings?t.listings.length:0)+' stops</div>';
+h+='<div style="font-size:12px;color:#6B7280;margin-top:2px">🕒 '+esc(t.time)+' · 🏠 '+(t.listings?t.listings.length:0)+((t.listings&&t.listings.length===1)?' stop':' stops')+'</div>';
 h+='</div>';
 h+='<div style="font-size:18px;color:'+esc(t.color)+'">→</div>';
 h+='</button>';

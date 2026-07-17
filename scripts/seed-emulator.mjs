@@ -7,7 +7,7 @@ const put = (path, data) => fetch(`${DB}/${path}.json?ns=${PROJECT}-default-rtdb
   method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
 }).then(r => r.ok ? null : r.text().then(t => { throw new Error(path + ": " + t); }));
 
-const mkListing = (i, addr) => ({ id: "l-"+i, order: i, address: addr, city: "Phoenix",
+const mkListing = (i, addr) => ({ id: "l-"+i, order: i + 1, address: addr, city: "Phoenix",
   beds: 3, baths: 2, sqft: 1800, dom: 12, price: 450000, agent: "Test Agent",
   agentEmail: "agent@example.com", photos: ["https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400"] });
 
