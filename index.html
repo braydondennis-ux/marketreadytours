@@ -1125,14 +1125,15 @@ useEffect(()=>{
 if(window.google?.maps?.places) setToken(new window.google.maps.places.AutocompleteSessionToken());
 },[]);
 useEffect(()=>{
-if(!query||query.length<3||!window.google?.maps?.places||addrConfirmed){setSugg([]);return;}
+if(!query||query.length<3||addrConfirmed){setSugg([]);return;}
+if(!window.google?.maps?.places){setSugg([]);return;}
 const svc=new window.google.maps.places.AutocompleteService();
-svc.getPlacePredictions({input:query,sessionToken,types:["address"],componentRestrictions:{country:"us"}},
-(predictions,status)=>{
-if(status===window.google.maps.places.PlacesServiceStatus.OK&&predictions) setSugg(predictions);
+svc.getPlacePredictions({input:query,types:["address"],componentRestrictions:{country:"us"}},
+(predictions,st)=>{
+if(st===window.google.maps.places.PlacesServiceStatus.OK&&predictions) setSugg(predictions);
 else setSugg([]);
 });
-},[query]);
+},[query,addrConfirmed]);
 const handleAddrSelect=(prediction)=>{
 setSugg([]);
 const map=new window.google.maps.Map(document.createElement("div"));
@@ -2417,14 +2418,15 @@ useEffect(()=>{
 if(window.google?.maps?.places) setToken(new window.google.maps.places.AutocompleteSessionToken());
 },[]);
 useEffect(()=>{
-if(!query||query.length<3||!window.google?.maps?.places||addrConfirmed){setSugg([]);return;}
+if(!query||query.length<3||addrConfirmed){setSugg([]);return;}
+if(!window.google?.maps?.places){setSugg([]);return;}
 const svc=new window.google.maps.places.AutocompleteService();
-svc.getPlacePredictions({input:query,sessionToken,types:["address"],componentRestrictions:{country:"us"}},
-(predictions,status)=>{
-if(status===window.google.maps.places.PlacesServiceStatus.OK&&predictions) setSugg(predictions);
+svc.getPlacePredictions({input:query,types:["address"],componentRestrictions:{country:"us"}},
+(predictions,st)=>{
+if(st===window.google.maps.places.PlacesServiceStatus.OK&&predictions) setSugg(predictions);
 else setSugg([]);
 });
-},[query]);
+},[query,addrConfirmed]);
 const handleAddrSelect=(prediction)=>{
 setSugg([]);
 const map=new window.google.maps.Map(document.createElement("div"));
