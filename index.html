@@ -19,7 +19,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBoPhoNQ5C84nS79QDV36R93APg4Pizo_E&libraries=places"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyChm7UYPWXg_nhD8JqUW3WRfyzsTC491V8&libraries=places"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -118,7 +118,7 @@ await sendCFEmail(email, "Welcome to MarketReady Tours 🏡",
 } catch(e) { console.warn("Welcome email failed:", e); }
 }
 /* ── API KEYS ── */
-const GOOGLE_KEY = "AIzaSyBoPhoNQ5C84nS79QDV36R93APg4Pizo_E";
+const GOOGLE_KEY = "AIzaSyChm7UYPWXg_nhD8JqUW3WRfyzsTC491V8";
 const TODAY = new Date().toISOString().split("T")[0];
 const APP_VERSION="mrt_2026febV";
 try{if(localStorage.getItem("mrt_app_version")!==APP_VERSION){for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&(k.startsWith("mrt_")||k.startsWith("gat_")))localStorage.removeItem(k);}localStorage.setItem("mrt_app_version",APP_VERSION);}}catch(e){}
