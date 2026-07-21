@@ -1212,7 +1212,7 @@ onMouseLeave={e=>e.currentTarget.style.background="none"}>
 {status&&<div style={{marginBottom:8,padding:"8px 12px",borderRadius:8,fontSize:12,
 background:"#FFFBEB",color:"#92400E",border:"1px solid #FDE68A"}}>{status}</div>}
 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
-{[["beds","Beds"],["baths","Baths"],["sqft","Sq Ft"],["dom","Days on Market"],["price","List Price ($)"],["agent","Listing Agent"]].map(([f,label])=>(
+{[["beds","Beds"],["baths","Baths"],["sqft","Sq Ft"],["dom","Days on Market"],["price","List Price ($)"],["agent","Listing Agent"],["agentEmail","Agent Email"],["agentPhone","Agent Phone"]].map(([f,label])=>(
 <div key={f}>
 <label style={{display:"block",fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,color:B.gray,marginBottom:4}}>{label}</label>
 <input value={fields[f]||""} onChange={e=>setFields(fi=>({...fi,[f]:e.target.value}))} placeholder={label}
