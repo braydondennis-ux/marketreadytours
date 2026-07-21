@@ -1122,7 +1122,7 @@ const [query,setQuery]=useState("");
 const [suggestions,setSugg]=useState([]);
 const [addrConfirmed,setAddrConfirmed]=useState(false);
 const [sessionToken,setToken]=useState(null);
-const [fields,setFields]=useState({address:"",city:"",beds:"",baths:"",sqft:"",dom:"",price:"",agent:"",photos:[]});
+const [fields,setFields]=useState({address:"",city:"",beds:"",baths:"",sqft:"",dom:"",price:"",agent:"",agentEmail:"",agentPhone:"",photos:[]});
 const [status,setStatus]=useState("");
 const inputRef=useRef(null);
 useEffect(()=>{
@@ -1326,7 +1326,7 @@ const totalMi=legs.reduce((s,l)=>s+l.distance.value,0);
 alert(`Route optimized! 🗺️\n\nTotal drive: ${Math.round(totalMi/1609)} miles, ~${Math.round(totalMins/60)} minutes\n\nClick "Save Changes" to apply.`);
 } catch(e) {
 console.warn("Route optimization failed",e);
-alert("Could not optimize route. Make sure all addresses are valid.");
+alert("Route optimization failed. Please go to Google Cloud Console → APIs & Services → Library and enable the \"Directions API\", then add it to your Browser key. Then try again.");
 }
 setOptimizing(false);
 };
