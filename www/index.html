@@ -2,10 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-<meta name="version" content="1784569095">
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>MarketReady Tours — #1 Real Estate Home Tours App</title>
 <meta name="description" content="Tour. Rate. Decide. Browse curated home tours, RSVP, preview homes with peers, and submit real-time feedback."/>
@@ -23,7 +19,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyChm7UYPWXg_nhD8JqUW3WRfyzsTC491V8&libraries=places"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBoPhoNQ5C84nS79QDV36R93APg4Pizo_E&libraries=places"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -37,8 +33,6 @@ textarea,input,select{font-family:inherit}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .fade-in{animation:fadeIn .3s ease}
-.pac-container{z-index:999999!important;position:fixed!important;}
-.pac-container:after{display:none!important}
 </style>
 </head>
 <body>
@@ -122,7 +116,7 @@ await sendCFEmail(email, "Welcome to MarketReady Tours 🏡",
 } catch(e) { console.warn("Welcome email failed:", e); }
 }
 /* ── API KEYS ── */
-const GOOGLE_KEY = "AIzaSyChm7UYPWXg_nhD8JqUW3WRfyzsTC491V8";
+const GOOGLE_KEY = "AIzaSyBoPhoNQ5C84nS79QDV36R93APg4Pizo_E";
 const TODAY = new Date().toISOString().split("T")[0];
 const APP_VERSION="mrt_2026febV";
 try{if(localStorage.getItem("mrt_app_version")!==APP_VERSION){for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&(k.startsWith("mrt_")||k.startsWith("gat_")))localStorage.removeItem(k);}localStorage.setItem("mrt_app_version",APP_VERSION);}}catch(e){}
@@ -1118,144 +1112,253 @@ Cancel
 }
 /* ── ADD LISTING FORM with Google Places Autocomplete ── */
 function AddListingForm({ tourColor, onAdd, onCancel }) {
-const [query,setQuery]=useState("");
-const [suggestions,setSugg]=useState([]);
-const [addrConfirmed,setAddrConfirmed]=useState(false);
-const [sessionToken,setToken]=useState(null);
-const [fields,setFields]=useState({address:"",city:"",beds:"",baths:"",sqft:"",dom:"",price:"",agent:"",agentEmail:"",agentPhone:"",photos:[]});
-const [status,setStatus]=useState("");
-const inputRef=useRef(null);
+const [query, setQuery]       = useState("");
+const [suggestions, setSugg]  = useState([]);
+const [selected, setSelected] = useState(null);
+const [fields, setFields]     = useState({ address:"", city:"", beds:"", baths:"", sqft:"", dom:"", price:"", agent:"", photos:[] });
+const [loading, setLoading]   = useState(false);
+const [status, setStatus]     = useState("");
+const [sessionToken, setToken]= useState(null);
+const inputRef = useRef(null);
 useEffect(()=>{
-if(window.google?.maps?.places) setToken(new window.google.maps.places.AutocompleteSessionToken());
+if(window.google?.maps?.places) {
+setToken(new window.google.maps.places.AutocompleteSessionToken());
+}
 },[]);
 useEffect(()=>{
-if(!query||query.length<3||addrConfirmed){setSugg([]);return;}
-if(!window.google?.maps?.places){setSugg([]);return;}
-const svc=new window.google.maps.places.AutocompleteService();
-svc.getPlacePredictions({input:query,types:["address"],componentRestrictions:{country:"us"}},
-(predictions,st)=>{
-if(st===window.google.maps.places.PlacesServiceStatus.OK&&predictions) setSugg(predictions);
-else setSugg([]);
-});
-},[query,addrConfirmed]);
-const handleAddrSelect=(prediction)=>{
+if(!query || query.length < 3 || !window.google?.maps?.places || selected) {
+setSugg([]); return;
+}
+const svc = new window.google.maps.places.AutocompleteService();
+svc.getPlacePredictions({
+input: query,
+sessionToken,
+types: ["address"],
+componentRestrictions: { country: "us" },
+}, (predictions, status) => {
+if(status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
+setSugg(predictions);
+} else {
 setSugg([]);
-const map=new window.google.maps.Map(document.createElement("div"));
-const svc=new window.google.maps.places.PlacesService(map);
-svc.getDetails({placeId:prediction.place_id,fields:["address_components"],sessionToken},(place,st)=>{
-if(st!==window.google.maps.places.PlacesServiceStatus.OK||!place) return;
-const get=(type)=>{const c=place.address_components.find(c=>c.types.includes(type));return c?c.long_name:"";};
-const getS=(type)=>{const c=place.address_components.find(c=>c.types.includes(type));return c?c.short_name:"";};
-const address=`${get("street_number")} ${get("route")}`.trim();
-const city=`${get("locality")||get("sublocality")}, ${getS("administrative_area_level_1")} ${get("postal_code")}`.trim();
+}
+});
+}, [query]);
+const handleSelect = (prediction) => {
+setSugg([]);
+setLoading(true);
+setStatus("📍 Confirming address...");
+const map = new window.google.maps.Map(document.createElement("div"));
+const svc = new window.google.maps.places.PlacesService(map);
+svc.getDetails({
+placeId: prediction.place_id,
+fields: ["address_components", "formatted_address", "geometry"],
+sessionToken,
+}, (place, st) => {
+if(st !== window.google.maps.places.PlacesServiceStatus.OK || !place) {
+setStatus("❌ Could not get address details. Please try again.");
+setLoading(false); return;
+}
+const get = (type) => {
+const comp = place.address_components.find(c => c.types.includes(type));
+return comp ? comp.long_name : "";
+};
+const getShort = (type) => {
+const comp = place.address_components.find(c => c.types.includes(type));
+return comp ? comp.short_name : "";
+};
+const streetNum  = get("street_number");
+const streetName = get("route");
+const city       = get("locality") || get("sublocality");
+const state      = getShort("administrative_area_level_1");
+const zip        = get("postal_code");
+const address    = `${streetNum} ${streetName}`.trim();
+const cityStr    = `${city}, ${state} ${zip}`.trim();
 setQuery(address);
-setFields(f=>({...f,address,city}));
-setAddrConfirmed(true);
+setSelected(prediction.place_id);
 setToken(new window.google.maps.places.AutocompleteSessionToken());
+setFields(f => ({ ...f, address, city: cityStr }));
+setStatus("✅ Address confirmed! Fill in listing details below.");
+setLoading(false);
 });
 };
-const handleAdd=()=>{
-if(!fields.address&&!query){setStatus("⚠️ Please enter a property address.");return;}
+const handleAdd = () => {
+if(!fields.address) {
+setStatus("⚠️ Please enter a property address.");
+return;
+}
+if(!selected && fields.address.trim().length < 5) {
+setStatus("⚠️ Please enter a complete address or select one from the suggestions.");
+return;
+}
 onAdd({
 ...fields,
-address:fields.address||query,
-beds:Number(fields.beds)||0,
-baths:Number(fields.baths)||0,
-sqft:Number(String(fields.sqft).replace(/[^0-9]/g,""))||0,
-dom:Number(fields.dom)||0,
-price:Number(String(fields.price).replace(/[^0-9]/g,""))||0,
-photos:fields.photos?.length?fields.photos:["https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop"],
+beds:  Number(fields.beds)  || 0,
+baths: Number(fields.baths) || 0,
+sqft:  Number(String(fields.sqft).replace(/[^0-9]/g,""))  || 0,
+dom:   Number(fields.dom)   || 0,
+price: Number(String(fields.price).replace(/[^0-9]/g,"")) || 0,
+photos: fields.photos?.length
+? fields.photos
+: ["https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop"],
 });
 };
+const clearSelection = () => {
+setSelected(null); setQuery("");
+setFields({ address:"", city:"", beds:"", baths:"", sqft:"", dom:"", price:"", agent:"", photos:[] });
+setStatus(""); setSugg([]);
+setTimeout(() => inputRef.current?.focus(), 100);
+};
+const fieldLabels = [["beds","Beds"],["baths","Baths"],["sqft","Sq Ft"],["dom","Days on Market"],["price","List Price ($)"],["agent","Listing Agent"]];
 return (
-<div style={{background:"#fff",borderRadius:14,padding:16,border:`2px solid ${tourColor}40`}}>
-<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+<div style={{background:"#fff", borderRadius:14, padding:16, border:`2px solid ${tourColor}40`}}>
+<div style={{display:"flex", alignItems:"center", gap:8, marginBottom:14}}>
 <span style={{fontSize:20}}>🔍</span>
-<h4 style={{color:B.primary,fontSize:14,fontWeight:700,margin:0}}>Add New Listing</h4>
+<h4 style={{color:B.primary, fontSize:14, fontWeight:700, margin:0}}>Add New Listing</h4>
 </div>
-<div style={{position:"relative",marginBottom:10}}>
-<label style={{display:"block",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,color:B.gray,marginBottom:6}}>Property Address *</label>
+{/* Address search */}
+<div style={{position:"relative", marginBottom:10}}>
+<label style={{display:"block", fontSize:11, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, color:B.gray, marginBottom:6}}>
+Property Address *
+</label>
 <div style={{position:"relative"}}>
-<input ref={inputRef} type="text" placeholder="Start typing an address..."
-value={query} onChange={e=>{setQuery(e.target.value);setAddrConfirmed(false);}}
-style={{width:"100%",border:`1.5px solid ${addrConfirmed?"#059669":"#E5E7EB"}`,borderRadius:9,
-padding:"11px 40px 11px 12px",fontSize:14,outline:"none",background:addrConfirmed?"#F0FDF4":"#fff",boxSizing:"border-box"}}/>
-{addrConfirmed&&<button onClick={()=>{setAddrConfirmed(false);setQuery("");setFields(f=>({...f,address:"",city:""}));}}
-style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",
-background:"#DC2626",color:"#fff",border:"none",borderRadius:"50%",width:22,height:22,
-cursor:"pointer",fontSize:11,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>}
+<input
+ref={inputRef}
+type="text"
+placeholder="Start typing an address..."
+value={query}
+onChange={e=>{ setQuery(e.target.value); setSelected(null); }}
+style={{width:"100%", border:`1.5px solid ${selected ? "#059669" : "#E5E7EB"}`,
+borderRadius:9, padding:"11px 40px 11px 12px", fontSize:14,
+outline:"none", background: selected ? "#F0FDF4" : "#fff"}}
+/>
+{selected && (
+<button onClick={clearSelection}
+style={{position:"absolute", right:10, top:"50%", transform:"translateY(-50%)",
+background:"#DC2626", color:"#fff", border:"none", borderRadius:"50%",
+width:22, height:22, cursor:"pointer", fontSize:12, fontWeight:700,
+display:"flex", alignItems:"center", justifyContent:"center"}}>✕</button>
+)}
+{loading && (
+<div style={{position:"absolute", right:10, top:"50%", transform:"translateY(-50%)"}}>
+<div style={{width:18, height:18, border:"2px solid #E5E7EB", borderTopColor:tourColor,
+borderRadius:"50%", animation:"spin .8s linear infinite"}}/>
 </div>
-{suggestions.length>0&&!addrConfirmed&&(()=>{
-const r=inputRef.current?.getBoundingClientRect();
-return (
-<div style={{position:"fixed",top:(r?.bottom||0)+2,left:r?.left||0,width:r?.width||300,
-background:"#fff",border:"1.5px solid #E5E7EB",borderRadius:10,
-boxShadow:"0 8px 24px rgba(0,0,0,.15)",zIndex:999999,overflow:"hidden"}}>
-{suggestions.map((s,i)=>(
-<button key={s.place_id} onClick={()=>handleAddrSelect(s)}
-style={{width:"100%",background:"none",border:"none",
-borderBottom:i<suggestions.length-1?"1px solid #F3F4F6":"none",
-padding:"11px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"flex-start",gap:10}}
+)}
+</div>
+{suggestions.length > 0 && !selected && (
+<div style={{position:"absolute", top:"100%", left:0, right:0, background:"#fff",
+border:"1.5px solid #E5E7EB", borderRadius:10, boxShadow:"0 8px 24px rgba(0,0,0,.15)",
+zIndex:9999, overflow:"hidden", marginTop:4}}>
+{suggestions.map((s, i) => (
+<button key={s.place_id} onClick={()=>handleSelect(s)}
+style={{width:"100%", background:"none", border:"none", borderBottom:i<suggestions.length-1?"1px solid #F3F4F6":"none",
+padding:"12px 14px", cursor:"pointer", textAlign:"left", display:"flex", alignItems:"flex-start", gap:10,
+transition:"background .1s"}}
 onMouseEnter={e=>e.currentTarget.style.background="#F9FAFB"}
 onMouseLeave={e=>e.currentTarget.style.background="none"}>
-<span style={{fontSize:16,flexShrink:0}}>📍</span>
+<span style={{fontSize:16, flexShrink:0, marginTop:1}}>📍</span>
 <div>
-<div style={{fontWeight:600,fontSize:13,color:B.dark}}>{s.structured_formatting?.main_text}</div>
-<div style={{fontSize:11,color:B.gray}}>{s.structured_formatting?.secondary_text}</div>
+<div style={{fontWeight:600, fontSize:13, color:B.dark}}>{s.structured_formatting?.main_text}</div>
+<div style={{fontSize:11, color:B.gray}}>{s.structured_formatting?.secondary_text}</div>
 </div>
 </button>
 ))}
 </div>
-);
-})()}
+)}
 </div>
-{status&&<div style={{marginBottom:8,padding:"8px 12px",borderRadius:8,fontSize:12,
-background:"#FFFBEB",color:"#92400E",border:"1px solid #FDE68A"}}>{status}</div>}
-<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
-{[["beds","Beds"],["baths","Baths"],["sqft","Sq Ft"],["dom","Days on Market"],["price","List Price ($)"],["agent","Listing Agent"],["agentEmail","Agent Email"],["agentPhone","Agent Phone"]].map(([f,label])=>(
+{status && (
+<div style={{background: status.startsWith("✅") ? "#F0FDF4" : status.startsWith("❌") ? "#FEF2F2" : "#FFFBEB",
+border: `1px solid ${status.startsWith("✅") ? "#BBF7D0" : status.startsWith("❌") ? "#FECACA" : "#FDE68A"}`,
+borderRadius:8, padding:"10px 12px", fontSize:12,
+color: status.startsWith("✅") ? "#065F46" : status.startsWith("❌") ? "#DC2626" : "#92400E",
+marginBottom:10}}>
+{status}
+</div>
+)}
+{/* Manual fields — shown after address confirmed */}
+{selected && (
+<div style={{display:"flex", flexDirection:"column", gap:8, marginBottom:12}}>
+<div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:8}}>
+{fieldLabels.map(([f, label])=>(
 <div key={f}>
-<label style={{display:"block",fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,color:B.gray,marginBottom:4}}>{label}</label>
-<input value={fields[f]||""} onChange={e=>setFields(fi=>({...fi,[f]:e.target.value}))} placeholder={label}
-style={{width:"100%",border:"1.5px solid #E5E7EB",borderRadius:8,padding:"9px 10px",fontSize:14,outline:"none",background:B.cream}}/>
+<label style={{display:"block", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, color:B.gray, marginBottom:4}}>{label}</label>
+<input value={fields[f]||""} onChange={e=>setFields(fi=>({...fi,[f]:e.target.value}))}
+placeholder={label}
+style={{width:"100%", border:"1.5px solid #E5E7EB", borderRadius:8, padding:"9px 10px", fontSize:14, outline:"none", background:B.cream}}/>
 </div>
 ))}
 </div>
-<div style={{marginBottom:12}}>
-<label style={{display:"block",fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,color:B.gray,marginBottom:4}}>City, State ZIP</label>
+<div>
+<label style={{display:"block", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, color:B.gray, marginBottom:4}}>City, State ZIP</label>
 <input value={fields.city||""} onChange={e=>setFields(fi=>({...fi,city:e.target.value}))}
-style={{width:"100%",border:"1.5px solid #E5E7EB",borderRadius:8,padding:"9px 10px",fontSize:14,outline:"none",background:B.cream}}/>
+style={{width:"100%", border:"1.5px solid #E5E7EB", borderRadius:8, padding:"9px 10px", fontSize:14, outline:"none", background:B.cream}}/>
 </div>
-<div style={{marginBottom:14}}>
-<label style={{display:"block",fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,color:B.gray,marginBottom:6}}>Photos</label>
-<label style={{display:"flex",alignItems:"center",gap:8,background:B.cream,border:"1.5px dashed #D1D5DB",borderRadius:9,padding:"10px 14px",cursor:"pointer",fontSize:13,color:B.gray}}>
-<span style={{fontSize:20}}>📷</span>Add Photos
-<input type="file" accept="image/*" multiple style={{display:"none"}} onChange={e=>{
-const files=Array.from(e.target.files);if(!files.length)return;
-Promise.all(files.map(f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=ev=>res(ev.target.result);r.onerror=rej;r.readAsDataURL(f);}))).then(urls=>setFields(fi=>({...fi,photos:[...(fi.photos||[]),...urls]})));}}/>
+</div>
+)}
+{/* Photo upload */}
+<div style={{marginBottom:12}}>
+<label style={{display:"block", fontSize:11, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, color:B.gray, marginBottom:6}}>
+📸 Listing Photos
 </label>
-{fields.photos?.length>0&&(
-<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:8}}>
+<label style={{display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+border:"2px dashed #D1D5DB", borderRadius:10, padding:"14px 12px",
+cursor:"pointer", background:"#FAFAFA", transition:"all .15s"}}
+onMouseEnter={e=>{e.currentTarget.style.borderColor=tourColor;e.currentTarget.style.background=tourColor+"10";}}
+onMouseLeave={e=>{e.currentTarget.style.borderColor="#D1D5DB";e.currentTarget.style.background="#FAFAFA";}}>
+<span style={{fontSize:22}}>📁</span>
+<div>
+<div style={{fontWeight:600, fontSize:13, color:B.dark}}>Click to upload photos</div>
+<div style={{fontSize:11, color:B.gray}}>JPG, PNG, HEIC — multiple files OK</div>
+</div>
+<input type="file" accept="image/*" multiple style={{display:"none"}}
+onChange={e=>{
+const files = Array.from(e.target.files);
+if(!files.length) return;
+Promise.all(files.map(f => new Promise((res,rej)=>{
+const reader = new FileReader();
+reader.onload = ev => res(ev.target.result);
+reader.onerror = rej;
+reader.readAsDataURL(f);
+}))).then(urls => {
+setFields(fi => ({ ...fi, photos: [...(fi.photos||[]), ...urls] }));
+});
+}}
+/>
+</label>
+{/* Photo preview grid */}
+{fields.photos?.length > 0 && (
+<div style={{marginTop:8, display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:6}}>
 {fields.photos.map((p,i)=>(
-<div key={i} style={{position:"relative"}}>
-<img src={p} alt="" style={{width:56,height:56,objectFit:"cover",borderRadius:8}}/>
+<div key={i} style={{position:"relative", borderRadius:8, overflow:"hidden", aspectRatio:"4/3"}}>
+<img src={p} alt="" style={{width:"100%", height:"100%", objectFit:"cover"}}/>
 <button onClick={()=>setFields(fi=>({...fi,photos:fi.photos.filter((_,j)=>j!==i)}))}
-style={{position:"absolute",top:-4,right:-4,background:"#DC2626",color:"#fff",border:"none",
-borderRadius:"50%",width:18,height:18,cursor:"pointer",fontSize:10,fontWeight:700,
-display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+style={{position:"absolute", top:4, right:4, background:"rgba(0,0,0,.6)",
+color:"#fff", border:"none", borderRadius:"50%", width:20, height:20,
+cursor:"pointer", fontSize:11, fontWeight:700, display:"flex",
+alignItems:"center", justifyContent:"center", lineHeight:1}}>✕</button>
+{i===0 && <div style={{position:"absolute", bottom:4, left:4, background:tourColor,
+color:"#fff", fontSize:9, fontWeight:700, borderRadius:4, padding:"2px 5px"}}>COVER</div>}
 </div>
 ))}
 </div>
 )}
 </div>
-<div style={{display:"flex",gap:10}}>
-<button onClick={onCancel} style={{flex:1,background:"#F3F4F6",border:"none",borderRadius:9,padding:"11px 0",fontWeight:600,fontSize:13,cursor:"pointer",color:B.dark}}>Cancel</button>
-<button onClick={handleAdd} className="btn-hover"
-style={{flex:2,background:tourColor,color:"#fff",border:"none",borderRadius:9,padding:"11px 0",fontWeight:700,fontSize:13,cursor:"pointer"}}>✓ Add Listing</button>
+<div style={{display:"flex", gap:10}}>
+<button onClick={onCancel}
+style={{flex:1, background:B.lightGray, border:"none", borderRadius:9, padding:"11px 0", fontWeight:600, cursor:"pointer"}}>
+Cancel
+</button>
+<button onClick={handleAdd} disabled={!fields.address || loading}
+className="btn-hover"
+style={{flex:2, background: !fields.address||loading ? "#9CA3AF" : tourColor,
+color:"#fff", border:"none", borderRadius:9, padding:"11px 0",
+fontWeight:700, cursor: !selected||loading ? "default":"pointer"}}>
+{loading ? "Loading..." : "✓ Add Listing"}
+</button>
 </div>
 </div>
 );
 }
-
 /* ── TOUR DETAIL PAGE ── */
 function TourDetailPage({tour,onBack,onUpdateTour,isAdmin,listingRequests}) {
 const [subpage,setSubpage]=useState("list");
@@ -1326,7 +1429,7 @@ const totalMi=legs.reduce((s,l)=>s+l.distance.value,0);
 alert(`Route optimized! 🗺️\n\nTotal drive: ${Math.round(totalMi/1609)} miles, ~${Math.round(totalMins/60)} minutes\n\nClick "Save Changes" to apply.`);
 } catch(e) {
 console.warn("Route optimization failed",e);
-alert("Route optimization failed. Please go to Google Cloud Console → APIs & Services → Library and enable the \"Directions API\", then add it to your Browser key. Then try again.");
+alert("Could not optimize route. Make sure all addresses are valid.");
 }
 setOptimizing(false);
 };
@@ -2422,15 +2525,14 @@ useEffect(()=>{
 if(window.google?.maps?.places) setToken(new window.google.maps.places.AutocompleteSessionToken());
 },[]);
 useEffect(()=>{
-if(!query||query.length<3||addrConfirmed){setSugg([]);return;}
-if(!window.google?.maps?.places){setSugg([]);return;}
+if(!query||query.length<3||!window.google?.maps?.places||addrConfirmed){setSugg([]);return;}
 const svc=new window.google.maps.places.AutocompleteService();
-svc.getPlacePredictions({input:query,types:["address"],componentRestrictions:{country:"us"}},
-(predictions,st)=>{
-if(st===window.google.maps.places.PlacesServiceStatus.OK&&predictions) setSugg(predictions);
+svc.getPlacePredictions({input:query,sessionToken,types:["address"],componentRestrictions:{country:"us"}},
+(predictions,status)=>{
+if(status===window.google.maps.places.PlacesServiceStatus.OK&&predictions) setSugg(predictions);
 else setSugg([]);
 });
-},[query,addrConfirmed]);
+},[query]);
 const handleAddrSelect=(prediction)=>{
 setSugg([]);
 const map=new window.google.maps.Map(document.createElement("div"));
