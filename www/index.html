@@ -19,7 +19,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBoPhoNQ5C84nS79QDV36R93APg4Pizo_E&libraries=places"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyChm7UYPWXg_nhD8JqUW3WRfyzsTC491V8&libraries=places"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -33,6 +33,7 @@ textarea,input,select{font-family:inherit}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .fade-in{animation:fadeIn .3s ease}
+.pac-container{z-index:999999!important;position:fixed!important;}
 </style>
 </head>
 <body>
@@ -116,7 +117,7 @@ await sendCFEmail(email, "Welcome to MarketReady Tours 🏡",
 } catch(e) { console.warn("Welcome email failed:", e); }
 }
 /* ── API KEYS ── */
-const GOOGLE_KEY = "AIzaSyBoPhoNQ5C84nS79QDV36R93APg4Pizo_E";
+const GOOGLE_KEY = "AIzaSyChm7UYPWXg_nhD8JqUW3WRfyzsTC491V8";
 const TODAY = new Date().toISOString().split("T")[0];
 const APP_VERSION="mrt_2026febV";
 try{if(localStorage.getItem("mrt_app_version")!==APP_VERSION){for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&(k.startsWith("mrt_")||k.startsWith("gat_")))localStorage.removeItem(k);}localStorage.setItem("mrt_app_version",APP_VERSION);}}catch(e){}
@@ -1115,7 +1116,7 @@ function AddListingForm({ tourColor, onAdd, onCancel }) {
 const [query, setQuery]       = useState("");
 const [suggestions, setSugg]  = useState([]);
 const [selected, setSelected] = useState(null);
-const [fields, setFields]     = useState({ address:"", city:"", beds:"", baths:"", sqft:"", dom:"", price:"", agent:"", photos:[] });
+const [fields, setFields]     = useState({ address:"", city:"", beds:"", baths:"", sqft:"", dom:"", price:"", agent:"", agentEmail:"", agentPhone:"", photos:[] });
 const [loading, setLoading]   = useState(false);
 const [status, setStatus]     = useState("");
 const [sessionToken, setToken]= useState(null);
@@ -1182,16 +1183,14 @@ setLoading(false);
 });
 };
 const handleAdd = () => {
-if(!fields.address) {
-setStatus("⚠️ Please enter a property address.");
-return;
-}
-if(!selected && fields.address.trim().length < 5) {
-setStatus("⚠️ Please enter a complete address or select one from the suggestions.");
+const addr=(fields.address||query||"").trim();
+if(addr.length < 5) {
+setStatus("⚠️ Please enter a complete property address.");
 return;
 }
 onAdd({
 ...fields,
+address: addr,
 beds:  Number(fields.beds)  || 0,
 baths: Number(fields.baths) || 0,
 sqft:  Number(String(fields.sqft).replace(/[^0-9]/g,""))  || 0,
@@ -1204,7 +1203,7 @@ photos: fields.photos?.length
 };
 const clearSelection = () => {
 setSelected(null); setQuery("");
-setFields({ address:"", city:"", beds:"", baths:"", sqft:"", dom:"", price:"", agent:"", photos:[] });
+setFields({ address:"", city:"", beds:"", baths:"", sqft:"", dom:"", price:"", agent:"", agentEmail:"", agentPhone:"", photos:[] });
 setStatus(""); setSugg([]);
 setTimeout(() => inputRef.current?.focus(), 100);
 };
@@ -1245,10 +1244,12 @@ borderRadius:"50%", animation:"spin .8s linear infinite"}}/>
 </div>
 )}
 </div>
-{suggestions.length > 0 && !selected && (
-<div style={{position:"absolute", top:"100%", left:0, right:0, background:"#fff",
+{suggestions.length > 0 && !selected && (()=>{
+const _r=inputRef.current?.getBoundingClientRect();
+return (
+<div style={{position:"fixed", top:(_r?.bottom||0)+4, left:_r?.left||0, width:_r?.width||300, background:"#fff",
 border:"1.5px solid #E5E7EB", borderRadius:10, boxShadow:"0 8px 24px rgba(0,0,0,.15)",
-zIndex:9999, overflow:"hidden", marginTop:4}}>
+zIndex:999999, overflow:"hidden"}}>
 {suggestions.map((s, i) => (
 <button key={s.place_id} onClick={()=>handleSelect(s)}
 style={{width:"100%", background:"none", border:"none", borderBottom:i<suggestions.length-1?"1px solid #F3F4F6":"none",
@@ -1264,7 +1265,7 @@ onMouseLeave={e=>e.currentTarget.style.background="none"}>
 </button>
 ))}
 </div>
-)}
+);})()}
 </div>
 {status && (
 <div style={{background: status.startsWith("✅") ? "#F0FDF4" : status.startsWith("❌") ? "#FEF2F2" : "#FFFBEB",
@@ -1275,8 +1276,7 @@ marginBottom:10}}>
 {status}
 </div>
 )}
-{/* Manual fields — shown after address confirmed */}
-{selected && (
+{/* Listing detail fields */}
 <div style={{display:"flex", flexDirection:"column", gap:8, marginBottom:12}}>
 <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:8}}>
 {fieldLabels.map(([f, label])=>(
@@ -1294,7 +1294,6 @@ style={{width:"100%", border:"1.5px solid #E5E7EB", borderRadius:8, padding:"9px
 style={{width:"100%", border:"1.5px solid #E5E7EB", borderRadius:8, padding:"9px 10px", fontSize:14, outline:"none", background:B.cream}}/>
 </div>
 </div>
-)}
 {/* Photo upload */}
 <div style={{marginBottom:12}}>
 <label style={{display:"block", fontSize:11, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, color:B.gray, marginBottom:6}}>
@@ -1348,11 +1347,11 @@ color:"#fff", fontSize:9, fontWeight:700, borderRadius:4, padding:"2px 5px"}}>CO
 style={{flex:1, background:B.lightGray, border:"none", borderRadius:9, padding:"11px 0", fontWeight:600, cursor:"pointer"}}>
 Cancel
 </button>
-<button onClick={handleAdd} disabled={!fields.address || loading}
+<button onClick={handleAdd} disabled={loading || (!fields.address && query.trim().length<5)}
 className="btn-hover"
-style={{flex:2, background: !fields.address||loading ? "#9CA3AF" : tourColor,
+style={{flex:2, background: (loading||(!fields.address&&query.trim().length<5)) ? "#9CA3AF" : tourColor,
 color:"#fff", border:"none", borderRadius:9, padding:"11px 0",
-fontWeight:700, cursor: !selected||loading ? "default":"pointer"}}>
+fontWeight:700, cursor: (loading||(query.trim().length<5&&!fields.address)) ? "default":"pointer"}}>
 {loading ? "Loading..." : "✓ Add Listing"}
 </button>
 </div>
@@ -1394,15 +1393,34 @@ const moveStop=(idx,dir)=>{
 const arr=[...adminListings];const si=idx+dir;
 if(si<0||si>=arr.length)return;
 [arr[idx].order,arr[si].order]=[arr[si].order,arr[idx].order];
-setAdminListings([...arr].sort((a,b)=>a.order-b.order));
+const next=[...arr].sort((a,b)=>a.order-b.order);
+setAdminListings(next);
+onUpdateTour({...tour,listings:next});
 };
 const addListing=(listingData)=>{
 if(adminListings.length>=8) return;
 const item={...listingData, id:Date.now(), order:adminListings.length+1};
-setAdminListings(prev=>[...prev,item]);
+const next=[...adminListings,item];
+setAdminListings(next);
+onUpdateTour({...tour,listings:next});
 setShowAddForm(false);
 };
-const deleteStop=(id)=>setAdminListings(prev=>prev.filter(l=>l.id!==id).map((l,i)=>({...l,order:i+1})));
+const deleteStop=(id)=>{
+const next=adminListings.filter(l=>l.id!==id).map((l,i)=>({...l,order:i+1}));
+setAdminListings(next);
+onUpdateTour({...tour,listings:next});
+};
+const [editingStop,setEditingStop]=useState(null);
+const [stopDraft,setStopDraft]=useState({});
+const saveStopEdit=(id)=>{
+const next=adminListings.map(l=>l.id===id?{...l,...stopDraft}:l);
+setAdminListings(next);
+onUpdateTour({...tour,listings:next});
+setEditingStop(null);
+};
+useEffect(()=>{
+if(tour&&!tour.code){onUpdateTour({...tour,code:String(Math.floor(1000+Math.random()*9000))});}
+},[tour?.id]);
 const [optimizing,setOptimizing]=useState(false);
 const optimizeRoute=async()=>{
 if(adminListings.length<3){alert("Need at least 3 listings to optimize route.");return;}
@@ -1720,6 +1738,7 @@ finally{setInviteSending(false);}
 <div style={{background:tour.color,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,position:"sticky",top:0,boxShadow:"0 2px 8px rgba(0,0,0,.2)"}}>
 <button onClick={()=>setShowAdmin(false)} style={{background:"none",border:"none",color:"#fff",cursor:"pointer",fontSize:22}}>←</button>
 <div style={{color:"#fff",fontFamily:"Georgia,serif",fontSize:15,fontWeight:700}}>Manage: {tour.emoji} {tour.name}</div>
+<div style={{marginLeft:"auto",background:"rgba(255,255,255,.15)",borderRadius:8,padding:"4px 10px",color:"#fff",fontWeight:800,fontSize:14,letterSpacing:2,flexShrink:0}}>🔑 {tour.code||"—"}</div>
 </div>
 <div style={{padding:"20px 16px"}}>
 <h3 style={{color:B.primary,marginBottom:14,fontSize:13,textTransform:"uppercase",letterSpacing:.5}}>Reorder / Remove Stops</h3>
@@ -1728,7 +1747,20 @@ finally{setInviteSending(false);}
 <div style={{background:tour.color,color:"#fff",borderRadius:"50%",width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:12,flexShrink:0}}>{i+1}</div>
 <div style={{flex:1}}>
 <div style={{fontWeight:600,fontSize:13,color:B.dark}}>{l.address}</div>
-<div style={{fontSize:11,color:B.gray}}>${Number(l.price).toLocaleString()} · {l.agent}</div>
+<div style={{fontSize:11,color:B.gray}}>${Number(l.price).toLocaleString()} · {l.agent||"No agent"}{l.agentEmail?" · "+l.agentEmail:""}</div>
+{editingStop===l.id&&(
+<div style={{marginTop:8,display:"flex",flexDirection:"column",gap:6}}>
+{[["agent","Agent Name"],["agentEmail","Agent Email"],["agentPhone","Agent Phone"]].map(([f,ph])=>(
+<input key={f} placeholder={ph} value={stopDraft[f]||""}
+onChange={e=>setStopDraft(d=>({...d,[f]:e.target.value}))}
+style={{width:"100%",border:"1.5px solid #E5E7EB",borderRadius:8,padding:"7px 10px",fontSize:12,outline:"none",background:"#fff"}}/>
+))}
+<div style={{display:"flex",gap:6}}>
+<button onClick={()=>setEditingStop(null)} style={{flex:1,background:"#fff",border:"none",borderRadius:8,padding:"7px 0",fontSize:12,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+<button onClick={()=>saveStopEdit(l.id)} style={{flex:1,background:tour.color,color:"#fff",border:"none",borderRadius:8,padding:"7px 0",fontSize:12,fontWeight:700,cursor:"pointer"}}>Save</button>
+</div>
+</div>
+)}
 {/* Admin note */}
 <textarea placeholder="Private admin note..." rows={2}
 value={adminNotes[l.id]||""}
@@ -1737,6 +1769,7 @@ style={{width:"100%",marginTop:8,border:"1.5px solid #E5E7EB",borderRadius:8,
 padding:"6px 10px",fontSize:12,resize:"vertical",outline:"none",background:"#fff"}}/>
 </div>
 <div style={{display:"flex",flexDirection:"column",gap:4}}>
+<button onClick={()=>{setEditingStop(l.id);setStopDraft({agent:l.agent||"",agentEmail:l.agentEmail||"",agentPhone:l.agentPhone||""});}} style={{background:"#fff",border:"none",borderRadius:6,padding:"4px 8px",cursor:"pointer"}}>✏️</button>
 <button onClick={()=>moveStop(i,-1)} disabled={i===0} style={{background:"#fff",border:"none",borderRadius:6,padding:"4px 8px",cursor:i===0?"default":"pointer",opacity:i===0?.35:1}}>▲</button>
 <button onClick={()=>moveStop(i,1)} disabled={i===adminListings.length-1} style={{background:"#fff",border:"none",borderRadius:6,padding:"4px 8px",cursor:i===adminListings.length-1?"default":"pointer",opacity:i===adminListings.length-1?.35:1}}>▼</button>
 <button onClick={()=>deleteStop(l.id)} style={{background:"#FEE2E2",border:"none",borderRadius:6,padding:"4px 8px",cursor:"pointer",color:"#DC2626",fontWeight:700}}>✕</button>
@@ -2168,7 +2201,7 @@ const filtered=(filterDate==="upcoming"?tours.filter(t=>t.date>=TODAY):tours.fil
 const fmt12=t24=>{const[h,m]=t24.split(":");const hr=parseInt(h);const ampm=hr>=12?"PM":"AM";const hr12=hr%12||12;return `${hr12}:${m} ${ampm}`;};
 const createTour=()=>{
 if(!newTour.name)return;
-setTours(prev=>[...prev,{...newTour,id:"tour-"+Date.now(),time:fmt12(newTour.time),listings:[],ratings:{},favorites:{},notes:{},sponsors:[],agentName:"",agentPhone:"",agentEmail:"",agentPhoto:"",brokerageName:"",brokerageLogo:""}]);
+setTours(prev=>[...prev,{...newTour,id:"tour-"+Date.now(),time:fmt12(newTour.time),listings:[],ratings:{},favorites:{},notes:{},sponsors:[],code:String(Math.floor(1000+Math.random()*9000)),agentName:"",agentPhone:"",agentEmail:"",agentPhoto:"",brokerageName:"",brokerageLogo:""}]);
 setShowCreate(false);setNewTour({name:"",time:"09:00",date:filterDate==="upcoming"?TODAY:filterDate,color:"#1B3A6B",emoji:"🏡"});
 };
 const activeTour=tours.find(t=>t.id===activeTourId);
