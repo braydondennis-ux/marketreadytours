@@ -1359,7 +1359,7 @@ fontWeight:700, cursor: (loading||(query.trim().length<5&&!fields.address)) ? "d
 );
 }
 /* ── TOUR DETAIL PAGE ── */
-function TourDetailPage({tour,onBack,onUpdateTour,isAdmin,listingRequests}) {
+function TourDetailPage({tour,tourIndex,onBack,onUpdateTour,isAdmin,listingRequests}) {
 const [subpage,setSubpage]=useState("list");
 const [selected,setSelected]=useState(null);
 const [showInvite,setShowInvite]=useState(false);
@@ -1376,13 +1376,19 @@ const [adminListings,setAdminListings]=useState([...(tour.listings||[])].sort((a
 const [showAddForm,setShowAddForm]=useState(false);
 const [adminNotes,setAdminNotes]=useState(tour.notes||{});
 useEffect(()=>{setAdminListings([...(tour.listings||[])].sort((a,b)=>a.order-b.order));},[tour]);
+const _restWrite=(path,val)=>{
+try{fetch("https://marketready-tours-default-rtdb.firebaseio.com/mrt_tours/"+tourIndex+"/"+path+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(val)});}catch(e){}
+};
 const toggleFavorite=(listingId)=>{
-const fav={...tour.favorites,[listingId]:!tour.favorites?.[listingId]};
+const newVal=!tour.favorites?.[listingId];
+const fav={...tour.favorites,[listingId]:newVal};
 onUpdateTour({...tour,favorites:fav});
+if(!(_fbAuth&&_fbAuth.currentUser)&&tourIndex>=0)_restWrite("favorites/"+listingId,newVal);
 };
 const handleRatingSubmit=(listingId,ratings)=>{
 const newRatings={...tour.ratings,[listingId]:ratings};
 onUpdateTour({...tour,ratings:newRatings});
+if(!(_fbAuth&&_fbAuth.currentUser)&&tourIndex>=0)_restWrite("ratings/"+listingId,ratings);
 };
 const saveNote=(listingId,note)=>{
 const notes={...adminNotes,[listingId]:note};
@@ -1412,6 +1418,18 @@ onUpdateTour({...tour,listings:next});
 };
 const [editingStop,setEditingStop]=useState(null);
 const [stopDraft,setStopDraft]=useState({});
+const [codeVerified,setCodeVerified]=useState(()=>{try{return sessionStorage.getItem("mrt_code_"+tour.id)===String(tour.code||"");}catch(e){return false;}});
+const [showCodeGate,setShowCodeGate]=useState(false);
+const [codeInput,setCodeInput]=useState("");
+const [codeError,setCodeError]=useState("");
+const verifyCode=()=>{
+if(codeInput.trim()===String(tour.code)){
+setCodeVerified(true);
+try{sessionStorage.setItem("mrt_code_"+tour.id,String(tour.code));}catch(e){}
+setShowCodeGate(false);setCodeInput("");setCodeError("");
+setSubpage("rating");
+}else{setCodeError("Incorrect code. Ask your tour host for the 4-digit code.");}
+};
 const saveStopEdit=(id)=>{
 const next=adminListings.map(l=>l.id===id?{...l,...stopDraft}:l);
 setAdminListings(next);
@@ -1487,7 +1505,7 @@ let sent=0;let failed=0;
 for(const r of allRecipients){
 try{
 const ok=await sendCFEmail(r.email,`${tour.emoji} ${tour.name} — Tour Route`,
-`Hi ${r.name},\n\nHere is the tour route for ${tour.emoji} ${tour.name}!\n\nDate: ${tour.date}\nTime: ${tour.time}\n\n${routeText}\n\nOpen in Google Maps:\n${mapsUrl}\n\nPlease arrive at your designated stop 10 minutes early. We look forward to seeing you!\n\n— MarketReady Tours\nmarketreadytours.com`);
+`Hi ${r.name},\n\nHere is the tour route for ${tour.emoji} ${tour.name}!\n\nDate: ${tour.date}\nTime: ${tour.time}\n\U0001f511 Tour Rating Code: ${tour.code||"\u2014"}\n(Enter this in the app to rate homes during the tour)\n\n${routeText}\n\nOpen in Google Maps:\n${mapsUrl}\n\nPlease arrive at your designated stop 10 minutes early. We look forward to seeing you!\n\n— MarketReady Tours\nmarketreadytours.com`);
 if(ok)sent++;else failed++;
 }catch(e){failed++;}
 }
@@ -1576,6 +1594,24 @@ const ratedCount=Object.keys(tour.ratings||{}).length;
 return (
 <div style={{background:B.cream,minHeight:"100vh",paddingBottom:90,maxWidth:480,margin:"0 auto",overflow:"hidden"}}>
 {showQR&&<QRModal tour={tour} onClose={()=>setShowQR(false)}/>}
+{showCodeGate&&(
+<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setShowCodeGate(false)}>
+<div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:16,padding:"24px 20px",width:"100%",maxWidth:340,textAlign:"center"}}>
+<div style={{fontSize:34,marginBottom:8}}>🔑</div>
+<h3 style={{color:B.primary,fontFamily:"Georgia,serif",fontSize:19,marginBottom:6}}>Enter Tour Code</h3>
+<p style={{color:B.gray,fontSize:13,marginBottom:16}}>Your tour host has the 4-digit code for {tour.emoji} {tour.name}.</p>
+<input value={codeInput} onChange={e=>{setCodeInput(e.target.value.replace(/[^0-9]/g,"").slice(0,4));setCodeError("");}}
+inputMode="numeric" placeholder="••••" autoFocus
+onKeyDown={e=>{if(e.key==="Enter")verifyCode();}}
+style={{width:"100%",border:`2px solid ${codeError?"#DC2626":"#E5E7EB"}`,borderRadius:12,padding:"13px 0",fontSize:26,fontWeight:800,textAlign:"center",letterSpacing:12,outline:"none",marginBottom:10}}/>
+{codeError&&<div style={{color:"#DC2626",fontSize:12,marginBottom:10}}>{codeError}</div>}
+<div style={{display:"flex",gap:10}}>
+<button onClick={()=>setShowCodeGate(false)} style={{flex:1,background:"#F3F4F6",border:"none",borderRadius:10,padding:"12px 0",fontWeight:600,cursor:"pointer",color:B.dark}}>Cancel</button>
+<button onClick={verifyCode} disabled={codeInput.length<4} style={{flex:2,background:codeInput.length<4?"#9CA3AF":tour.color,color:"#fff",border:"none",borderRadius:10,padding:"12px 0",fontWeight:700,cursor:codeInput.length<4?"default":"pointer"}}>Unlock Rating</button>
+</div>
+</div>
+</div>
+)}
 {showBranding&&<AgentBrandingModal tour={tour} onSave={d=>{onUpdateTour({...tour,...d});setShowBranding(false);}} onClose={()=>setShowBranding(false)}/>}
 {showSponsors&&<TourSponsorsModal tour={tour} onSave={s=>{onUpdateTour({...tour,sponsors:s});}} onClose={()=>setShowSponsors(false)}/>}
 {/* Invite Agent Modal */}
@@ -2083,7 +2119,7 @@ background:"#F0FDF4",color:"#059669",border:"1.5px solid #BBF7D0",borderRadius:1
 padding:"10px 0",fontWeight:700,fontSize:13,textDecoration:"none"}}>
 🧭 Directions
 </a>
-<button className="btn-hover" onClick={()=>{setSelected(listing);setSubpage("rating");}}
+<button className="btn-hover" onClick={()=>{setSelected(listing); if(isAdmin||codeVerified||!tour.code){setSubpage("rating");}else{setCodeError("");setCodeInput("");setShowCodeGate(true);}}}
 style={{flex:1,background:isRated?"#059669":tour.color,color:"#fff",border:"none",borderRadius:10,padding:"10px 0",
 fontWeight:700,cursor:"pointer",fontSize:13,boxShadow:"0 3px 10px rgba(27,58,107,.25)"}}>
 {isRated?"✓ Re-Rate":"Rate Home ★"}
@@ -2205,7 +2241,8 @@ setTours(prev=>[...prev,{...newTour,id:"tour-"+Date.now(),time:fmt12(newTour.tim
 setShowCreate(false);setNewTour({name:"",time:"09:00",date:filterDate==="upcoming"?TODAY:filterDate,color:"#1B3A6B",emoji:"🏡"});
 };
 const activeTour=tours.find(t=>t.id===activeTourId);
-if(activeTour) return <TourDetailPage tour={activeTour} onBack={()=>{setActiveTourId(null);window.location.hash="/";}} onUpdateTour={updated=>setTours(prev=>prev.map(t=>t.id===updated.id?updated:t))} isAdmin={isAdmin} listingRequests={listingRequests}/>;
+const activeTourIdx=tours.findIndex(t=>t.id===activeTourId);
+if(activeTour) return <TourDetailPage tour={activeTour} tourIndex={activeTourIdx} onBack={()=>{setActiveTourId(null);window.location.hash="/";}} onUpdateTour={updated=>setTours(prev=>prev.map(t=>t.id===updated.id?updated:t))} isAdmin={isAdmin} listingRequests={listingRequests}/>;
 return (
 <div style={{background:B.cream,minHeight:"100vh",paddingBottom:90}}>
 {showCreate&&(
