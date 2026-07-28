@@ -62,13 +62,18 @@ window.loadGoogleMaps=function(cb){
     window._mapsCallbacks=[];
   };
   var s=document.createElement('script');
-  // REMINDER: this is Braydon's PROD Maps key, restricted by HTTP referrer.
-  // The map shows "Map preview unavailable" on the *.vercel.app demo because that
-  // domain isn't in the key's allowed referrers. To make the demo map work, add
-  //   https://*.vercel.app/*
-  // to this key's Website restrictions in Google Cloud Console (Braydon's project),
-  // OR wire a separate demo key here selected by hostname. Prod is unaffected either way.
-  s.src='https://maps.googleapis.com/maps/api/js?key=AIzaSyBoPhoNQ5C84nS79QDV36R93APg4Pizo_E&libraries=places&callback=_gmapsReady';
+  // Braydon's PROD key is restricted by HTTP referrer to marketreadytours.com, so it fails
+  // on the *.vercel.app demo — grey "Map preview unavailable" plus a silently dead Places
+  // autocomplete. The demo therefore uses its own key from our own GCP project.
+  //   1. Paste the demo key into MRT_DEMO_MAPS_KEY below.
+  //   2. In Google Cloud Console restrict that key to Websites: https://*.vercel.app/*
+  //      and to the Maps JavaScript API + Places API only.
+  // Leaving MRT_DEMO_MAPS_KEY empty falls back to the prod key, i.e. today's behaviour.
+  // Production is unaffected either way — it never reads the demo key.
+  var MRT_PROD_MAPS_KEY='AIzaSyBoPhoNQ5C84nS79QDV36R93APg4Pizo_E';
+  var MRT_DEMO_MAPS_KEY='AIzaSyBrD8tfQ17BNVbzll6H78wzxbKbU9Tj2OU';
+  var MRT_MAPS_KEY=(location.hostname.endsWith('.vercel.app')&&MRT_DEMO_MAPS_KEY)?MRT_DEMO_MAPS_KEY:MRT_PROD_MAPS_KEY;
+  s.src='https://maps.googleapis.com/maps/api/js?key='+MRT_MAPS_KEY+'&libraries=places&callback=_gmapsReady';
   s.async=true;s.defer=true;
   document.head.appendChild(s);
 };
@@ -110,6 +115,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
 @media (max-width:1023px){
   .mrt-appbar .mrt-hdr-logo{ display:none !important; }
   .mrt-td-logowrap{ display:none !important; }
+  .mrt-route-logo{ display:none !important; }
   .mrt-dash-logorow .mrt-hdr-logo{ display:inline !important; }
 }
 /* ══ DESKTOP LAYER (>=1024px AND body.mrt-desktop only) ═══════════════════
@@ -166,6 +172,9 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#C9A55A!import
   /* Logo now lives in the persistent global top nav bar → hide the per-header logos on desktop */
   body.mrt-desktop .mrt-appbar .mrt-hdr-logo{ display:none !important; }
   body.mrt-desktop .mrt-td-logowrap{ display:none !important; }
+  /* Tour Route header carries its own logo outside .mrt-appbar — without this it doubles up
+     with the global top-nav logo on desktop. */
+  body.mrt-desktop .mrt-route-logo{ display:none !important; }
   /* Persistent global top nav bar — full-width, sticky, logo-only; identical on every page. Desktop only. */
   body.mrt-desktop .mrt-topnav{ position:sticky; top:0; z-index:300; display:flex; align-items:center; height:64px; width:100%; background:var(--mrt-paper); border-bottom:1px solid var(--mrt-hair); padding-left:max(18px, calc(50% - 582px)); padding-right:max(18px, calc(50% - 582px)); }
   body.mrt-desktop .mrt-topnav-logo{ height:48px !important; width:auto !important; }
@@ -301,6 +310,17 @@ try {
 } catch (e) {/* Firebase unavailable — app still works via localStorage */}
 if (_USE_DEV) console.log("MRT[dev] using isolated dev Firebase project (preview build)");
 
+/* ── DEMO OUTBOUND ROUTING (*.vercel.app preview only) ──
+   The demo talks to the REAL email/SMS services so the whole flow is demoable end to end,
+   but every message is redirected to one test inbox and tagged with who it WOULD have gone
+   to. Calls that create real-world artifacts someone gets billed for (Square invoices) stay
+   stubbed. localhost stays fully silent. Production is untouched by all of this. */
+const DEMO_TEST_EMAIL = "erikyaspelin@gmail.com";
+/* Rewrites a recipient + subject for the demo. Returns [to, subject]. */
+const demoRoute = (to, subject) => _USE_DEV
+  ? [DEMO_TEST_EMAIL, "[DEMO → " + to + "] " + (subject || "")]
+  : [to, subject];
+
 /* ── LOCAL EMULATOR (localhost only — prod untouched) ── */
 window._MRT_LOCAL = ["localhost","127.0.0.1"].includes(location.hostname);
 if (window._MRT_LOCAL) {
@@ -336,10 +356,28 @@ async function createFirebaseUser(email, password) {
 
 /* Look up admin role from Firebase database */
 async function getAdminRole(email) {
-  if (!_fb) return null;
   const key = email.replace(/\./g, ",");
-  const snap = await _fb.ref("admins/" + key).once("value");
-  return snap.val(); // {name, role} or null
+  // Reads the same path over plain REST. The realtime socket can stall on restrictive
+  // networks (VPNs, corporate wifi, captive portals) and .once() has NO timeout, so a stalled
+  // socket left the Sign In button stuck on "Signing in…" forever with no error. Same REST
+  // fallback idea already used for loading tours.
+  const viaRest = async () => {
+    let url = mrtDbRestUrl("admins/" + key);
+    try {
+      const tok = _fbAuth && _fbAuth.currentUser ? await _fbAuth.currentUser.getIdToken() : null;
+      if (tok) url += (url.indexOf("?") === -1 ? "?" : "&") + "auth=" + encodeURIComponent(tok);
+    } catch (e) {/* fall through unauthenticated — the rules will decide */}
+    const r = await fetchWithTimeout(url, {}, 8000);
+    if (!r.ok) throw new Error("admin lookup failed (" + r.status + ")");
+    return r.json(); // {name, role} or null
+  };
+  if (!_fb) return viaRest();
+  // Whichever answers first wins. A socket read that ERRORS defers to REST instead of
+  // rejecting, so one broken transport can't fail the login on its own.
+  const NEVER = new Promise(function () {});
+  const viaSocket = _fb.ref("admins/" + key).once("value").then(s => s.val()).catch(() => NEVER);
+  const viaRestDelayed = new Promise(r => setTimeout(r, 2500)).then(viaRest);
+  return Promise.race([viaSocket, viaRestDelayed]);
 }
 function fbToArr(d) {
   if (d === null || d === undefined || typeof d !== "object") return d;
@@ -395,12 +433,25 @@ const LI = (name, size=16, extraStyle={}) => {
 };
 const SEND_EMAIL_URL = "https://sendemail-wraz5q2v2a-uc.a.run.app";
 const SQUARE_INVOICE_URL = "https://marketreadynetwork.com/.netlify/functions/create-invoice-mrt";
+/* A Square invoice is a real, billable artifact sent to a real person, and the Netlify
+   function behind this URL has no sandbox mode we can switch from the client. On localhost
+   and on the demo the call is simulated so the sponsor payment flow stays fully clickable
+   without invoicing anyone. Drop-in for fetchWithTimeout. */
+const squareFetch = (url, opts, ms) => {
+  if (window._MRT_LOCAL || _USE_DEV) {
+    console.log("MRT[demo] Square invoice simulated — nothing was actually created/billed");
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true, demo: true }) });
+  }
+  return fetchWithTimeout(url, opts, ms);
+};
 const sendCFEmail = async (to, subject, message, html) => {
   if (!to || !isValidEmail(to)) {
     console.warn("sendCFEmail: invalid recipient", to);
     return false;
   }
-  if (window._MRT_LOCAL || _USE_DEV) { console.log("MRT[no-send]: sendCFEmail suppressed →", to, subject); return true; }
+  if (window._MRT_LOCAL) { console.log("MRT[no-send]: sendCFEmail suppressed →", to, subject); return true; }
+  // Demo: really send, but to the test inbox, labelled with the intended recipient.
+  if (_USE_DEV) { const r = demoRoute(to, subject); console.log("MRT[demo] email →", DEMO_TEST_EMAIL, "(intended:", to + ")"); to = r[0]; subject = r[1]; }
   try {
     const r = await fetchWithTimeout(SEND_EMAIL_URL, {
       method: "POST",
@@ -422,9 +473,24 @@ const sendCFEmail = async (to, subject, message, html) => {
 };
 const FORMSPREE_URL = "https://formspree.io/f/xykdngrr";
 const LISTING_REQUEST_FORMSPREE = "https://formspree.io/f/xwvnrbqr"; // listing requests form
+/* A Formspree form delivers to whatever address is set in ITS dashboard, so unlike our own
+   email path it can't be redirected per-environment. On localhost and on the demo these
+   posts are skipped so the real MarketReady inbox stays clean — sendCFEmail already puts a
+   labelled copy of the same notification in the demo test inbox. Drop-in for
+   fetchWithTimeout: same (url, opts, ms) shape, same thenable result. */
+const formspreeFetch = (url, opts, ms) => {
+  if (window._MRT_LOCAL || _USE_DEV) {
+    console.log("MRT[demo] Formspree post skipped →", url);
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) });
+  }
+  return fetchWithTimeout(url, opts, ms);
+};
 const SMS_EMAIL = "4806951996@txt.att.net";
 const sendSMS = msg => {
-  if (window._MRT_LOCAL || _USE_DEV) { console.log("MRT[no-send]: sendSMS suppressed →", msg); return; }
+  if (window._MRT_LOCAL) { console.log("MRT[no-send]: sendSMS suppressed →", msg); return; }
+  // Demo: a Formspree form's destination is fixed in the Formspree dashboard and can't be
+  // redirected from here, so the alert goes out via the (already demo-routed) email path.
+  if (_USE_DEV) { sendCFEmail(SMS_EMAIL, "MRT Alert (SMS)", msg); return; }
   fetchWithTimeout(LISTING_REQUEST_FORMSPREE, {
     method: "POST",
     headers: {
@@ -443,7 +509,7 @@ async function sendWelcomeEmail(name, email) {
     // Send Firebase password reset so user sets their own password
     await _fbAuth.sendPasswordResetEmail(email);
     // Also send a welcome notification via Formspree
-    await fetchWithTimeout(FORMSPREE_URL, {
+    await formspreeFetch(FORMSPREE_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -2105,23 +2171,42 @@ function RatingPage(_ref7) {
       display: "flex",
       gap: 8
     }
-  }, /*#__PURE__*/React.createElement("a", {
-    href: "https://www.marketreadytours.com",
-    target: "_blank",
-    className: "mrt-btn mrt-btn--ghost mrt-btn--sm mrt-press",
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "mrt-btn mrt-btn--sm",
+    "aria-disabled": "true",
+    title: "Work in progress",
     style: {
-      textDecoration: "none",
-      flex: 1
+      flex: 1,
+      textAlign: "center",
+      cursor: "not-allowed",
+      opacity: .55,
+      background: B.lightGray,
+      color: B.gray,
+      border: "1px solid " + B.line
     }
-  }, "Buyer Est."), /*#__PURE__*/React.createElement("a", {
-    href: "https://www.marketreadytours.com",
-    target: "_blank",
-    className: "mrt-btn mrt-btn--gold mrt-btn--sm mrt-press",
+  }, "Buyer Est."), /*#__PURE__*/React.createElement("span", {
+    className: "mrt-btn mrt-btn--sm",
+    "aria-disabled": "true",
+    title: "Work in progress",
     style: {
-      textDecoration: "none",
-      flex: 1
+      flex: 1,
+      textAlign: "center",
+      cursor: "not-allowed",
+      opacity: .55,
+      background: B.lightGray,
+      color: B.gray,
+      border: "1px solid " + B.line
     }
-  }, "Seller Est.")), /*#__PURE__*/React.createElement(NeighborhoodPanel, {
+  }, "Seller Est.")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: B.gray,
+      textAlign: "center",
+      textTransform: "uppercase",
+      letterSpacing: .6,
+      marginTop: -6
+    }
+  }, "Work in progress"), /*#__PURE__*/React.createElement(NeighborhoodPanel, {
     address: listing.address,
     city: listing.city
   }), /*#__PURE__*/React.createElement("div", {
@@ -4224,7 +4309,7 @@ function TourSponsorsModal(_ref10) {
       const amt = showPayment.paymentPlan === "split" ? "49.75" : showPayment.paymentPlan === "half" ? "99.50" : "199.00";
       const planLabel = showPayment.paymentPlan === "split" ? "Quarter Sponsor (1/4)" : showPayment.paymentPlan === "half" ? "Half (1/2)" : "Full Sponsor";
       try {
-        const res = await fetchWithTimeout(SQUARE_INVOICE_URL, {
+        const res = await squareFetch(SQUARE_INVOICE_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -6906,6 +6991,7 @@ function TourDetailPage(_ref19) {
   }, LI("Route", 15), "Tour Route")), /*#__PURE__*/React.createElement("img", {
     src: window.MRT_LOGO_DATA,
     alt: "MRT",
+    className: "mrt-route-logo",
     style: {
       height: 40,
       objectFit: "contain",
@@ -9676,7 +9762,7 @@ const RequestATourInlineForm = React.forwardRef(function (_ref24, ref) {
     setSubmitting(true);
     setError("");
     try {
-      await fetchWithTimeout(LISTING_REQUEST_FORMSPREE, {
+      await formspreeFetch(LISTING_REQUEST_FORMSPREE, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -11957,7 +12043,7 @@ function RequestListingPage(_ref31) {
       createdBy: hashCreatedBy || (tour ? tour.createdBy || "" : "")
     };
     try {
-      await fetchWithTimeout(LISTING_REQUEST_FORMSPREE, {
+      await formspreeFetch(LISTING_REQUEST_FORMSPREE, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
