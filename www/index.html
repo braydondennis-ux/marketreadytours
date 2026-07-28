@@ -379,6 +379,37 @@ async function getAdminRole(email) {
   const viaRestDelayed = new Promise(r => setTimeout(r, 2500)).then(viaRest);
   return Promise.race([viaSocket, viaRestDelayed]);
 }
+
+/* Write counterpart to getAdminRole's fallback. RTDB writes also go over the realtime socket
+   and also have no timeout: if the socket stalls, .set()/.remove() queue locally and NEVER
+   settle, so the calling UI sits on "Creating…" forever with no error. This is easy to miss
+   because the app can still look "Synced" — that pill reflects fbReady (initial data loaded,
+   possibly via the REST fallback), not socket health. Race the socket write against a REST
+   write of the same path. Pass value === null to delete. */
+async function mrtDbSet(path, value) {
+  const viaRest = async () => {
+    let url = mrtDbRestUrl(path);
+    try {
+      const tok = _fbAuth && _fbAuth.currentUser ? await _fbAuth.currentUser.getIdToken() : null;
+      if (tok) url += (url.indexOf("?") === -1 ? "?" : "&") + "auth=" + encodeURIComponent(tok);
+    } catch (e) {/* unauthenticated — the rules will decide */}
+    const r = await fetchWithTimeout(url, value === null ? {
+      method: "DELETE"
+    } : {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(value)
+    }, 8000);
+    if (!r.ok) throw new Error("write failed (" + r.status + ")");
+    return true;
+  };
+  if (!_fb) return viaRest();
+  const NEVER = new Promise(function () {});
+  const socketOp = value === null ? _fb.ref(path).remove() : _fb.ref(path).set(value);
+  const viaSocket = socketOp.then(() => true).catch(() => NEVER);
+  const viaRestDelayed = new Promise(r => setTimeout(r, 3000)).then(viaRest);
+  return Promise.race([viaSocket, viaRestDelayed]);
+}
 function fbToArr(d) {
   if (d === null || d === undefined || typeof d !== "object") return d;
   const k = Object.keys(d);
@@ -11212,7 +11243,7 @@ function TeamPage(_ref28) {
       await createFirebaseUser(newUser.email, tempPass);
       // Add role to Firebase database
       const key = newUser.email.replace(/\./g, ",");
-      await _fb.ref("admins/" + key).set({
+      await mrtDbSet("admins/" + key, {
         name: newUser.name,
         role: "sub"
       });
@@ -11236,7 +11267,7 @@ function TeamPage(_ref28) {
         // Firebase Auth account exists — just add the DB entry + local entry
         try {
           const key = newUser.email.replace(/\./g, ",");
-          await _fb.ref("admins/" + key).set({ name: newUser.name, role: "sub" });
+          await mrtDbSet("admins/" + key, { name: newUser.name, role: "sub" });
           const nu = { id: uid("sub"), email: newUser.email, name: newUser.name, role: "sub", username: newUser.email.split("@")[0] };
           setSubAdmins(prev => [...prev, nu]);
           setNewUser({ name: "", email: "" });
@@ -11261,7 +11292,7 @@ function TeamPage(_ref28) {
     if (user && _fb) {
       try {
         const key = user.email.replace(/\./g, ",");
-        await _fb.ref("admins/" + key).remove();
+        await mrtDbSet("admins/" + key, null);
       } catch (e) {}
     }
     setSubAdmins(prev => prev.filter(u => u.id !== id));
