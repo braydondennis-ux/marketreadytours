@@ -3329,6 +3329,35 @@ try{if(_fbAuth) await _fbAuth.signOut();}catch(e){}
 /* Firebase sync — runs in background, app works fine without it */
 const fbReady = useRef(false);
 const fbIgnore = useRef({});
+/* fbSynced[path] = canonical JSON of the value we know the server currently holds.
+   This replaces the old single-boolean fbIgnore echo suppression, which lost data:
+   the flag could only swallow ONE incoming event, so when several edits were made in
+   quick succession (e.g. adding 8 listings) the later server echoes were applied to
+   local state. Those echoes carry EARLIER snapshots, so local state regressed to a
+   older version — and because applying a snapshot changes `tours`, the write effect
+   then wrote that stale version straight back, permanently destroying the newer
+   listings. Comparing content instead of counting events makes echoes harmless. */
+const fbSynced = useRef({});
+const fbWriteTimer = useRef({});
+/* Key order differs between our local objects and Firebase's round-trip, so compare
+   canonically (keys sorted) or the guard would miss and cause needless churn. */
+const fbCanon = v => { try { return JSON.stringify(v, (k, val) => (val && typeof val === "object" && !Array.isArray(val)) ? Object.keys(val).sort().reduce((o, kk) => { o[kk] = val[kk]; return o; }, {}) : val); } catch (e) { return null; } };
+/* Debounced, echo-safe write. Rapid successive edits coalesce into ONE write instead
+   of a storm of whole-collection overwrites racing each other's echoes. */
+const fbPush = (path, value) => {
+  if (!_fb || !fbReady.current) return;
+  const json = fbCanon(value === undefined ? null : value);
+  if (json === null || fbSynced.current[path] === json) return; // server already has exactly this
+  clearTimeout(fbWriteTimer.current[path]);
+  fbWriteTimer.current[path] = setTimeout(() => {
+    if (fbSynced.current[path] === json) return;
+    try {
+      fbSynced.current[path] = json;
+      const p = _fb.ref(path).set(value);
+      if (p && p.catch) p.catch(() => { if (fbSynced.current[path] === json) fbSynced.current[path] = null; });
+    } catch (e) { fbSynced.current[path] = null; }
+  }, 400);
+};
 
 // On mount: load from Firebase ONCE, then start listening
 useEffect(()=>{
@@ -3343,7 +3372,7 @@ Promise.all(Object.keys(paths).map(path=>
   _fb.ref(path).once("value").then(snap=>{
     try{
       const raw=snap.val();
-      if(raw!==null&&raw!==undefined){paths[path](fbToArr(raw));}
+      if(raw!==null&&raw!==undefined){const v=fbToArr(raw);fbSynced.current[path]=fbCanon(v);paths[path](v);}
       else{/* Firebase empty — will be seeded by write effects */}
     }catch(e){}
   }).catch(()=>{})
@@ -3355,9 +3384,18 @@ Promise.all(Object.keys(paths).map(path=>
     try{
       _fb.ref(path).on("value",snap=>{
         try{
-          if(fbIgnore.current[path]){fbIgnore.current[path]=false;return;}
           const raw=snap.val();
-          if(raw!==null&&raw!==undefined) setter(fbToArr(raw));
+          if(raw===null||raw===undefined) return;
+          const v=fbToArr(raw);
+          const json=fbCanon(v);
+          // Our own echo, or nothing actually changed — ignore. Content comparison, not
+          // event counting, so any number of in-flight writes is safe.
+          if(json===null||fbSynced.current[path]===json) return;
+          // Record BEFORE calling the setter, so the write effect this triggers sees the
+          // value as already-synced and does NOT write it back (that write-back loop is
+          // what persisted stale snapshots over good data).
+          fbSynced.current[path]=json;
+          setter(v);
         }catch(e){}
       });
     }catch(e){}
@@ -3366,9 +3404,9 @@ Promise.all(Object.keys(paths).map(path=>
 },[]);
 
 // Push local changes to Firebase (only after initial load completes)
-useEffect(()=>{if(!_fb||!fbReady.current)return;try{fbIgnore.current["mrt_tours"]=true;_fb.ref("mrt_tours").set(tours);}catch(e){}},[tours]);
-useEffect(()=>{if(!_fb||!fbReady.current)return;try{fbIgnore.current["mrt_listing_requests"]=true;_fb.ref("mrt_listing_requests").set(listingRequests);}catch(e){}},[listingRequests]);
-useEffect(()=>{if(!_fb||!fbReady.current)return;try{fbIgnore.current["mrt_subadmins"]=true;_fb.ref("mrt_subadmins").set(subAdmins);}catch(e){}},[subAdmins]);
+useEffect(()=>{fbPush("mrt_tours",tours);},[tours]);
+useEffect(()=>{fbPush("mrt_listing_requests",listingRequests);},[listingRequests]);
+useEffect(()=>{fbPush("mrt_subadmins",subAdmins);},[subAdmins]);
 return (
 <div style={{maxWidth:480,margin:"0 auto",minHeight:"100vh"}}>
 <div id="fb-status" style={{position:"fixed",top:4,right:4,zIndex:9999,fontSize:10,padding:"2px 8px",borderRadius:10,background:_fb?"#D1FAE5":"#FEE2E2",color:_fb?"#065F46":"#991B1B"}}>{_fb?(fbReady.current?"🟢 Synced":"🟡 Connecting..."):"🔴 Local only"}</div>
