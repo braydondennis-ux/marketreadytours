@@ -55,6 +55,27 @@ fallback) and **not** socket health, so a dead socket looks healthy until you tr
 
 ---
 
+## 🟠 3. Sync is still whole-collection last-write-wins
+
+Production lost data on 2026-07-31 (Scott: 7 of 8 listings, repeatedly) because the February
+build suppressed write echoes with a **one-shot boolean** and had **no write debounce**. Later
+echoes carried earlier snapshots, got applied to local state, and the write effect then wrote
+that stale snapshot back. Fixed in prod by commit `cd6f980` (content guard + 400ms debounce).
+`design-refresh` was never vulnerable to that specific bug — it already debounces 800ms and
+uses a 2.5s ignore *window* the listener never clears — and has since been hardened with the
+same canonical content guard.
+
+**Still open on both branches:** every write replaces the ENTIRE `mrt_tours` collection, and
+resolution is last-write-wins. Two consequences remain:
+
+- A genuine remote edit arriving inside our own 2.5s ignore window is **dropped**, not applied,
+  and nothing re-fetches it — that client stays stale until reload.
+- Two admins editing different tours at the same time can still clobber one another, because
+  the whole collection is the unit of write.
+
+Real fix is per-tour granular writes (`mrt_tours/<id>`), which the pre-rollback May build
+already had in commit `15e501f` and which the February rollback discarded.
+
 ## Deferred from the 2026-07-16 audit
 
 Full detail in `HANDOFF-audit-2026-07-16.md`.
