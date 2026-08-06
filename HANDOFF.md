@@ -184,14 +184,26 @@ Recorded rollback deployment:
 - URL: `https://marketreadytours-rea0qro8q-abqeriks-projects.vercel.app`
 - Record: `.mrt-backups/production-cutover-2026-08-04/vercel-production-before-cutover.txt`
 
-Current refresh preview candidate before this branding pass:
+Current refresh preview candidate after the branding/workflow audit:
 
 - `https://mrt-refresh.vercel.app/`
 - `https://marketready-refresh.vercel.app/`
-- Deployment ID: `dpl_BgcUSkmSE8xSAwN4DyWXHRm8SuZN`
-- URL: `https://marketreadytours-bo4lm6x38-abqeriks-projects.vercel.app`
+- Deployment ID: `dpl_BJ8QdydpGCLx3cdbRU4szHVqMs78`
+- URL: `https://marketreadytours-ql0iwfqmn-abqeriks-projects.vercel.app`
+- Release commit: `9e8c932` on `abqerik/marketreadytours`, branch
+  `agent/mrt-refresh-release-2026-08-06`
+- Both preview aliases resolve to the same deployment. Its served HTML matches the local generated
+  bundle exactly after normalizing the injected Preview App Check site key.
+- Firebase CLI was reauthenticated as `erik@marketreadysystems.ai` on 2026-08-06.
+- Static surfaces, security headers, Preview App Check injection, dev-project routing, public data
+  privacy, and reachable callable endpoints passed remote smoke checks. The controlled browser was
+  unavailable, so the final desktop/mobile visual click-through still requires a human pass.
+- `markSponsorPaid` now exists and is active in `marketready-tours-dev`, but its Cloud Run service is
+  private (`HTTP 403`). The deploy uploaded and created the service, then failed only while setting
+  its public invoker IAM policy because this account still lacks `run.services.setIamPolicy`.
 
-Do not overwrite these aliases during the branding task.
+Do not promote this deployment to production until Braydon explicitly approves the candidate and
+the Cloud Run invoker blocker is resolved.
 
 ## Production cutover work already completed
 
