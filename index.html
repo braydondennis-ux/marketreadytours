@@ -6646,61 +6646,6 @@ function RouteMapView(_ref18) {
       const map = new window.google.maps.Map(mapRef.current, {
         zoom: 12,
         mapTypeId: "roadmap",
-        styles: [{
-          featureType: "all",
-          elementType: "geometry",
-          stylers: [{
-            color: "#1a1a1a"
-          }]
-        }, {
-          featureType: "all",
-          elementType: "labels.text.fill",
-          stylers: [{
-            color: "#2F44A0"
-          }]
-        }, {
-          featureType: "all",
-          elementType: "labels.text.stroke",
-          stylers: [{
-            color: "#111318"
-          }]
-        }, {
-          featureType: "road",
-          elementType: "geometry",
-          stylers: [{
-            color: "#2a2a2a"
-          }]
-        }, {
-          featureType: "road.arterial",
-          elementType: "geometry",
-          stylers: [{
-            color: "#373737"
-          }]
-        }, {
-          featureType: "road.highway",
-          elementType: "geometry",
-          stylers: [{
-            color: "#3c3c3c"
-          }]
-        }, {
-          featureType: "water",
-          elementType: "geometry",
-          stylers: [{
-            color: "#0D1117"
-          }]
-        }, {
-          featureType: "poi",
-          elementType: "geometry",
-          stylers: [{
-            color: "#1a1a1a"
-          }]
-        }, {
-          featureType: "transit",
-          elementType: "geometry",
-          stylers: [{
-            color: "#2f3948"
-          }]
-        }],
         disableDefaultUI: false,
         zoomControl: true,
         streetViewControl: false,
@@ -6718,8 +6663,8 @@ function RouteMapView(_ref18) {
         suppressMarkers: true,
         polylineOptions: {
           strokeColor: "#2F44A0",
-          strokeWeight: 3,
-          strokeOpacity: 0.8
+          strokeWeight: 6,
+          strokeOpacity: 1
         }
       });
 
@@ -6737,7 +6682,7 @@ function RouteMapView(_ref18) {
               map,
               label: {
                 text: String(i + 1),
-                color: "#111318",
+                color: "#FFFFFF",
                 fontWeight: "bold",
                 fontSize: "12px"
               },
@@ -6746,8 +6691,8 @@ function RouteMapView(_ref18) {
                 scale: 18,
                 fillColor: "#2F44A0",
                 fillOpacity: 1,
-                strokeColor: "#111318",
-                strokeWeight: 2
+                strokeColor: "#FFFFFF",
+                strokeWeight: 3
               },
               title: l.address
             });
