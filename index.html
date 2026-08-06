@@ -770,6 +770,22 @@ const mrtLocalYmd = function (date) {
 };
 const TODAY = mrtLocalYmd();
 const isPaidSponsor = sponsor => !!sponsor && (sponsor.paid === true || sponsor.paymentStatus === "paid");
+/* Dashboard cards render listing photos at 52 CSS pixels. On Vercel, request a
+   128px cached derivative (enough for Retina displays) instead of transferring
+   the full listing photo. Other hosts and localhost safely keep the original. */
+const mrtThumbUrl = url => {
+  if (!url) return "";
+  try {
+    const source = new URL(url, window.location.href);
+    const onVercel = window.location.hostname.endsWith(".vercel.app") ||
+      window.location.hostname === "marketreadytours.com" ||
+      window.location.hostname === "www.marketreadytours.com";
+    if (onVercel && source.hostname === "firebasestorage.googleapis.com") {
+      return "/_vercel/image?url=" + encodeURIComponent(source.href) + "&w=128&q=70";
+    }
+  } catch (e) {/* malformed image URL — let the browser handle the original */}
+  return url;
+};
 const getTourStopNumber = (tour, listing) => {
   const sorted = (tour && tour.listings || []).slice().sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
   const index = sorted.findIndex(stop => stop.id === (listing && listing.id));
@@ -11713,8 +11729,17 @@ function ToursDashboard(_ref26) {
           flexShrink: 0
         }
       }, /*#__PURE__*/React.createElement("img", {
-        src: (l.photos || [])[0],
+        src: mrtThumbUrl((l.photos || [])[0]),
         alt: "",
+        width: 52,
+        height: 52,
+        loading: i < 4 ? "eager" : "lazy",
+        decoding: "async",
+        fetchPriority: i < 4 ? "high" : "low",
+        onError: e => {
+          const original = (l.photos || [])[0];
+          if (original && e.currentTarget.src !== original) e.currentTarget.src = original;
+        },
         style: {
           width: 52,
           height: 52,
@@ -14551,6 +14576,7 @@ function SponsorSignupPage(_ref38) {
   }, PLAN_TIERS.map(tier => /*#__PURE__*/React.createElement("button", {
     key: tier.key,
     onClick: () => setPlan(tier.key),
+    "aria-pressed": plan === tier.key,
     className: "mrt-press",
     style: {
       position: "relative",
@@ -14559,7 +14585,7 @@ function SponsorSignupPage(_ref38) {
       borderRadius: "var(--mrt-radius-card)",
       padding: "16px 18px",
       background: tier.lead ? "var(--mrt-gold-chip-bg)" : "var(--mrt-paper)",
-      border: tier.lead ? "1.5px solid var(--mrt-gold)" : plan === tier.key ? "1.5px solid var(--mrt-navy)" : "1px solid var(--mrt-hair)",
+      border: plan === tier.key ? "2px solid var(--mrt-navy)" : tier.lead ? "1.5px solid var(--mrt-gold)" : "1px solid var(--mrt-hair)",
       boxShadow: plan === tier.key ? "var(--mrt-shadow-soft)" : "none"
     }
   }, tier.lead && /*#__PURE__*/React.createElement("span", {

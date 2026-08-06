@@ -3,6 +3,20 @@
   "outputDirectory": "www",
   "framework": null,
   "cleanUrls": true,
+  "images": {
+    "sizes": [128],
+    "qualities": [70],
+    "formats": ["image/avif", "image/webp"],
+    "minimumCacheTTL": 2678400,
+    "remotePatterns": [
+      {
+        "protocol": "https",
+        "hostname": "firebasestorage.googleapis.com",
+        "port": "",
+        "pathname": "/v0/b/**"
+      }
+    ]
+  },
   "headers": [
     {
       "source": "/(.*)",
