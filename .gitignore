@@ -1,5 +1,16 @@
 .vercel
+.DS_Store
 .emu-seed/
 firebase-debug.log
 database-debug.log
 ui-debug.log
+node_modules/
+functions/node_modules/
+www/
+coverage/
+playwright-report/
+test-results/
+.firebase/
+.mrt-backups/
+.env*
+!.env.example

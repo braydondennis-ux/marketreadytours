@@ -1,12 +1,23 @@
 {
   "name": "marketready-app",
   "version": "1.0.0",
+  "private": true,
   "description": "",
   "main": "index.js",
   "scripts": {
-    "emu": "npx firebase-tools emulators:start --only auth,database --import=./.emu-seed --export-on-exit=./.emu-seed",
+    "build": "node scripts/build.mjs",
+    "dev": "npm run build && npx http-server www -p 8080 -c-1",
+    "emu": "npx firebase-tools emulators:start --only auth,database,storage,functions --import=./.emu-seed --export-on-exit=./.emu-seed",
+    "seed:emu": "node scripts/seed-emulator.mjs",
     "serve": "npx http-server -p 8080 -c-1 .",
-    "validate": "node www/validate.js"
+    "validate": "npm run build && node scripts/validate.cjs",
+    "test": "node --test functions/test/*.test.js scripts/*.test.mjs",
+    "test:rules": "firebase emulators:exec --project=mrt-local-audit --only database,storage \"node scripts/rules-suite.mjs\"",
+    "test:workflow": "MRT_SIGNING_SECRET=mrt-workflow-signing-secret MRT_SQUARE_WEBHOOK_SECRET=mrt-workflow-square-secret MRT_SQUARE_WEBHOOK_URL=http://127.0.0.1:5001/mrt-local-audit/us-central1/squareWebhook MRT_SQUARE_ACCESS_TOKEN=mock MRT_SQUARE_LOCATION_ID=mock MRT_INSTANTLY_API_KEY=mock MRT_INSTANTLY_WEBHOOK_SECRET=mock MRT_TRANSACTIONAL_EMAIL_URL=http://127.0.0.1:9/mock MRT_TRANSACTIONAL_EMAIL_TOKEN=mock MRT_OUTBOUND_ALLOWLIST=agent@example.com firebase emulators:exec --project=mrt-local-audit --only auth,database,storage,functions \"npm run seed:emu && node scripts/workflow-suite.mjs\"",
+    "test:e2e": "playwright test",
+    "check": "npm run test && npm run validate",
+    "ios:sync": "npm run build && npx cap sync ios",
+    "ios:build": "npm run ios:sync && xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -derivedDataPath /tmp/mrt-ios-derived CODE_SIGNING_ALLOWED=NO build"
   },
   "keywords": [],
   "author": "",
@@ -17,6 +28,10 @@
     "@capacitor/ios": "^8.1.0"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.1.0"
+    "@capacitor/cli": "^8.1.0",
+    "@playwright/test": "1.62.0",
+    "@firebase/rules-unit-testing": "5.0.1",
+    "firebase": "12.16.0",
+    "firebase-tools": "15.24.0"
   }
 }

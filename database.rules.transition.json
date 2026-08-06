@@ -1,0 +1,127 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "admins": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.email === 'marketreadytours@gmail.com'",
+      "$adminKey": {".validate": "newData.hasChild('role')"}
+    },
+    "mrt_subadmins": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.email === 'marketreadytours@gmail.com'"
+    },
+    "mrt_settings": {
+      ".read": "auth != null && auth.token.email === 'marketreadytours@gmail.com'",
+      ".write": "auth != null && auth.token.email === 'marketreadytours@gmail.com'"
+    },
+
+    "mrt_tours": {
+      ".read": true,
+      ".write": "auth != null",
+      "$tour_index": {
+        "ratings": {
+          "$listing_id": {
+            ".write": true,
+            ".validate": "newData.hasChildren() || !newData.exists()"
+          }
+        },
+        "favorites": {
+          "$listing_id": {
+            ".write": true,
+            ".validate": "newData.isBoolean() || !newData.exists()"
+          }
+        },
+        "notes": {"$listing_id": {".write": "auth != null"}}
+      }
+    },
+    "mrt_tours_public": {".read": true, ".write": false},
+    "mrt_tours_private": {
+      ".read": "auth != null && (auth.token.mrtRole === 'admin' || auth.token.mrtRole === 'super')",
+      ".write": false
+    },
+    "mrt_tour_previews": {".read": true, ".write": "auth != null"},
+
+    "mrt_ratings": {
+      ".read": true,
+      "$tourId": {"$listingId": {"$subId": {
+        ".write": "auth != null || (!data.exists() && newData.exists())",
+        ".validate": "newData.hasChild('submittedAt')"
+      }}}
+    },
+    "mrt_ratings_public": {".read": true, ".write": false},
+    "mrt_ratings_private": {
+      "$tourId": {"$listingId": {"$uid": {
+        ".read": "auth != null && (auth.uid === $uid || auth.token.mrtRole === 'admin' || auth.token.mrtRole === 'super')",
+        ".write": false
+      }}}
+    },
+    "mrt_rating_grants": {
+      "$uid": {".read": "auth != null && auth.uid === $uid", ".write": false}
+    },
+
+    "mrt_favorites": {
+      ".read": true,
+      "$firstKey": {"$secondKey": {"$thirdKey": {
+        ".write": true,
+        ".validate": "newData.isBoolean() || !newData.exists()"
+      }}}
+    },
+    "mrt_favorite_counts": {
+      ".read": "auth != null && (auth.token.mrtRole === 'admin' || auth.token.mrtRole === 'super')",
+      ".write": false
+    },
+
+    "mrt_reminders": {".read": "auth != null", ".write": "auth != null"},
+    "mrt_listing_requests": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$reqId": {
+        ".write": "auth != null || (!data.exists() && newData.exists())",
+        ".validate": "newData.hasChild('id')"
+      }
+    },
+    "mrt_tour_requests": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$reqId": {".write": "auth != null || (!data.exists() && newData.exists())"}
+    },
+    "mrt_contact_requests": {
+      ".read": "auth != null && (auth.token.mrtRole === 'admin' || auth.token.mrtRole === 'super')",
+      ".write": false
+    },
+    "mrt_sponsor_signups": {
+      ".read": "auth != null",
+      "$firstKey": {"$secondKey": {
+        ".write": "auth != null || (!data.exists() && newData.exists())"
+      }}
+    },
+    "mrt_campaigns": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".indexOn": ["tourId", "status"]
+    },
+    "mrt_suppressions": {
+      ".read": "auth != null && auth.token.mrtRole === 'super'",
+      ".write": false
+    },
+    "mrt_not_interested": {
+      ".read": "auth != null",
+      "$tourId": {"$emailKey": {".write": "auth != null || (!data.exists() && newData.exists())"}}
+    },
+    "mrt_listing_requests_queue": {
+      ".read": "auth != null",
+      "$reqId": {".write": "auth != null || (!data.exists() && newData.exists())"}
+    },
+
+    "mrt_invoices": {
+      ".read": "auth != null && (auth.token.mrtRole === 'admin' || auth.token.mrtRole === 'super')",
+      ".write": false
+    },
+    "mrt_idempotency": {".read": false, ".write": false},
+    "mrt_rate_limits": {".read": false, ".write": false},
+    "mrt_webhook_events": {".read": false, ".write": false},
+    "live_activity": {"$tour_id": {".read": true, ".write": "auth != null"}}
+  }
+}

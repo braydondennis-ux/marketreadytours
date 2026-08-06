@@ -1,59 +1,49 @@
-# MarketReady Tours — Security Hardening (Phase 0)
+# MarketReady Tours — Security Status
 
-Status of the audit's Phase 0 ("stop-the-bleeding"). **No production deployments were made.** Code/config
-changes are staged in the working tree and running on a local preview only.
+_Updated 2026-07-28. These controls have not been deployed to production._
 
-## Live findings (verified against the production Firebase, read-only)
+## Implemented
 
-The RTDB is **not** wide-open test mode — most paths are already locked. Confirmed unauthenticated reads:
+- Canonical mutations run through authenticated Firebase Functions.
+- Functions hard-block every remote project except `marketready-tours-dev`.
+- Admin authorization uses UID-scoped custom claims, not email keys or session storage.
+- Anonymous Auth gives public users stable ownership for favorites, grants, ratings, and uploads.
+- Public/private tour and rating records are split; public projections omit codes, contact data,
+  campaign contacts, notes, raw feedback, and unpaid sponsors.
+- Realtime Database and Storage default-deny Rules have emulator coverage.
+- Rating access requires a short-lived server grant derived from the tour code.
+- Rating payloads require all ten integer scores in the 1–5 range.
+- Public intake has validation, a honeypot, per-user/IP rate limiting, idempotency, and payload caps.
+- Outbound email, Instantly, reminders, invoice creation, and payment state are server-owned.
+- Dev outbound is mocked unless explicitly enabled and remains recipient-allowlisted.
+- Opt-outs use expiring signed tokens; the email address is not accepted as authority.
+- Sponsor payment status is updated by a signature-checked webhook, not a public/admin UI toggle.
+- Demo invoice creation uses only Square Sandbox, derives amounts server-side, and accepts only
+  hosted `squareupsandbox.com` payment URLs. Emulator invoice creation remains mocked.
+- App Check is enforced on remote callable Functions; localhost uses the emulator.
+- Generated dependencies and `www/` are no longer version-controlled.
 
-| Path | Anon read | Notes |
-|------|-----------|-------|
-| `mrt_tours` | 🔴 PUBLIC | Leaks embedded `campaignContacts`, notes, ratings, and per-tour access `code` |
-| `admins` | 🔴 PUBLIC | Leaks every admin email + role |
-| `mrt_tour_previews` | 🟡 PUBLIC | Intentional (public cards) |
-| `mrt_subadmins`, `mrt_tour_requests`, `mrt_listing_requests`, `mrt_settings`, `mrt_reminders`, `mrt_not_interested` | 🟢 denied | Client PII + the Instantly API key are **not** exposed |
+## Deliberate production block
 
-**Not yet verified (needs console):** whether anonymous *writes* are allowed to `mrt_tours` / `admins`
-(the data-wipe and self-escalation vectors). The write probe was intentionally not run against prod.
-Pull the current rules from the console to confirm — the drafted rules below close both regardless.
+The live hostname still follows the legacy client path. The Functions guard does not permit the
+production project, and the live client does not enable the secure backend. This prevents an
+accidental partial rollout. Publishing the new Rules by themselves would break the live client.
 
-## Changes made in this pass
+## Configuration still required before any preview/live use
 
-1. **Stored XSS in the calendar view (fixed)** — `index.html` + `www/index.html`. Tour-derived
-   `name`/`emoji`/`color`/`id` were interpolated raw into `innerHTML`. Added `esc()` (HTML/attribute
-   escaping) and `jsId()` (id sanitised for the inline `onclick`) inside the calendar `render()`.
-2. **Subresource Integrity (added)** — `integrity="sha384-…"` + `crossorigin="anonymous"` on all
-   cdnjs/gstatic `<script>` tags in both files (React, ReactDOM, Firebase ×4, qrcodejs, lucide).
-   Google Maps has no SRI support and is left as-is. Hashes computed from the live CDN bytes; both
-   CDNs send `access-control-allow-origin: *`, so loading is unaffected.
-3. **Security headers (added)** — `vercel.json` now sets `X-Frame-Options: DENY` (anti-clickjacking),
-   `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Strict-Transport-Security`,
-   `Permissions-Policy`, and a `Content-Security-Policy`. The CSP keeps `'unsafe-inline'` for scripts
-   because the app is one big inline block (no nonce possible in a static file) — tighten this during
-   the eventual rebuild. **Verify the CSP against a real session before production** (connect-src must
-   cover Firebase + all email/SMS/payment endpoints; the current list is scoped to what the app uses).
-4. **Firebase rules drafted (NOT deployed)** — `database.rules.json`, `storage.rules`, `firebase.json`,
-   `.firebaserc`. They preserve the guest flow (public read on `mrt_tours`/`mrt_tour_previews`) while:
-   - locking `admins` / `mrt_subadmins` / `mrt_settings` writes to the super-admin,
-   - requiring auth to write `mrt_tours` (kills anonymous wipe),
-   - allowing anonymous **create-only** on the public intake paths (`mrt_listing_requests`,
-     `mrt_tour_requests`, `mrt_not_interested`) so public submissions keep working.
+- Register the dev web app with Firebase App Check and provide `MRT_APP_CHECK_SITE_KEY`.
+- Store Instantly, signing, transactional-email, and webhook keys in Functions secrets.
+- Configure the Square Sandbox access token, location, webhook signature key, and exact webhook
+  URL described in `docs/SQUARE-SANDBOX.md`.
+- Keep Maps keys restricted to the intended referrers and APIs.
+- Add Apple App Attest/DeviceCheck for a production iOS release.
+- Monitor App Check metrics before enforcing it on additional Firebase products.
 
-### To deploy the rules (when ready — this IS a production change)
-```
-npm i -g firebase-tools      # not installed in this repo's env
-firebase login
-firebase deploy --only database,storage
-```
-Or paste `database.rules.json` into Firebase console → Realtime Database → Rules, and `storage.rules`
-into Storage → Rules. **Review `storage.rules` first** — the live bucket allows anonymous object
-listing; the draft scopes reads to the known image prefixes but should be validated against real uploads.
+## Accepted constraints
 
-## Known residual / not addressed in this pass (next phases)
-- `mrt_tours` read is still public → split sensitive fields into `mrt_tours_private/<id>` (Phase 1).
-- **F1 — guest ratings never reach Firebase** (biggest functional bug): ratings are written into the
-  admin-only bulk `tours` write path. Needs a granular guest-writable ratings path like `mrt_not_interested`.
-- **Two-file drift** (root=Square / www=Stripe) and the dead `build.js` pipeline — single source of truth.
-- Open email/SMS relays (`sendemail-…run.app`, AT&T SMS gateway) need auth + rate limiting (server-side).
-- Restrict the Google Maps API key by HTTP referrer in GCP.
+- The UI remains a large compiled inline script and therefore the current static-host CSP still
+  requires inline script support. A source-level rebuild is the path to a nonce/hash-only CSP.
+- Legacy production integrations remain in the production-only fallback branch until an approved
+  cutover. Local and isolated dev execution cannot call them.
+- Migration retains legacy nodes for rollback; remove them only in a later, separately reviewed
+  cleanup after the secure client has been stable.

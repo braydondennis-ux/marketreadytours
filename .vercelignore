@@ -3,5 +3,9 @@ ios
 .superpowers
 docs
 .git
-package-lock.json
-scripts
+functions
+.emu-seed
+.mrt-backups
+firebase-debug.log
+database-debug.log
+ui-debug.log

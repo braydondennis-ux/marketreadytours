@@ -1,103 +1,136 @@
 {
-  // MarketReady Tours — hardened RTDB rules. DRAFT — review, then deploy from the Firebase
-  // console (Realtime Database -> Rules) or `firebase deploy --only database`.
-  // Default-deny at the root; every path is explicitly scoped below.
-  // (The Firebase CLI accepts // and /* */ comments in this file.)
   "rules": {
     ".read": false,
     ".write": false,
 
-    // Role store. Read requires login; WRITE locked to super-admin only —
-    // closes the self-privilege-escalation hole (anyone could grant themselves role:"super").
     "admins": {
-      ".read": "auth != null",
-      ".write": "auth != null && auth.token.email === 'marketreadytours@gmail.com'",
-      "$emailKey": {
-        ".validate": "newData.hasChild('role')"
+      ".read": "auth != null && (auth.token.mrtRole === 'admin' || auth.token.mrtRole === 'super')",
+      ".write": false,
+      "$uid": {
+        ".validate": "newData.hasChildren(['uid','email','name','role','active']) && newData.child('uid').val() === $uid && (newData.child('role').val() === 'admin' || newData.child('role').val() === 'super')"
       }
     },
 
-    "mrt_subadmins": {
-      ".read": "auth != null",
-      ".write": "auth != null && auth.token.email === 'marketreadytours@gmail.com'"
-    },
-
-    // Holds the Instantly API key. Super-admin only, both ways.
-    "mrt_settings": {
-      ".read": "auth != null && auth.token.email === 'marketreadytours@gmail.com'",
-      ".write": "auth != null && auth.token.email === 'marketreadytours@gmail.com'"
-    },
-
-    // READ stays public so guests can open shared tour links and rate (preserves core flow).
-    // WRITE now requires auth — closes the anonymous data-wipe vector.
-    // RESIDUAL: sensitive fields (campaignContacts, notes, per-tour code) are still publicly
-    // readable here. Real fix = move those into a protected mrt_tours_private/<id> sibling
-    // (Phase 1 code change), then this node only exposes guest-safe fields.
-    "mrt_tours": {
+    "mrt_tours_public": {
       ".read": true,
-      ".write": "auth != null"
-    },
-
-    // Public, guest-visible preview cards by design.
-    "mrt_tour_previews": {
-      ".read": true,
-      ".write": "auth != null"
-    },
-
-    "mrt_reminders": {
-      ".read": "auth != null",
-      ".write": "auth != null"
-    },
-
-    // Public intake. Admins read all and may bulk-write (the app persists the whole
-    // collection on approve/deny). Anonymous may CREATE a new request but cannot read,
-    // overwrite, or delete existing records.
-    "mrt_listing_requests": {
-      ".read": "auth != null",
-      ".write": "auth != null",
-      "$reqId": {
-        ".write": "auth != null || (!data.exists() && newData.exists())",
-        ".validate": "newData.hasChild('id')"
-      }
-    },
-
-    "mrt_tour_requests": {
-      ".read": "auth != null",
-      ".write": "auth != null",
-      "$reqId": {
-        ".write": "auth != null || (!data.exists() && newData.exists())"
-      }
-    },
-
-    // Anonymous guests flag themselves not-interested per tour. Create-only for anonymous; admins read.
-    "mrt_not_interested": {
-      ".read": "auth != null",
+      ".write": false,
       "$tourId": {
-        "$emailKey": {
-          ".write": "auth != null || (!data.exists() && newData.exists())"
+        ".validate": "newData.hasChildren(['id','name','date','listings','sponsors','version']) && newData.child('id').val() === $tourId"
+      }
+    },
+    "mrt_tours_private": {
+      ".read": "auth != null && (auth.token.mrtRole === 'admin' || auth.token.mrtRole === 'super')",
+      ".write": false
+    },
+
+    "mrt_ratings_public": {
+      ".read": true,
+      ".write": false
+    },
+    "mrt_ratings_private": {
+      "$tourId": {
+        "$listingId": {
+          "$uid": {
+            ".read": "auth != null && (auth.uid === $uid || auth.token.mrtRole === 'admin' || auth.token.mrtRole === 'super')",
+            ".write": false
+          }
         }
       }
     },
-    "mrt_ratings": {
-      ".read": true,
-      "$tourId": { "$listingId": { "$subId": {
-        ".write": "auth != null || (!data.exists() && newData.exists())",
-        ".validate": "newData.hasChild('submittedAt')"
-      } } }
+    "mrt_rating_grants": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false
+      }
     },
+
     "mrt_favorites": {
-      ".read": true,
-      "$tourId": { "$listingId": { "$userKey": {
-        ".write": true,
-        ".validate": "newData.isBoolean() || !newData.exists()"
-      } } }
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$tourId": {
+          "$listingId": {
+            ".write": "auth != null && auth.uid === $uid",
+            ".validate": "newData.val() === true || !newData.exists()"
+          }
+        }
+      }
+    },
+    "mrt_favorite_counts": {
+      ".read": "auth != null && (auth.token.mrtRole === 'admin' || auth.token.mrtRole === 'super')",
+      ".write": false
+    },
+
+    "mrt_listing_requests": {
+      ".read": "auth != null && (auth.token.mrtRole === 'admin' || auth.token.mrtRole === 'super')",
+      ".write": false
+    },
+    "mrt_tour_requests": {
+      ".read": "auth != null && (auth.token.mrtRole === 'admin' || auth.token.mrtRole === 'super')",
+      ".write": false
     },
     "mrt_sponsor_signups": {
-      ".read": "auth != null",
-      "$tourId": { "$signupId": {
-        ".write": "auth != null || (!data.exists() && newData.exists())",
-        ".validate": "newData.hasChild('name') && newData.hasChild('email')"
-      } }
+      ".read": "auth != null && (auth.token.mrtRole === 'admin' || auth.token.mrtRole === 'super')",
+      ".write": false
+    },
+    "mrt_contact_requests": {
+      ".read": "auth != null && (auth.token.mrtRole === 'admin' || auth.token.mrtRole === 'super')",
+      ".write": false
+    },
+
+    "mrt_campaigns": {
+      ".read": "auth != null && (auth.token.mrtRole === 'admin' || auth.token.mrtRole === 'super')",
+      ".write": false
+    },
+    "mrt_suppressions": {
+      ".read": "auth != null && auth.token.mrtRole === 'super'",
+      ".write": false
+    },
+    "mrt_reminders": {
+      ".read": "auth != null && (auth.token.mrtRole === 'admin' || auth.token.mrtRole === 'super')",
+      ".write": false,
+      ".indexOn": ["nextAttemptAt", "status"]
+    },
+    "mrt_invoices": {
+      ".read": "auth != null && (auth.token.mrtRole === 'admin' || auth.token.mrtRole === 'super')",
+      ".write": false
+    },
+
+    "mrt_idempotency": {
+      ".read": false,
+      ".write": false
+    },
+    "mrt_rate_limits": {
+      ".read": false,
+      ".write": false
+    },
+    "mrt_webhook_events": {
+      ".read": false,
+      ".write": false
+    },
+
+    "mrt_tours": {
+      ".read": false,
+      ".write": false
+    },
+    "mrt_ratings": {
+      ".read": false,
+      ".write": false
+    },
+    "mrt_not_interested": {
+      ".read": false,
+      ".write": false
+    },
+    "mrt_tour_previews": {
+      ".read": false,
+      ".write": false
+    },
+    "mrt_subadmins": {
+      ".read": false,
+      ".write": false
+    },
+    "mrt_settings": {
+      ".read": false,
+      ".write": false
     }
   }
 }
