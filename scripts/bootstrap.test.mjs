@@ -49,6 +49,35 @@ test("the Past tab includes completed legacy tours without an archived flag", as
     /const pastTours = tours\.filter\(t => !!t\.archived \|\| !!t\.date && t\.date < todayStr\)/,
   );
   assert.match(source, /showArchived\s*\? pastTours/);
+  assert.match(source, /"aria-pressed": !showArchived/);
+  assert.match(source, /"aria-pressed": showArchived/);
+});
+
+test("Safari-safe rankings do not depend on the entrance animation", async () => {
+  const source = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const rankingStart = source.indexOf("function RankingPage");
+  const rankingEnd = source.indexOf("function SummaryDashboard", rankingStart);
+  const rankingPage = source.slice(rankingStart, rankingEnd);
+
+  assert.match(rankingPage, /className: "mrt-card mrt-press mrt-ranking-card"/);
+  assert.doesNotMatch(rankingPage, /className: "fade-in mrt-card mrt-press"/);
+});
+
+test("admin sign-in and profile reads cannot remain pending forever", async () => {
+  const source = await readFile(new URL("../index.html", import.meta.url), "utf8");
+
+  assert.match(source, /mrtWithTimeout\(user\.getIdTokenResult\(true\), 8000, "Admin authorization"\)/);
+  assert.match(source, /mrtWithTimeout\(_fb\.ref\("admins\/" \+ user\.uid\)\.once\("value"\), 5000, "Admin profile"\)/);
+  assert.match(source, /mrtWithTimeout\([\s\S]*?_fbAuth\.signInWithEmailAndPassword[\s\S]*?12000,[\s\S]*?"Sign in"/);
+});
+
+test("legacy payment routes describe the manual sponsorship workflow", async () => {
+  const source = await readFile(new URL("../index.html", import.meta.url), "utf8");
+
+  assert.match(source, /Sponsorship Request Received/);
+  assert.match(source, /payment instructions, and next steps/);
+  assert.match(source, /Sponsorship Not Completed/);
+  assert.doesNotMatch(source, /Your payment has been processed successfully/);
 });
 
 test("every hosted build initializes App Check and targets its selected Firebase project", async () => {

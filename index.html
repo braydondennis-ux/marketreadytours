@@ -515,11 +515,18 @@ async function getAdminRole(email) {
   if (MRT_SECURE_BACKEND) {
     const user = _fbAuth && _fbAuth.currentUser;
     if (!user || user.isAnonymous) return null;
-    const token = await user.getIdTokenResult(true);
+    const token = await mrtWithTimeout(user.getIdTokenResult(true), 8000, "Admin authorization");
     const role = token.claims && token.claims.mrtRole;
     if (role !== "super" && role !== "admin") return null;
-    const snap = await _fb.ref("admins/" + user.uid).once("value");
-    const profile = snap.val() || {};
+    // The custom claim is the authorization source of truth. Profile data only improves the
+    // display name, so a stalled App Check/realtime connection must never strand sign-in.
+    let profile = {};
+    try {
+      const snap = await mrtWithTimeout(_fb.ref("admins/" + user.uid).once("value"), 5000, "Admin profile");
+      profile = snap.val() || {};
+    } catch (e) {
+      console.warn("Admin profile unavailable; continuing with authenticated claim", e);
+    }
     return {
       uid: user.uid,
       email: user.email,
@@ -1380,9 +1387,13 @@ function LoginPage(_ref5) {
     setError("");
     try {
       if (!_fbAuth) throw new Error("Auth unavailable");
-      const cred = await _fbAuth.signInWithEmailAndPassword(user.trim(), pass);
+      const cred = await mrtWithTimeout(
+        _fbAuth.signInWithEmailAndPassword(user.trim(), pass),
+        12000,
+        "Sign in"
+      );
       const email = cred.user.email;
-      const adminData = await getAdminRole(email);
+      const adminData = await mrtWithTimeout(getAdminRole(email), 10000, "Admin access check");
       if (!adminData) {
         setError("You do not have admin access.");
         setLoading(false);
@@ -1767,25 +1778,12 @@ function NeighborhoodPanel(_ref6) {
   const mapUrl = "https://www.google.com/maps/search/".concat(encodeURIComponent(address + ", " + city));
   if (!open) return /*#__PURE__*/React.createElement("button", {
     onClick: () => setOpen(true),
+    className: "mrt-btn mrt-btn--ghost",
     style: {
       width: "100%",
-      background: "#fff",
-      border: "1.5px dashed #D1D5DB",
-      borderRadius: 12,
-      padding: "12px 16px",
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      gap: 10,
-      color: B.gray,
-      fontSize: 13,
-      fontWeight: 600
+      justifyContent: "flex-start"
     }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 20
-    }
-  }, "\uD83C\uDFD8\uFE0F"), " View Neighborhood Info");
+  }, LI("MapPinned", 18), "View Neighborhood Info");
   return /*#__PURE__*/React.createElement("div", {
     className: "fade-in",
     style: {
@@ -2523,47 +2521,7 @@ function RatingPage(_ref7) {
       flexDirection: "column",
       gap: 14
     }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 8
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "mrt-btn mrt-btn--sm",
-    "aria-disabled": "true",
-    title: "Work in progress",
-    style: {
-      flex: 1,
-      textAlign: "center",
-      cursor: "not-allowed",
-      opacity: .55,
-      background: B.lightGray,
-      color: B.gray,
-      border: "1px solid " + B.line
-    }
-  }, "Buyer Est."), /*#__PURE__*/React.createElement("span", {
-    className: "mrt-btn mrt-btn--sm",
-    "aria-disabled": "true",
-    title: "Work in progress",
-    style: {
-      flex: 1,
-      textAlign: "center",
-      cursor: "not-allowed",
-      opacity: .55,
-      background: B.lightGray,
-      color: B.gray,
-      border: "1px solid " + B.line
-    }
-  }, "Seller Est.")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 11,
-      color: B.gray,
-      textAlign: "center",
-      textTransform: "uppercase",
-      letterSpacing: .6,
-      marginTop: -6
-    }
-  }, "Work in progress"), /*#__PURE__*/React.createElement(NeighborhoodPanel, {
+  }, /*#__PURE__*/React.createElement(NeighborhoodPanel, {
     address: listing.address,
     city: listing.city
   }), /*#__PURE__*/React.createElement("div", {
@@ -2907,7 +2865,7 @@ function RankingPage(_ref8) {
     const hasRatings = listing.avg > 0;
     return /*#__PURE__*/React.createElement("div", {
       key: listing.id,
-      className: "fade-in mrt-card mrt-press",
+      className: "mrt-card mrt-press mrt-ranking-card",
       style: {
         overflow: "hidden",
         background: isTop ? "var(--mrt-gold-chip-bg)" : "var(--mrt-paper)",
@@ -6049,7 +6007,7 @@ function InviteCampaignTab(_ref15) {
       fontSize: 13,
       cursor: "pointer"
     }
-  }, "\u270F\uFE0F Edit Emails"), /*#__PURE__*/React.createElement("input", {
+  }, LI("Pencil", 15), "Edit Emails"), /*#__PURE__*/React.createElement("input", {
     ref: fileRef,
     type: "file",
     accept: ".csv",
@@ -6138,7 +6096,7 @@ function InviteCampaignTab(_ref15) {
         lineHeight: 1.5,
         margin: 0
       }
-    }, "Only ", /*#__PURE__*/React.createElement("strong", null, emailsThatFit, " of 5 emails"), " will send before the tour. ", emailsThatMiss, " email", emailsThatMiss !== 1 ? "s" : "", " (Day ", SEQUENCE_DAYS.filter(d => d >= daysUntil).join(", "), ") will fire after the tour date. For best results, launch campaigns at least 12 days out."));
+    }, "Only ", /*#__PURE__*/React.createElement("strong", null, emailsThatFit, " of 5 emails"), " will send before the tour. ", emailsThatMiss, " email", emailsThatMiss !== 1 ? "s" : "", " (Day", SEQUENCE_DAYS.filter(d => d >= daysUntil).length !== 1 ? "s" : "", " ", SEQUENCE_DAYS.filter(d => d >= daysUntil).join(", "), ") will fire after the tour date. For best results, launch campaigns at least 12 days out."));
     return /*#__PURE__*/React.createElement("div", {
       style: {
         background: "#E8F0EC",
@@ -8253,6 +8211,8 @@ function TourDetailPage(_ref19) {
         });
       }
     },
+    "aria-label": "Edit " + l.address,
+    title: "Edit listing",
     style: {
       background: "#fff",
       border: "none",
@@ -8261,9 +8221,11 @@ function TourDetailPage(_ref19) {
       cursor: "pointer",
       fontSize: 14
     }
-  }, "\u270F\uFE0F"), /*#__PURE__*/React.createElement("button", {
+  }, LI("Pencil", 15)), /*#__PURE__*/React.createElement("button", {
     onClick: () => moveStop(i, -1),
     disabled: i === 0,
+    "aria-label": "Move " + l.address + " earlier",
+    title: "Move earlier",
     style: {
       background: "#fff",
       border: "none",
@@ -8272,9 +8234,11 @@ function TourDetailPage(_ref19) {
       cursor: i === 0 ? "default" : "pointer",
       opacity: i === 0 ? .35 : 1
     }
-  }, "\u25B2"), /*#__PURE__*/React.createElement("button", {
+  }, LI("ChevronUp", 15)), /*#__PURE__*/React.createElement("button", {
     onClick: () => moveStop(i, 1),
     disabled: i === adminListings.length - 1,
+    "aria-label": "Move " + l.address + " later",
+    title: "Move later",
     style: {
       background: "#fff",
       border: "none",
@@ -8283,8 +8247,10 @@ function TourDetailPage(_ref19) {
       cursor: i === adminListings.length - 1 ? "default" : "pointer",
       opacity: i === adminListings.length - 1 ? .35 : 1
     }
-  }, "\u25BC"), /*#__PURE__*/React.createElement("button", {
+  }, LI("ChevronDown", 15)), /*#__PURE__*/React.createElement("button", {
     onClick: () => deleteStop(l.id),
+    "aria-label": "Remove " + l.address,
+    title: "Remove listing",
     style: {
       background: "#FEE2E2",
       border: "none",
@@ -8294,7 +8260,7 @@ function TourDetailPage(_ref19) {
       color: "#9B1C1C",
       fontWeight: 700
     }
-  }, "\u2715"))), editingStop === l.id && /*#__PURE__*/React.createElement("div", {
+  }, LI("Trash2", 15)))), editingStop === l.id && /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 12,
       display: "flex",
@@ -10401,7 +10367,9 @@ const RequestATourInlineForm = React.forwardRef(function (_ref24, ref) {
       fontSize: 16,
       fontWeight: 700
     }
-  }, "\uD83D\uDCE9 Request a Tour")), /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("span", {
+    style: { display: "inline-flex", alignItems: "center", gap: 8 }
+  }, LI("Send", 17), "Request a Tour"))), /*#__PURE__*/React.createElement("button", {
     onClick: onClose,
     style: {
       background: "rgba(255,255,255,.15)",
@@ -10413,17 +10381,24 @@ const RequestATourInlineForm = React.forwardRef(function (_ref24, ref) {
       fontWeight: 700,
       fontSize: 13
     }
-  }, "\u2715 Close")), done ? /*#__PURE__*/React.createElement("div", {
+  }, LI("X", 14), " Close")), done ? /*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
       padding: "40px 24px"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 56,
-      marginBottom: 12
+      width: 56,
+      height: 56,
+      margin: "0 auto 12px",
+      borderRadius: "50%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      background: "var(--mrt-success-bg)",
+      color: "var(--mrt-success)"
     }
-  }, "\u2705"), /*#__PURE__*/React.createElement("h3", {
+  }, LI("Check", 28)), /*#__PURE__*/React.createElement("h3", {
     style: {
       color: B.primary,
       fontFamily: "DM Sans, system-ui, sans-serif",
@@ -10469,7 +10444,9 @@ const RequestATourInlineForm = React.forwardRef(function (_ref24, ref) {
       fontSize: 13,
       color: "#5A4A2A"
     }
-  }, "\uD83D\uDDD3\uFE0F Interested in attending an upcoming home tour? Fill out this form and we'll reach out to confirm your spot within 24\u201348 hours."), [["name", "Full Name *", "text"], ["email", "Email Address *", "email"], ["phone", "Phone Number", "tel"], ["brokerage", "Brokerage Name", "text"]].map(_ref25 => {
+  }, /*#__PURE__*/React.createElement("span", {
+    style: { display: "inline-flex", alignItems: "flex-start", gap: 8 }
+  }, LI("Calendar", 16, { flexShrink: 0, marginTop: 1 }), /*#__PURE__*/React.createElement("span", null, "Interested in attending an upcoming home tour? Fill out this form and we'll reach out to confirm your spot within 24\u201348 hours."))), [["name", "Full Name *", "text"], ["email", "Email Address *", "email"], ["phone", "Phone Number", "tel"], ["brokerage", "Brokerage Name", "text"]].map(_ref25 => {
     let [f, ph, t] = _ref25;
     return /*#__PURE__*/React.createElement("input", {
       key: f,
@@ -10678,7 +10655,7 @@ const RequestATourInlineForm = React.forwardRef(function (_ref24, ref) {
       cursor: submitting ? "default" : "pointer",
       width: "100%"
     }
-  }, submitting ? "Submitting..." : "📩 Submit Request")));
+  }, submitting ? "Submitting..." : /*#__PURE__*/React.createElement(React.Fragment, null, LI("Send", 16), "Submit Request"))));
 });
 function ToursDashboard(_ref26) {
   var _ref27;
@@ -11490,10 +11467,14 @@ function ToursDashboard(_ref26) {
     style: { flexShrink: 0 }
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowArchived(false),
-    className: "mrt-seg__btn" + (!showArchived ? " mrt-seg__btn--active" : "")
+    className: "mrt-seg__btn" + (!showArchived ? " mrt-seg__btn--active" : ""),
+    "aria-pressed": !showArchived,
+    style: !showArchived ? { background: "var(--mrt-cobalt)", color: "#fff" } : undefined
   }, "Upcoming"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowArchived(true),
-    className: "mrt-seg__btn" + (showArchived ? " mrt-seg__btn--active" : "")
+    className: "mrt-seg__btn" + (showArchived ? " mrt-seg__btn--active" : ""),
+    "aria-pressed": showArchived,
+    style: showArchived ? { background: "var(--mrt-cobalt)", color: "#fff" } : undefined
   }, "Past"))), filtered.length === 0 && (fbLoadError ? /*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
@@ -15541,24 +15522,31 @@ function App() {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 64,
-      marginBottom: 16
+      width: 64,
+      height: 64,
+      margin: "0 auto 16px",
+      borderRadius: "50%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      background: "var(--mrt-success-bg)",
+      color: "var(--mrt-success)"
     }
-  }, "\u2705"), /*#__PURE__*/React.createElement("h2", {
+  }, LI("Check", 32)), /*#__PURE__*/React.createElement("h2", {
     style: {
       color: B.primary,
       fontFamily: "DM Sans, system-ui, sans-serif",
       fontSize: 24,
       marginBottom: 12
     }
-  }, "Payment Received!"), /*#__PURE__*/React.createElement("p", {
+  }, "Sponsorship Request Received"), /*#__PURE__*/React.createElement("p", {
     style: {
       color: B.gray,
       fontSize: 15,
       lineHeight: 1.6,
       marginBottom: 24
     }
-  }, "Thank you for your sponsorship! Your payment has been processed successfully. We'll be in touch with next steps."), /*#__PURE__*/React.createElement("button", {
+  }, "Thank you for supporting MarketReady Tours. Our team received your sponsorship details and will follow up with placement, payment instructions, and next steps."), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setPage("dashboard");
       window.location.hash = "/";
@@ -15590,24 +15578,31 @@ function App() {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 64,
-      marginBottom: 16
+      width: 64,
+      height: 64,
+      margin: "0 auto 16px",
+      borderRadius: "50%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      background: "#F5E8E8",
+      color: "var(--mrt-red)"
     }
-  }, "\u274C"), /*#__PURE__*/React.createElement("h2", {
+  }, LI("X", 32)), /*#__PURE__*/React.createElement("h2", {
     style: {
       color: B.primary,
       fontFamily: "DM Sans, system-ui, sans-serif",
       fontSize: 24,
       marginBottom: 12
     }
-  }, "Payment Cancelled"), /*#__PURE__*/React.createElement("p", {
+  }, "Sponsorship Not Completed"), /*#__PURE__*/React.createElement("p", {
     style: {
       color: B.gray,
       fontSize: 15,
       lineHeight: 1.6,
       marginBottom: 24
     }
-  }, "Your payment was not completed. No charges have been made. You can try again anytime."), /*#__PURE__*/React.createElement("button", {
+  }, "Your sponsorship request was not completed and no information was submitted. You can return to the sponsorship form whenever you're ready."), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setPage("dashboard");
       window.location.hash = "/";
