@@ -1,11 +1,191 @@
 # MarketReady Tours — Engineering Handoff
 
-_Updated 2026-08-06. Read this entire file before acting._
+_Updated 2026-08-10. Read this entire file before acting._
 
-> **The branding pass below is DONE (2026-08-06).** See
+## 2026-08-10 — production cutover, resolved blockers
+
+Braydon granted Erik (`erik@marketreadysystems.ai`) **Owner** on `marketready-tours`, clearing the
+IAM gate the 2026-08-08 attempt stopped at. What follows are the traps found while executing the
+cutover. Each one would have broken production; none is obvious from reading the code.
+
+**Never run a bare `firebase deploy --only functions` on this project.** Our `functions/` source and
+Braydon's deployed set only partially overlap. A blind deploy DELETES `sendEmail` and `trackEmail` —
+which the currently-live legacy site calls — and CREATES `instantlyWebhook`, `processReminders`,
+`processRemindersNow`, and `createSponsorInvoice`, all fenced off below. Always deploy by name.
+The 19 callables were deployed this way on 2026-08-10; the 6 legacy services were left untouched.
+
+**Cloud Run invoker bindings are not reapplied on update.** All 19 callables returned a raw HTML
+`403 Forbidden` from the Cloud Run edge — the request never reached Firebase code. Their IAM policy
+was completely empty (`etag: ACAB`). `invoker: "public"` in `callableOptions` is only applied by
+firebase-tools when a function is CREATED, not updated, so redeploying does not fix it. Repaired by
+granting `allUsers` → `roles/run.invoker` on the 19 services (Braydon's 6 legacy services already
+carried the identical binding). Correct post-fix behaviour is a JSON `UNAUTHENTICATED` envelope, not
+an HTML error page — App Check and `assertAuthenticated`/`assertAdmin` remain the security boundary.
+
+**GitHub Pages now deploys via GitHub Actions, not from the branch.** Braydon switched Pages Source
+to "GitHub Actions" on 2026-08-10 (`build_type: workflow`). This was necessary: Pages served the
+repository ROOT, where `index.html` still carries the `__MRT_APP_CHECK_SITE_KEY__` placeholder.
+`index.html:380` THROWS on an unsubstituted placeholder, and that throw is swallowed by the outer
+`catch` before `_fb`/`_fbAuth`/`_fbStorage` are assigned — so the site would have silently degraded
+to a dead, localStorage-only page with no visible error. `scripts/build.mjs` substitutes only into
+`www/`, which the branch-mode Pages did not serve. `.github/workflows/pages.yml` now builds and
+publishes `www/`, and fails loudly if the placeholders survive. Two bonuses: internal files
+(`HANDOFF.md`, `SECURITY_NOTES.md`, `functions/`, `scripts/`) are no longer published, and a failed
+build cannot take production down — Pages keeps serving the previous deployment.
+
+**Production App Check values** (the site key is a public client value, not a secret):
+`MRT_APP_CHECK_SITE_KEY=6LeP0XUtAAAAAJ8WdZG1lhaoJUXgGINFH1SUlEKT`, and the provider is
+**`enterprise`**, NOT the default `v3` — `index.html:384` branches on it and an Enterprise key
+activated through the v3 path fails. The dev/preview project uses a different key
+(`6LcwV3gt…`), which is why the placeholder mechanism exists; do not hardcode either into source.
+
+**`/_vercel/image` does not exist on GitHub Pages.** `mrtThumbUrl` listed `marketreadytours.com` as
+a Vercel host, so every dashboard thumbnail would have 404'd in production while working perfectly
+on the preview. Fixed to check `*.vercel.app` only; prod now serves original Firebase Storage URLs
+(correct but unoptimised). This is the strongest argument for moving hosting to Vercel later.
+
+**The push to Braydon's `main` is not a fast-forward** — 102 ahead / 22 behind, and the two builds
+are not textually mergeable. Use `git merge -s ours origin/main`, which preserves his 22 commits as
+ancestors while keeping our tree. Verified safe: his behavioural fixes are already present in our
+build — `cd6f980`'s sync fix in a stronger form (content-comparison `fbSynced` rather than a one-shot
+flag), multi-rater ratings, and the agent contact fields. The one item absent (`pac-container` CSS)
+is unnecessary here: we use `AutocompleteService` with our own React dropdown, not Google's widget,
+so no `.pac-container` element is ever created.
+
+**Rollback is `git push --force origin cd6f980:main`.** This RESTORES Braydon's exact tree; only our
+merge commit is removed, and our work stays on `erik/agent/mrt-refresh-release-2026-08-06`. **No data
+restore is needed** — the migration is additive, `mrt_tours` was never modified, and the legacy build
+reads it unchanged. The 19 callables can stay deployed; the old build never calls them.
+
+**Known gaps, deliberately not blocking launch:** GitHub Pages serves no security headers, so the CSP
+in `vercel.json` applies only on Vercel previews — this is NOT a regression (prod never had them, and
+the refresh needs no `unsafe-eval` unlike the Babel-in-browser legacy build); close it with a
+Cloudflare Transform Rule. `createCheckoutSession` is called by the live legacy site but is deployed
+nowhere and exists in no source — it 404s in production today, a pre-existing bug. `www/` is
+gitignored here but tracked on Braydon's `main`; the `-s ours` merge drops it, which is correct.
+
+_Superseded sections below are kept for history._
+
+## 2026-08-08 continuation status — production cutover
+
+This section is the current assignment and supersedes the older branding-only assignment and
+deployment guardrails below. The branding history is intentionally preserved for context.
+
+### User authority and safety boundary
+
+- Erik reports that Braydon explicitly approved the refreshed site for production.
+- Production means both the existing Firebase project `marketready-tours` and the live
+  `marketreadytours.com` site.
+- The latest cutover attempt stopped at the read-only IAM gate. **No production data, Functions,
+  GitHub branch, DNS, Vercel alias, or live website was changed during that attempt.**
+- Do not publish only the static frontend while the new callable services return Cloud Run 403s.
+  The refresh defaults to `MRT_SECURE_BACKEND=true`; publishing it with private callables would
+  break tour-code verification, ratings, intake, admin saves, sponsorship administration, and
+  other core workflows.
+- Do not use `MRT_FORCE_LEGACY` as a launch workaround. It deliberately bypasses the secured
+  public/private projection and trusted callable architecture.
+
+### Release source and preview
+
+- Working branch: `agent/mrt-refresh-release-2026-08-06`
+- Current release commit: `82472cb` (`fix preview workflows and Safari states`)
+- `HANDOFF.md` is intentionally the only uncommitted workspace change after this continuation
+  update; preserve it when resuming.
+- Erik fork: `https://github.com/abqerik/marketreadytours.git`
+- Existing draft PR: `https://github.com/abqerik/marketreadytours/pull/1`
+- Preview aliases:
+  - `https://mrt-refresh.vercel.app/`
+  - `https://marketready-refresh.vercel.app/`
+- Current aliased preview deployment:
+  `https://marketreadytours-fm4cnw2pd-abqeriks-projects.vercel.app`
+- The branch was pushed only to Erik's fork. The worktree was clean immediately afterward.
+- `npm run check` passed at `82472cb`: 32/32 tests and all 13 validation gates. The validator
+  reports two known heuristic warnings, but the authoritative JavaScript parse passes.
+
+The final workflow/design audit fixes included preview App Check, the rating-code flow, stalled
+admin login/profile reads, Safari rankings visibility, Upcoming/Past selected state, accurate
+manual-sponsorship result copy, icon/accessibility cleanup, and guarded preview configuration.
+Earlier commits on the same release branch include the live-card cleanup, brighter route map,
+thumbnail optimization, and sponsor-plan selected-outline fix.
+
+### Actual production hosting topology
+
+- `marketreadytours.com` currently returns the old site through **Cloudflare → GitHub Pages**.
+- GitHub Pages source is `braydondennis-ux/marketreadytours`, branch `main`, path `/`.
+- Erik's GitHub account `abqerik` has `push: true` on Braydon's repository.
+- Local remote `origin` fetches Braydon's repository but has push deliberately disabled. Remote
+  `erik` fetches/pushes Erik's fork. Do not re-enable or use Braydon push until every backend and
+  data gate below passes.
+- A Vercel production deployment exists as a rollback/candidate record, but `vercel --prod` does
+  **not** publish `marketreadytours.com` in the current topology.
+- Latest observed Braydon `main`: `cd6f980` (`fix(sync): stop tours/listings being silently
+  destroyed on save`). Integrate this production hotfix into the release candidate before the
+  GitHub Pages switch; do not overwrite it.
+
+### Firebase authentication and the unresolved IAM state
+
+- Use the repository-local CLI: `npx firebase-tools ...`; no global `firebase` binary is installed.
+- Firebase CLI was successfully reauthenticated as `erik@marketreadysystems.ai` on 2026-08-07/08.
+  `firebase projects:list` can see `marketready-tours`, `marketready-tours-dev`, and
+  `marketreadynetwork`. Braydon's Google login or credentials are neither needed nor acceptable.
+- `erik@mcguire-creative.com` is only an email alias. OAuth resolves to
+  `erik@marketreadysystems.ai`; IAM must be granted to the latter principal.
+- Before the most recent suspected IAM change, a live policy read showed Erik had `roles/editor`,
+  Braydon (`braydondennis@gmail.com`) was the only project-level Owner, and Erik lacked only
+  `run.services.setIamPolicy`.
+- After Erik said Braydon may have changed access, repeated read-only project and service-level
+  checks returned **no** Cloud Functions/Cloud Run deployment permissions. A policy read returned
+  403. The active CLI identity was still correct and Firebase project listing still worked. This
+  suggests the old Editor grant was removed/replaced, the new grant targeted the wrong principal,
+  or the intended grant did not land; do not guess which.
+- The last verified permission results were all `NO` for:
+  `cloudfunctions.functions.{get,create,update,delete}`,
+  `run.services.{get,update,getIamPolicy,setIamPolicy}`, `iam.serviceAccounts.actAs`, and
+  `serviceusage.services.use`.
+
+Braydon should use **Grant access** (not replace the existing grant) for
+`erik@marketreadysystems.ai` and ensure both **Editor** (`roles/editor`) and **Cloud Run Admin**
+(`roles/run.admin`) are present. The known working Editor grant supplied the deploy/update,
+service-account, and service-usage permissions; Cloud Run Admin supplies the missing
+`run.services.setIamPolicy` permission. Re-test effective permissions before any write.
+
+### Safe continuation sequence
+
+1. Confirm the active Firebase CLI identity is `erik@marketreadysystems.ai`.
+2. Use `projects/marketready-tours:testIamPermissions` and require `YES` for Functions
+   create/update, Cloud Run get/update/getIamPolicy/setIamPolicy, service-account act-as, and
+   service usage. Stop if any required permission is absent.
+3. Capture a **fresh read-only** production Database/Auth/Storage backup and compare it with the
+   2026-08-05 cutover snapshot. Scott may have added tours since that snapshot. Reconcile counts,
+   sampled records, and the legacy tour hash before applying any delta.
+4. Preserve all existing additive production roots, transitional Rules, App Check configuration,
+   admin claims, Storage assets, and rollback files. Do not repeat migrations blindly.
+5. Deploy the approved `functions/` code explicitly to `--project marketready-tours`. Repair and
+   verify public invoker bindings for the **19 new callable services only**; Firebase Auth, App
+   Check, claims, validation, and rate limits remain the application security boundary.
+6. Confirm the 19 callable endpoints reach Firebase code rather than failing at the outer Cloud
+   Run layer. Run authenticated/App-Check production smoke tests without triggering real outbound
+   campaigns or payment artifacts.
+7. Integrate Braydon `main`/`cd6f980` into the release branch, resolve carefully, then run the full
+   `npm run check` suite and inspect the exact production diff.
+8. Only after all prior gates pass, intentionally publish the approved commit to Braydon's `main`.
+   GitHub Pages will update `marketreadytours.com`; monitor the Pages build and Cloudflare-served
+   result.
+9. Smoke-test the live desktop/mobile public and authenticated workflows. Keep `cd6f980`, the old
+   live build, the recorded Vercel rollback deployment, and the fresh backups available for
+   immediate rollback.
+
+The 19 new callables are: `approveListingRequest`, `approveSponsorSignup`, `createAdmin`,
+`deleteIntake`, `deleteTour`, `denyListingRequest`, `disableAdmin`, `launchCampaign`,
+`markSponsorPaid`, `optOut`, `requestAdminPasswordReset`, `saveTour`, `sendAdminEmail`,
+`sendAdminPasswordReset`, `submitIntake`, `submitRating`, `updateAdmin`, `updateIntakeStatus`, and
+`verifyTourCode`. Existing Node 24 scheduled/HTTP functions are not part of this invoker repair.
+
+> **The branding pass below is DONE (2026-08-06) and has since been deployed to the isolated
+> preview and audited. It has not been published to production.** See
 > [Branding pass — completed 2026-08-06](#branding-pass--completed-2026-08-06) for what shipped,
 > what was deliberately left alone, and what still needs a human eye. The assignment text is kept
-> for context. Nothing was deployed; the result is local-only and awaiting review.
+> for context; the 2026-08-08 continuation section above is authoritative.
 
 ## Immediate assignment
 
@@ -40,7 +220,8 @@ and existing assets. `www/` is generated by `npm run build`; do not hand-edit it
 
 ## Branding pass — completed 2026-08-06
 
-Market Ready Brand Standards v5 applied to the refresh. Local only — **not deployed anywhere**.
+Market Ready Brand Standards v5 applied to the refresh. This work was later deployed to the
+isolated Vercel preview, but **not to production**.
 
 ### What the source PDF actually is (read this before reopening the file)
 
@@ -184,26 +365,23 @@ Recorded rollback deployment:
 - URL: `https://marketreadytours-rea0qro8q-abqeriks-projects.vercel.app`
 - Record: `.mrt-backups/production-cutover-2026-08-04/vercel-production-before-cutover.txt`
 
-Current refresh preview candidate after the branding/workflow audit:
+Current refresh preview candidate after the branding/workflow audit (see the top continuation
+section for the authoritative release record):
 
 - `https://mrt-refresh.vercel.app/`
 - `https://marketready-refresh.vercel.app/`
-- Deployment ID: `dpl_BJ8QdydpGCLx3cdbRU4szHVqMs78`
-- URL: `https://marketreadytours-ql0iwfqmn-abqeriks-projects.vercel.app`
-- Release commit: `9e8c932` on `abqerik/marketreadytours`, branch
+- URL: `https://marketreadytours-fm4cnw2pd-abqeriks-projects.vercel.app`
+- Release commit: `82472cb` on `abqerik/marketreadytours`, branch
   `agent/mrt-refresh-release-2026-08-06`
 - Both preview aliases resolve to the same deployment. Its served HTML matches the local generated
   bundle exactly after normalizing the injected Preview App Check site key.
-- Firebase CLI was reauthenticated as `erik@marketreadysystems.ai` on 2026-08-06.
+- Firebase CLI was reauthenticated as `erik@marketreadysystems.ai` on 2026-08-07/08.
 - Static surfaces, security headers, Preview App Check injection, dev-project routing, public data
-  privacy, and reachable callable endpoints passed remote smoke checks. The controlled browser was
-  unavailable, so the final desktop/mobile visual click-through still requires a human pass.
-- `markSponsorPaid` now exists and is active in `marketready-tours-dev`, but its Cloud Run service is
-  private (`HTTP 403`). The deploy uploaded and created the service, then failed only while setting
-  its public invoker IAM policy because this account still lacks `run.services.setIamPolicy`.
+  privacy, and the audited browser workflows passed the latest preview checks. Preview App Check
+  now uses a preview-domain-only reCAPTCHA Enterprise key.
 
-Do not promote this deployment to production until Braydon explicitly approves the candidate and
-the Cloud Run invoker blocker is resolved.
+Braydon has since explicitly approved the candidate. Do not promote it until the Cloud Run invoker
+blocker is resolved and the continuation gates at the top of this file pass.
 
 ## Production cutover work already completed
 
@@ -260,13 +438,13 @@ mark-paid/unpaid. Production sponsor payments intentionally work as follows:
 
 Do not restyle by deleting, renaming, or bypassing any related controls or state markers.
 
-## Current production blocker — do not solve during branding
+## Current production blocker — re-test before cutover
 
 Nineteen new Node 22 generation-2 callables were created and updated successfully, but their
 underlying Cloud Run services are still private. Direct requests return the outer Cloud Run 403
 before Firebase App Check/Auth can run.
 
-The signed-in identity is `erik@marketreadysystems.ai`. A live IAM check showed:
+The signed-in identity is `erik@marketreadysystems.ai`. The original live IAM check showed:
 
 - Direct project role: `roles/editor`
 - Effective permissions include `run.services.get`, `run.services.getIamPolicy`, and
@@ -276,14 +454,12 @@ The signed-in identity is `erik@marketreadysystems.ai`. A live IAM check showed:
 `erik@mcguire-creative.com` is an email alias, not a distinct Google IAM login. OAuth resolves it
 to `erik@marketreadysystems.ai`.
 
-Braydon must temporarily grant `roles/run.admin` to `erik@marketreadysystems.ai`, or personally
-apply `roles/run.invoker` for `allUsers` to the 19 callable services. The user explicitly approved
+After Braydon reportedly changed access, the latest 2026-08-08 effective-permission checks returned
+no Functions/Cloud Run deployment permissions at either the project or service level, and project
+IAM policy reading returned 403. See the top continuation section for the exact results and required
+re-test. Do not make a production write until those permissions pass. The user explicitly approved
 the public invoker bindings; Firebase Auth, App Check, admin claims, validation, and rate limits
-remain the application security boundary. The attempted IAM write made no change because Google
-returned `run.services.setIamPolicy` denied.
-
-Do not attempt IAM work, remote deployment, function recreation/deletion, or a production Vercel
-promotion as part of the branding assignment.
+remain the application security boundary.
 
 ## Source architecture
 

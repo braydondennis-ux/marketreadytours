@@ -784,9 +784,9 @@ const mrtThumbUrl = url => {
   if (!url) return "";
   try {
     const source = new URL(url, window.location.href);
-    const onVercel = window.location.hostname.endsWith(".vercel.app") ||
-      window.location.hostname === "marketreadytours.com" ||
-      window.location.hostname === "www.marketreadytours.com";
+    /* Only Vercel serves /_vercel/image. Production is GitHub Pages, where that path
+       404s — listing the real domain here silently broke every dashboard thumbnail. */
+    const onVercel = window.location.hostname.endsWith(".vercel.app");
     if (onVercel && source.hostname === "firebasestorage.googleapis.com") {
       return "/_vercel/image?url=" + encodeURIComponent(source.href) + "&w=128&q=70";
     }
