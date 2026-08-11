@@ -1888,10 +1888,38 @@ exports.cloverWebhook = onRequest(
          Requiring one threw a TypeError and returned 500, which Clover surfaced as
          "Webhook url verification failed". Acknowledge anything without a session id —
          there is nothing to reconcile, so there is nothing to do. */
-      const sessionId = cleanText(
+      let sessionId = cleanText(
         event.checkoutSessionUuid || event.checkoutSessionId || event.data?.checkoutSessionId,
         160, "checkout session id",
       );
+
+      /* Clover's test ping is only {"test":"dummy"}, so a REAL payment event's field names
+         have never been observed — the names above come from their documentation. If none
+         match, fall back to scanning every string in the payload for one that equals a
+         checkout session we are actually waiting on. Nothing is trusted from the payload
+         except the id itself: the amount, tour and sponsor all come from our own record. */
+      if (!sessionId) {
+        const candidates = [];
+        const walk = (node, depth) => {
+          if (depth > 4 || node == null) return;
+          if (typeof node === "string") { candidates.push(node); return; }
+          if (Array.isArray(node)) { node.forEach((v) => walk(v, depth + 1)); return; }
+          if (typeof node === "object") Object.values(node).forEach((v) => walk(v, depth + 1));
+        };
+        walk(event, 0);
+        for (const candidate of candidates) {
+          if (!/^[A-Za-z0-9-]{8,160}$/.test(candidate)) continue;
+          const hit = (await getDatabase().ref(`mrt_sponsor_payments/${candidate}`).get()).val();
+          if (hit && hit.status === "pending") {
+            sessionId = candidate;
+            logger.warn("Clover webhook: session id found by fallback scan, not by field name", {
+              sessionId, bodyKeys: Object.keys(event || {}).join(","),
+            });
+            break;
+          }
+        }
+      }
+
       if (!sessionId) {
         logger.info("Clover webhook: no checkout session on this event — acknowledging", {
           type: event.type || "(none)",
@@ -1920,8 +1948,19 @@ exports.cloverWebhook = onRequest(
         return;
       }
 
-      const approved = String(event.status || "").toUpperCase() === "APPROVED";
+      /* Clover documents status as APPROVED/DECLINED but a real event has never been seen,
+         so a few plausible aliases are accepted. The default stays NOT-approved: an
+         unrecognised status leaves the sponsor unpaid, which an admin can correct with Mark
+         Paid. The opposite default would mark sponsors paid on an event we did not
+         understand, so the conservative direction is deliberate. */
+      const statusText = String(
+        event.status || event.paymentStatus || event.result || "",
+      ).toUpperCase();
+      const approved = ["APPROVED", "SUCCESS", "PAID", "SUCCEEDED"].includes(statusText);
       if (!approved) {
+        logger.warn("Clover webhook: event not treated as approved", {
+          sessionId, statusText: statusText || "(none)",
+        });
         await paymentRef.update({
           status: "declined",
           providerStatus: cleanText(event.status, 40, "status"),
