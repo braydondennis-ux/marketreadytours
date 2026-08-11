@@ -229,16 +229,47 @@ async function sendTransactionalEmail({to, subject, text, html}) {
   }
   const url = TRANSACTIONAL_EMAIL_URL.value();
   if (!url) throw new Error("Transactional email service is not configured");
+  const headers = {"Content-Type": "application/json"};
+  const idToken = await metadataIdToken(url);
+  if (idToken) headers.Authorization = `Bearer ${idToken}`;
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify({to: recipient, subject, message: text, html}),
     signal: AbortSignal.timeout(15000),
   });
   if (!response.ok) throw new Error(`Transactional email failed (${response.status})`);
   return {ok: true, mocked: false};
+}
+
+/* Mint a Google-signed OIDC identity token for `audience` from the metadata server.
+   The legacy sendEmail service has NO application-level authentication — it sends as
+   marketreadytours@gmail.com using a hardcoded app password, so while it is publicly
+   invokable anyone on the internet can send mail as MarketReady Tours. Its source lives
+   outside this repo, so the boundary is enforced at Cloud Run instead: allUsers is removed
+   from its invoker binding and only this project's compute service account may call it.
+
+   Returns null rather than throwing when no metadata server is reachable (emulator, local
+   runs). While sendEmail still permits allUsers, an unauthenticated call keeps working, so
+   deploying this change is safe BEFORE the invoker binding is tightened. */
+async function metadataIdToken(audience) {
+  if (isEmulator) return null;
+  try {
+    const res = await fetch(
+      "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity" +
+        `?audience=${encodeURIComponent(audience)}`,
+      {headers: {"Metadata-Flavor": "Google"}, signal: AbortSignal.timeout(5000)},
+    );
+    if (!res.ok) {
+      logger.warn("Identity token request failed", {status: res.status});
+      return null;
+    }
+    const token = (await res.text()).trim();
+    return token || null;
+  } catch (error) {
+    logger.warn("Identity token unavailable", {error: String(error && error.message || error)});
+    return null;
+  }
 }
 
 function normalizeTourForWrite(raw, uid, previous = null) {
