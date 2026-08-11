@@ -12395,7 +12395,12 @@ function TeamPage(_ref28) {
   }, LI("Shield", 11), "Sub-Admin")), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
-      gap: 6
+      gap: 6,
+      /* Three actions (edit / Resend / Remove) overflowed the card in a 3-column grid and
+         Remove was clipped off the right edge — invisible, so admins could not be removed
+         from the UI at all. Wrap instead of overflowing. */
+      flexWrap: "wrap",
+      justifyContent: "flex-end"
     }
   }, /*#__PURE__*/React.createElement("button", {
       onClick: () => {
