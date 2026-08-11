@@ -27,6 +27,15 @@ jobs:
             package-lock.json
             functions/package-lock.json
 
+      # The Firebase emulators are a Java process, and firebase-tools requires JDK 21+.
+      # The runner's default JDK is older, which is why "Security Rules tests" and
+      # "Emulator workflow tests" have failed on every commit since at least 2026-07-27.
+      - name: Set up Java for the Firebase emulators
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
       - name: Install web tooling
         run: npm ci
 
