@@ -2,6 +2,46 @@
 
 _Updated 2026-08-10. Read this entire file before acting._
 
+## ROLLBACK RUNBOOK — read this before rolling back
+
+**Rolling back is TWO steps, not one. Pushing `cd6f980` alone will serve a site with ZERO
+tours.** The legacy build reads `mrt_tours`, which has been deleted from production to close
+audit M5. It must be rebuilt first.
+
+```bash
+cd "/Users/erikyoungberg-aspelin/Desktop/Market Ready/Market Ready Tours/mrt/marketreadytours"
+
+# 1. Rebuild the legacy node from live data (safe to run anytime; dry-runs by default)
+node scripts/rebuild-legacy-mrt-tours.mjs            # inspect the counts
+node scripts/rebuild-legacy-mrt-tours.mjs --apply    # write it
+
+# 2. Confirm it landed — must print 35+ tours, NOT null
+npx firebase-tools database:get /mrt_tours --shallow --project marketready-tours | head -5
+
+# 3. Only then, revert the site
+git push --force origin cd6f980:main
+```
+
+**Requirements.** Step 1 needs application-default credentials
+(`gcloud auth application-default login`) and reads `mrt_tours_private`, which is never
+deleted. If the script cannot run, both on-disk backups contain a complete `mrt_tours` array
+that can be restored directly:
+`.mrt-backups/production-2026-08-10/` and `…-2026-08-10-post-cutover/` (9.1 MB each, plus auth
+exports). Restoring from backup loses any edits made after that snapshot; rebuilding from
+`mrt_tours_private` does not.
+
+**What rollback does and does not touch.** It reverts only the frontend. No data restore is
+otherwise required: the migration was additive, and `mrt_tours_private` / `mrt_tours_public` /
+`mrt_ratings_*` are simply ignored by the legacy build. The 19 callables can stay deployed —
+the legacy build never calls them, so they are inert.
+
+**Do not** roll back to fix a callable, App Check, or IAM problem. Those live in the Firebase
+project and are unaffected by which frontend is served; reverting the site will not change them
+and costs you the refresh.
+
+**Rollback target:** `cd6f9808fc8a90237012834fcba9587b4e512c47`. Our work remains on
+`erik/agent/mrt-refresh-release-2026-08-06`.
+
 ## 2026-08-10 — production cutover, resolved blockers
 
 Braydon granted Erik (`erik@marketreadysystems.ai`) **Owner** on `marketready-tours`, clearing the
