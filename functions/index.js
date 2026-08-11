@@ -29,6 +29,11 @@ const {
   createSquareSandboxInvoice,
   sponsorPlanDetails,
 } = require("./lib/square");
+const {
+  cloverPlanDetails,
+  createCloverCheckoutSession,
+  verifyCloverWebhook,
+} = require("./lib/clover");
 
 if (!getApps().length) initializeApp();
 
@@ -48,6 +53,12 @@ const SQUARE_WEBHOOK_SECRET = defineSecret("MRT_SQUARE_WEBHOOK_SECRET");
 const SQUARE_WEBHOOK_URL = defineSecret("MRT_SQUARE_WEBHOOK_URL");
 const SQUARE_ACCESS_TOKEN = defineSecret("MRT_SQUARE_ACCESS_TOKEN");
 const SQUARE_LOCATION_ID = defineSecret("MRT_SQUARE_LOCATION_ID");
+/* Clover Hosted Checkout — the production sponsor payment path. Square remains sandbox-only.
+   The webhook secret is issued by Clover when the webhook URL is registered in their
+   dashboard, so it is set after cloverWebhook is first deployed. */
+const CLOVER_API_TOKEN = defineSecret("MRT_CLOVER_API_TOKEN");
+const CLOVER_MERCHANT_ID = defineSecret("MRT_CLOVER_MERCHANT_ID");
+const CLOVER_WEBHOOK_SECRET = defineSecret("MRT_CLOVER_WEBHOOK_SECRET");
 const runtimeParam = (name) => ({value: () => process.env[name] || ""});
 const INSTANTLY_API_KEY = runtimeParam("MRT_INSTANTLY_API_KEY");
 const OUTBOUND_ALLOWLIST = runtimeParam("MRT_OUTBOUND_ALLOWLIST");
@@ -1360,6 +1371,151 @@ exports.markSponsorPaid = onCall(callableOptions, async (request) => {
   });
 });
 
+/* ── CLOVER SPONSOR PAYMENTS ────────────────────────────────────────────────────────────
+   Three pieces:
+     createSponsorPaymentLink  (admin)  — signs a long-lived token, emails the sponsor a link
+                                          to OUR page
+     createSponsorCheckout     (public) — verifies that token and mints a FRESH Clover session
+     cloverWebhook             (Clover) — the ONLY thing that marks a sponsor paid
+
+   The emailed link cannot be a Clover URL: Clover sessions expire in ~15 minutes and Clover
+   exposes no endpoint to query a session's status, so an emailed Clover link would be dead
+   before the sponsor opened it. Our page mints the session at click time instead. */
+
+function sponsorPayToken(payload) {
+  const encoded = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  return `${encoded}.${stableHash(encoded, SIGNING_SECRET.value())}`;
+}
+
+function parseSponsorPayToken(token) {
+  const [encoded, signature] = String(token || "").split(".");
+  if (!encoded || !signature) {
+    throw new HttpsError("invalid-argument", "This payment link is invalid.");
+  }
+  if (!timingSafeTextEqual(stableHash(encoded, SIGNING_SECRET.value()), signature)) {
+    throw new HttpsError("permission-denied", "This payment link is invalid.");
+  }
+  let payload;
+  try {
+    payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8"));
+  } catch {
+    throw new HttpsError("invalid-argument", "This payment link is invalid.");
+  }
+  if (!payload || Number(payload.exp || 0) < Date.now()) {
+    throw new HttpsError("failed-precondition", "This payment link has expired. Ask for a new one.");
+  }
+  return payload;
+}
+
+/* Locate an approved sponsor on a tour. Shared by the link and checkout callables so both
+   agree on what "payable" means. */
+async function loadPayableSponsor(tourId, sponsorId) {
+  const tour = (await getDatabase().ref(`mrt_tours_private/${tourId}`).get()).val();
+  if (!tour) throw new HttpsError("not-found", "Tour was not found.");
+  const sponsors = Array.isArray(tour.sponsors) ? tour.sponsors : [];
+  const sponsor = sponsors.find((entry) => String(entry?.id) === String(sponsorId));
+  if (!sponsor) throw new HttpsError("not-found", "Sponsor was not found on this tour.");
+  if (sponsor.paid === true || sponsor.paymentStatus === "paid") {
+    throw new HttpsError("failed-precondition", "This sponsorship is already paid.");
+  }
+  return {tour, sponsor};
+}
+
+exports.createSponsorPaymentLink = onCall({
+  ...callableOptions,
+}, async (request) => {
+  assertSafeProject();
+  const {uid} = assertAdmin(request);
+  return idempotent("createSponsorPaymentLink", uid, request.data?.requestId, async () => {
+    const tourId = cleanText(request.data?.tourId, 128, "tourId", true);
+    const sponsorId = cleanText(request.data?.sponsorId, 128, "sponsorId", true);
+    const plan = cleanText(request.data?.plan, 40, "plan", true);
+    cloverPlanDetails(plan); // rejects unknown plans before anything is sent
+    const {sponsor} = await loadPayableSponsor(tourId, sponsorId);
+
+    const email = normalizeEmail(sponsor.email);
+    if (!isValidEmail(email)) {
+      throw new HttpsError("failed-precondition", "This sponsor has no valid email address.");
+    }
+
+    /* 30 days: the link only identifies the sponsor. The Clover session it produces is
+       short-lived and minted fresh on each visit, so a long-lived link is not a payment
+       credential. */
+    const token = sponsorPayToken({
+      t: tourId, s: sponsorId, p: plan, exp: Date.now() + 30 * 24 * 60 * 60 * 1000,
+    });
+    const url = `https://marketreadytours.com/#/sponsor-pay?t=${encodeURIComponent(token)}`;
+
+    await sendTransactionalEmail({
+      to: email,
+      subject: "Complete your MarketReady Tours sponsorship",
+      text: `Hi ${sponsor.contactName || sponsor.name},\n\nYou can pay for your sponsorship here:\n${url}\n\nThe link stays valid; payment is processed securely by Clover.`,
+      html: `<p>Hi ${escapeHtml(sponsor.contactName || sponsor.name)},</p>` +
+        `<p><a href="${escapeHtml(url)}">Complete your sponsorship payment</a></p>` +
+        `<p>Payment is processed securely by Clover.</p>`,
+    });
+
+    return {ok: true, sent: true, email};
+  });
+});
+
+exports.createSponsorCheckout = onCall({
+  ...callableOptions,
+  secrets: [CLOVER_API_TOKEN, CLOVER_MERCHANT_ID],
+}, async (request) => {
+  assertSafeProject();
+  /* Deliberately NOT assertAdmin: the caller is the sponsor, who is anonymous. The signed
+     token is the authorisation, and it only names a tour+sponsor+plan — the price is looked
+     up server-side, so a tampered token cannot change what is charged. */
+  const uid = assertAuthenticated(request);
+  await enforceRateLimit("createSponsorCheckout", request, 20, 60 * 60 * 1000);
+
+  const payload = parseSponsorPayToken(request.data?.token);
+  const {tour, sponsor} = await loadPayableSponsor(payload.t, payload.s);
+  const details = cloverPlanDetails(payload.p);
+
+  let session;
+  try {
+    session = await createCloverCheckoutSession({
+      accessToken: CLOVER_API_TOKEN.value(),
+      merchantId: CLOVER_MERCHANT_ID.value(),
+      useSandbox: false,
+      plan: payload.p,
+      sponsor,
+      tour,
+      redirectUrls: {
+        success: "https://marketreadytours.com/#/sponsor-paid",
+        failure: `https://marketreadytours.com/#/sponsor-pay?t=${encodeURIComponent(request.data.token)}`,
+      },
+    });
+  } catch (error) {
+    logger.error("Clover checkout session failed", {tourId: payload.t, sponsorId: payload.s, error: error.message});
+    throw new HttpsError("unavailable", "Payment could not be started. Please try again shortly.");
+  }
+
+  /* Recorded BEFORE the sponsor is sent to Clover, so an inbound webhook always finds a
+     record to match — webhooks can arrive before the browser returns. */
+  await getDatabase().ref(`mrt_sponsor_payments/${session.checkoutSessionId}`).set({
+    checkoutSessionId: session.checkoutSessionId,
+    tourId: payload.t,
+    sponsorId: payload.s,
+    plan: details.key,
+    amountCents: details.amountCents,
+    status: "pending",
+    provider: "clover",
+    createdAt: Date.now(),
+    createdBy: uid,
+  });
+
+  return {
+    ok: true,
+    url: session.href,
+    amountCents: details.amountCents,
+    planLabel: details.label,
+    tourName: tour.name,
+  };
+});
+
 exports.createSponsorInvoice = onCall({
   ...callableOptions,
   secrets: [SQUARE_ACCESS_TOKEN, SQUARE_LOCATION_ID],
@@ -1651,6 +1807,111 @@ exports.instantlyWebhook = onRequest(
       response.status(204).send();
     } catch (error) {
       webhookFailure(response, error, "Instantly");
+    }
+  },
+);
+
+/* The authoritative signal that a sponsorship is paid.
+   Not the browser redirect: a sponsor who closes the tab after paying is still recorded, and
+   a forged success URL records nothing. Clover may deliver the same event more than once, so
+   replays are claimed in mrt_webhook_events/clover/{id} and ignored. */
+exports.cloverWebhook = onRequest(
+  {region: REGION, secrets: [CLOVER_WEBHOOK_SECRET]},
+  async (request, response) => {
+    try {
+      assertSafeProject();
+      if (!verifyCloverWebhook(
+        request.rawBody,
+        request.get("clover-signature") || request.get("Clover-Signature"),
+        CLOVER_WEBHOOK_SECRET.value(),
+      )) {
+        response.status(401).send("invalid signature");
+        return;
+      }
+
+      const event = request.body || {};
+      const sessionId = cleanText(
+        event.checkoutSessionUuid || event.checkoutSessionId || event.data?.checkoutSessionId,
+        160, "checkout session id", true,
+      );
+      const eventId = cleanText(
+        event.id || event.paymentUuid || `${sessionId}:${event.status || "unknown"}`,
+        160, "event id", true,
+      );
+
+      const claim = await getDatabase().ref(`mrt_webhook_events/clover/${eventId}`).transaction(
+        (current) => (current ? undefined : {receivedAt: Date.now(), type: event.type || "unknown"}),
+      );
+      if (!claim.committed) {
+        response.status(204).send(); // already processed
+        return;
+      }
+
+      const paymentRef = getDatabase().ref(`mrt_sponsor_payments/${sessionId}`);
+      const payment = (await paymentRef.get()).val();
+      if (!payment) {
+        logger.warn("Clover webhook for an unknown checkout session", {sessionId});
+        response.status(204).send();
+        return;
+      }
+
+      const approved = String(event.status || "").toUpperCase() === "APPROVED";
+      if (!approved) {
+        await paymentRef.update({
+          status: "declined",
+          providerStatus: cleanText(event.status, 40, "status"),
+          updatedAt: Date.now(),
+        });
+        response.status(200).send("ok");
+        return;
+      }
+
+      const tourRef = getDatabase().ref(`mrt_tours_private/${payment.tourId}`);
+      const tour = (await tourRef.get()).val();
+      if (!tour) {
+        logger.error("Clover payment for a tour that no longer exists", {sessionId, tourId: payment.tourId});
+        response.status(200).send("ok");
+        return;
+      }
+
+      const sponsors = Array.isArray(tour.sponsors) ? tour.sponsors : [];
+      const index = sponsors.findIndex((entry) => String(entry?.id) === String(payment.sponsorId));
+      if (index < 0) {
+        logger.error("Clover payment for a sponsor no longer on the tour", {sessionId});
+        response.status(200).send("ok");
+        return;
+      }
+
+      const now = Date.now();
+      const nextSponsors = sponsors.map((entry, i) => (i === index ? {
+        ...entry,
+        paid: true,
+        paymentStatus: "paid",
+        paymentMethod: "clover",
+        paidAt: now,
+      } : entry));
+      const nextTour = {
+        ...tour,
+        sponsors: nextSponsors,
+        version: Number(tour.version || 0) + 1,
+        updatedAt: now,
+      };
+
+      /* Single atomic update: the sponsor is marked paid and the public projection is
+         re-materialised together, so the sponsor becomes publicly visible the moment payment
+         lands — publicSponsor() drops anything unpaid. */
+      await getDatabase().ref().update({
+        [`mrt_tours_private/${payment.tourId}`]: nextTour,
+        [`mrt_tours_public/${payment.tourId}`]: publicTourProjection(nextTour),
+        [`mrt_sponsor_payments/${sessionId}/status`]: "paid",
+        [`mrt_sponsor_payments/${sessionId}/paidAt`]: now,
+        [`mrt_sponsor_payments/${sessionId}/cloverPaymentId`]:
+          cleanText(event.paymentUuid || event.paymentId, 160, "payment id") || null,
+      });
+
+      response.status(200).send("ok");
+    } catch (error) {
+      webhookFailure(response, error, "clover");
     }
   },
 );
