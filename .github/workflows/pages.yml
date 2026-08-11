@@ -39,7 +39,7 @@ jobs:
       MRT_APP_CHECK_PROVIDER: enterprise
       # "1" = public root serves maintenance.html, app moves to /app/.
       # "0" = normal launch. This is the single switch for going live.
-      MRT_MAINTENANCE: "1"
+      MRT_MAINTENANCE: "0"
     steps:
       - uses: actions/checkout@v4
 
