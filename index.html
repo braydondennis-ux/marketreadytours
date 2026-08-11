@@ -11837,6 +11837,13 @@ function TeamPage(_ref28) {
         setSubAdmins(prev => [...prev.filter(user => user.id !== nu.id), nu]);
         setNewUser({ name: "", email: "" });
         setShowAdd(false);
+        /* This Firebase-delivered reset email is the one that actually ARRIVES. createAdmin
+           also generates a link and sends it via sendTransactionalEmail, but that path was
+           observed silently not delivering on 2026-08-11 (returned success, no email, not in
+           spam). This call runs last, so its code is the valid one. Do not remove it without
+           first fixing server-side delivery \u2014 bootstrap.test.mjs:128 guards this. The two
+           competing code generations are redundant and should be reduced to one, once the
+           server path is trustworthy. */
         if (!_USE_DEV && _fbAuth) await _fbAuth.sendPasswordResetEmail(admin.email);
         showToast(
           _USE_DEV

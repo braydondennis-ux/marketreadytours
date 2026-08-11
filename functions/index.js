@@ -561,13 +561,18 @@ exports.createAdmin = onCall(
         user = await getAuth().updateUser(user.uid, {disabled: false, displayName: name});
       } catch (error) {
         if (error.code !== "auth/user-not-found") throw error;
-        // A user created WITHOUT a password has no password provider, and a password
-        // RESET link for such an account fails with "expired or has already been used" —
-        // which is what made every admin invitation unusable (audit 2026-08-10, reproduced
-        // three times). Setting an unguessable initial password creates the provider so the
-        // reset link below actually works. Nobody ever learns this value: it is random,
-        // never returned, never logged, and immediately superseded when the invitee sets
-        // their own password.
+        // Give the account a password provider from the start. An unguessable random value
+        // is used; nobody ever learns it — it is never returned, never logged, and is
+        // superseded when the invitee sets their own via the link below.
+        //
+        // NOTE: this was originally committed as the fix for invitations failing with
+        // "expired or has already been used". THAT DIAGNOSIS WAS WRONG. The real cause was
+        // an API-key referrer restriction: Firebase's reset page is served from
+        // marketready-tours.firebaseapp.com, which was missing from the browser key's
+        // allowed-referrer list, so the page's own verification call returned 403 and the
+        // UI reported it as an expired code. Fixed 2026-08-11 by adding that domain (and
+        // marketready-tours.web.app) to the key. Keeping this because a passwordless admin
+        // account is still an odd state, not because it fixes anything.
         user = await getAuth().createUser({
           email,
           displayName: name,
