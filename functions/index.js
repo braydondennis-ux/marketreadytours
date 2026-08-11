@@ -622,13 +622,17 @@ exports.createAdmin = onCall(
         updatedAt: Date.now(),
         updatedBy: uid,
       });
-      const resetLink = await getAuth().generatePasswordResetLink(email);
-      await sendTransactionalEmail({
-        to: email,
-        subject: "Set up your MarketReady Tours account",
-        text: `Set your password: ${resetLink}`,
-        html: `<p>Hello ${escapeHtml(name)},</p><p><a href="${escapeHtml(resetLink)}">Set your password</a></p>`,
-      });
+      /* Deliberately does NOT send a setup email or generate a reset link.
+         Firebase Auth is the sole delivery path for production account setup — the client
+         calls sendPasswordResetEmail after this returns (index.html, guarded by
+         scripts/bootstrap.test.mjs:132 "production account setup uses Firebase Auth reset
+         delivery"). Generating a link here too produced a SECOND oobCode, and Firebase
+         invalidates the earlier one, so the invitee received two emails of which the
+         better-looking one was always dead. Observed 2026-08-11: the "Set up your
+         MarketReady Tours account" message arrived and its link reported "expired or has
+         already been used", because the client's send had superseded it.
+         Firebase also delivers from noreply@marketreadytours.com, which is domain
+         authenticated — our own path goes through consumer Gmail SMTP and is spam-filtered. */
       return {ok: true, admin: {uid: user.uid, email, name, role, active: true}};
     });
   },
