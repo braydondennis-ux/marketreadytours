@@ -6439,6 +6439,57 @@ function InviteCampaignTab(_ref15) {
   }, "\u2705 Save All Templates")))));
 }
 /* ── NOT INTERESTED LANDING PAGE ── */
+/* Sponsor payment landing page.
+   Reached from the emailed link (?spt=<signed token>#/sponsor-pay). The Clover session is
+   minted when the sponsor presses the button, NOT on page load: Clover sessions expire in
+   about 15 minutes, so creating one on load would let it die while the page sat open. */
+function SponsorPayPage(_ref17b) {
+  let { onBack } = _ref17b;
+  const hashQuery = window.location.hash.includes("?")
+    ? window.location.hash.split("?").slice(1).join("?")
+    : "";
+  const params = new URLSearchParams(window.location.search || hashQuery);
+  const token = params.get("spt") || "";
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const start = async () => {
+    setError("");
+    setBusy(true);
+    try {
+      const result = await mrtCall("createSponsorCheckout", { token });
+      if (!result || !result.url) throw new Error("Payment could not be started.");
+      window.location.href = result.url;
+    } catch (e) {
+      setBusy(false);
+      setError((e && e.message) || "Payment could not be started. Please try again.");
+    }
+  };
+
+  return /*#__PURE__*/React.createElement("div", {
+    className: "mrt-col",
+    style: { padding: "48px 18px", maxWidth: 560, margin: "0 auto" }
+  }, /*#__PURE__*/React.createElement("h1", {
+    style: { fontSize: 26, margin: "0 0 10px", color: B.ink, letterSpacing: "-0.02em" }
+  }, "Complete your sponsorship"), !token ? /*#__PURE__*/React.createElement("p", {
+    style: { color: B.muted }
+  }, "This payment link is missing its code. Please use the link from your email, or contact us for a new one.") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
+    style: { color: B.muted, marginBottom: 22 }
+  }, "You'll be taken to Clover's secure checkout to finish paying. A card surcharge may be applied at checkout."), /*#__PURE__*/React.createElement("button", {
+    onClick: start,
+    disabled: busy,
+    className: "mrt-btn mrt-btn--gold",
+    style: { width: "100%", padding: "13px 20px", fontSize: 16, opacity: busy ? 0.7 : 1 }
+  }, busy ? "Opening secure checkout…" : "Continue to secure payment"), error && /*#__PURE__*/React.createElement("p", {
+    role: "status",
+    style: { color: B.error || "#A32017", marginTop: 16, fontSize: 14.5 }
+  }, error)), /*#__PURE__*/React.createElement("button", {
+    onClick: onBack,
+    className: "mrt-btn mrt-btn--ghost mrt-btn--sm",
+    style: { marginTop: 26 }
+  }, "Back to tours"));
+}
+
 function NotInterestedPage(_ref17) {
   let {
     tours,
@@ -14741,6 +14792,7 @@ function App() {
     if (h === "contact") return "contact";
     if (h === "payment-success") return "payment-success";
     if (h === "payment-cancel") return "payment-cancel";
+    if (h.startsWith("sponsor-pay")) return "sponsor-pay";
     if (h.startsWith("tour/")) return "dashboard";
     return "dashboard";
   });
@@ -14797,6 +14849,10 @@ function App() {
         setPreselectedTourId(null);
       } else if (h === "payment-cancel") {
         setPage("payment-cancel");
+        setActiveTourId(null);
+        setPreselectedTourId(null);
+      } else if (h.startsWith("sponsor-pay")) {
+        setPage("sponsor-pay");
         setActiveTourId(null);
         setPreselectedTourId(null);
       } else if (h.startsWith("tour/")) {
@@ -15427,6 +15483,11 @@ function App() {
     initialTourId: activeTourId,
     onClearTourId: () => setActiveTourId(null),
     isSuperAdmin: isSuperAdmin
+  }), page === "sponsor-pay" && /*#__PURE__*/React.createElement(SponsorPayPage, {
+    onBack: () => {
+      setPage("dashboard");
+      window.location.hash = "/";
+    }
   }), page === "not-interested" && /*#__PURE__*/React.createElement(NotInterestedPage, {
     tours: mergedTours,
     onBack: () => {

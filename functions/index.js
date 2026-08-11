@@ -1444,7 +1444,10 @@ exports.createSponsorPaymentLink = onCall({
     const token = sponsorPayToken({
       t: tourId, s: sponsorId, p: plan, exp: Date.now() + 30 * 24 * 60 * 60 * 1000,
     });
-    const url = `https://marketreadytours.com/#/sponsor-pay?t=${encodeURIComponent(token)}`;
+    /* Token goes in the QUERY STRING, not inside the hash — the app reads it via
+       location.search, matching the existing not-interested opt-out link convention. A
+       `?t=` placed after `#/` would be invisible to location.search. */
+    const url = `https://marketreadytours.com/?spt=${encodeURIComponent(token)}#/sponsor-pay`;
 
     await sendTransactionalEmail({
       to: email,
@@ -1483,9 +1486,12 @@ exports.createSponsorCheckout = onCall({
       plan: payload.p,
       sponsor,
       tour,
+      /* These are cosmetic. The webhook is what actually records payment — a sponsor who
+         never returns to the success URL is still marked paid, and hitting the success URL
+         without paying records nothing. */
       redirectUrls: {
-        success: "https://marketreadytours.com/#/sponsor-paid",
-        failure: `https://marketreadytours.com/#/sponsor-pay?t=${encodeURIComponent(request.data.token)}`,
+        success: "https://marketreadytours.com/#/payment-success",
+        failure: `https://marketreadytours.com/?spt=${encodeURIComponent(request.data.token)}#/sponsor-pay`,
       },
     });
   } catch (error) {
