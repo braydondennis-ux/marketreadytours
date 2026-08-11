@@ -1843,22 +1843,11 @@ exports.cloverWebhook = onRequest(
 
       const signatureHeader = request.get("clover-signature") || request.get("Clover-Signature");
 
-      /* TEMPORARY DIAGNOSTIC (2026-08-11): Clover's URL registration probe is being rejected
-         and its shape is not documented clearly enough to code against. Log what actually
-         arrives so the handler can be written from evidence rather than inference. Remove
-         once the shape is known. Body is truncated and this endpoint only ever receives
-         Clover's own payment notifications. */
+      /* No signature means this cannot be a payment notification — Clover signs those. It is
+         a registration probe, so acknowledge it. Nothing is read from the body and no state
+         changes, so a forged unsigned request achieves nothing but a 200. Rejecting these is
+         what made URL registration fail with "Webhook url verification failed". */
       if (!signatureHeader) {
-        logger.info("Clover webhook: UNSIGNED request received", {
-          method: request.method,
-          headerNames: Object.keys(request.headers || {}).join(","),
-          bodyKeys: Object.keys(event || {}).join(","),
-          bodySample: JSON.stringify(event || {}).slice(0, 500),
-          query: JSON.stringify(request.query || {}).slice(0, 200),
-        });
-        /* No signature means this cannot be a payment notification — Clover signs those. It
-           is a registration probe, so acknowledge it. Nothing is read from the body and no
-           state changes, so a forged unsigned request achieves nothing but a 200. */
         response.status(200).json({ok: true});
         return;
       }
@@ -1876,13 +1865,15 @@ exports.cloverWebhook = onRequest(
         return;
       }
 
-      /* TEMPORARY DIAGNOSTIC (2026-08-11): the field names below came from Clover's docs and
-         had never been seen in a live event. Log the real shape so this can be finished from
-         evidence rather than inference. Remove once a genuine payment event is observed. */
-      logger.info("Clover webhook: SIGNED request received", {
-        bodyKeys: Object.keys(event || {}).join(","),
-        bodySample: JSON.stringify(event || {}).slice(0, 600),
-      });
+      /* Clover's real payment event, observed 2026-08-11:
+           {"type":"PAYMENT","id":"HH9WJGZHFJAFE","merchantId":"THMY50ENDR0T1",
+            "created":1786486997.237,"status":"APPROVED","message":"Approved for 4975",
+            "checkoutSessionId":"88f9af83-b1aa-4b36-a7bf-b58a4c73731f"}
+         The documented field names were correct. Its verification/test ping is {"test":"dummy"}.
+
+         NOTE: Clover sends NO webhook when a payment is VOIDED or REFUNDED — confirmed by
+         voiding that transaction and observing no event. Reversals are therefore invisible
+         here, and a refunded sponsor stays marked paid until an admin clicks Mark Unpaid. */
 
       /* Clover sends SIGNED verification and test pings that carry no checkout session.
          Requiring one threw a TypeError and returned 500, which Clover surfaced as
