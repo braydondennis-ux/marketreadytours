@@ -27,6 +27,17 @@ const builtHtml = sourceHtml.replaceAll(
   "__MRT_APP_CHECK_SITE_KEY__",
   appCheckSiteKey || "__MRT_APP_CHECK_SITE_KEY__",
 ).replaceAll("__MRT_APP_CHECK_PROVIDER__", appCheckProvider);
-await writeFile(resolve(out, "index.html"), builtHtml);
 
-console.log("Built static web bundle in www/");
+// Maintenance mode: the public root serves maintenance.html and the real app moves to
+// /app/. The app is a static bundle, so /app/ is obscurity, NOT access control — put
+// Cloudflare Access in front if genuine protection is needed. Flip MRT_MAINTENANCE to
+// "0" in .github/workflows/pages.yml to go live again.
+if (process.env.MRT_MAINTENANCE === "1") {
+  await mkdir(resolve(out, "app"), {recursive: true});
+  await writeFile(resolve(out, "app", "index.html"), builtHtml);
+  await cp(resolve(root, "maintenance.html"), resolve(out, "index.html"));
+  console.log("Built static web bundle in www/ — MAINTENANCE MODE (app at /app/)");
+} else {
+  await writeFile(resolve(out, "index.html"), builtHtml);
+  console.log("Built static web bundle in www/");
+}

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>MarketReady Tours — Back shortly</title>
+<meta name="robots" content="noindex, nofollow"/>
+<style>
+  :root{
+    --canvas:#F7F6F2; --paper:#FFFFFF; --ink:#101A36; --cobalt:#2F44A0;
+    --steel:#AEBFD6; --text:#111318; --muted:#5B5F6B; --hair:#E4E2DB;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --canvas:#0B0F1D; --paper:#131828; --ink:#C9D3EA; --cobalt:#8496EA;
+      --steel:#7F91AE; --text:#E9EBF2; --muted:#A2A9BC; --hair:#242C44;
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--canvas); color:var(--text);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.6; display:flex; align-items:center; justify-content:center;
+    padding:24px; -webkit-font-smoothing:antialiased;
+  }
+  .card{
+    background:var(--paper); border:1px solid var(--hair); border-radius:12px;
+    max-width:520px; width:100%; padding:40px 36px;
+    box-shadow:0 1px 3px rgba(16,26,54,.06);
+  }
+  .mark{
+    width:44px;height:44px;border-radius:9px;background:var(--ink);
+    display:flex;align-items:center;justify-content:center;margin-bottom:24px;
+  }
+  .mark span{color:var(--paper);font-weight:700;font-size:17px;letter-spacing:-.02em}
+  .eyebrow{
+    font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--cobalt);font-weight:650;margin:0 0 10px;
+  }
+  h1{font-size:27px;line-height:1.2;margin:0 0 14px;letter-spacing:-.02em;color:var(--ink);font-weight:660}
+  p{margin:0 0 14px;color:var(--muted);font-size:15.5px}
+  p.lead{color:var(--text)}
+  .rule{height:1px;background:var(--hair);margin:26px 0 22px;border:none}
+  form{display:flex;gap:8px;flex-wrap:wrap}
+  input[type=password]{
+    flex:1 1 200px;min-width:0;padding:11px 13px;font-size:15px;
+    border:1px solid var(--hair);border-radius:7px;background:var(--canvas);
+    color:var(--text);font-family:inherit;
+  }
+  input[type=password]:focus{outline:2px solid var(--cobalt);outline-offset:1px;border-color:transparent}
+  button{
+    padding:11px 20px;font-size:15px;font-weight:600;font-family:inherit;
+    background:var(--ink);color:var(--paper);border:none;border-radius:7px;cursor:pointer;
+  }
+  button:hover{background:var(--cobalt)}
+  button:focus-visible{outline:2px solid var(--cobalt);outline-offset:2px}
+  .err{color:#A32017;font-size:14px;margin:12px 0 0;min-height:20px}
+  @media (prefers-color-scheme: dark){.err{color:#F09287}}
+  .contact{font-size:14px;color:var(--muted);margin-top:4px}
+  a{color:var(--cobalt)}
+</style>
+</head>
+<body>
+  <main class="card">
+    <div class="mark"><span>MR</span></div>
+    <p class="eyebrow">MarketReady Tours</p>
+    <h1>We're making some improvements</h1>
+    <p class="lead">The site is briefly unavailable while we finish an update. Your tours, listings, ratings, and account data are all safe and untouched.</p>
+    <p>We expect to be back shortly. Thanks for your patience.</p>
+    <p class="contact">Need something urgently? Email <a href="mailto:marketreadytours@gmail.com">marketreadytours@gmail.com</a>.</p>
+
+    <hr class="rule"/>
+
+    <p class="eyebrow">Team access</p>
+    <form id="f" autocomplete="off">
+      <label for="p" style="position:absolute;left:-9999px">Team passcode</label>
+      <input id="p" type="password" placeholder="Team passcode" autocomplete="off"/>
+      <button type="submit">Continue</button>
+    </form>
+    <p class="err" id="e" role="status" aria-live="polite"></p>
+  </main>
+
+<script>
+// NOTE: this is a convenience gate for the team, NOT access control. The application
+// is a static bundle at /app/ and is reachable by anyone who knows the path. Use
+// Cloudflare Access if genuine protection is required.
+document.getElementById("f").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var v = document.getElementById("p").value.trim().toLowerCase();
+  if (v === "mrt2026") {
+    window.location.href = "/app/";
+  } else {
+    document.getElementById("e").textContent = "That passcode isn't right.";
+    document.getElementById("p").select();
+  }
+});
+</script>
+</body>
+</html>

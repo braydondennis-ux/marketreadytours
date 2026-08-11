@@ -37,6 +37,9 @@ jobs:
     env:
       MRT_APP_CHECK_SITE_KEY: 6LeP0XUtAAAAAJ8WdZG1lhaoJUXgGINFH1SUlEKT
       MRT_APP_CHECK_PROVIDER: enterprise
+      # "1" = public root serves maintenance.html, app moves to /app/.
+      # "0" = normal launch. This is the single switch for going live.
+      MRT_MAINTENANCE: "1"
     steps:
       - uses: actions/checkout@v4
 
@@ -49,23 +52,31 @@ jobs:
 
       - name: Verify App Check placeholders were substituted
         run: |
-          if grep -q "__MRT_APP_CHECK_SITE_KEY__\|__MRT_APP_CHECK_PROVIDER__" www/index.html; then
+          # In maintenance mode the app lives at /app/; the root is the holding page.
+          if [ "$MRT_MAINTENANCE" = "1" ]; then APP=www/app/index.html; else APP=www/index.html; fi
+          echo "Verifying $APP"
+          if grep -q "__MRT_APP_CHECK_SITE_KEY__\|__MRT_APP_CHECK_PROVIDER__" "$APP"; then
             echo "::error::App Check placeholders survived the build — deploying this would"
             echo "::error::break Firebase init and serve a dead site. Refusing to continue."
             exit 1
           fi
-          grep -q "$MRT_APP_CHECK_SITE_KEY" www/index.html \
+          grep -q "$MRT_APP_CHECK_SITE_KEY" "$APP" \
             || { echo "::error::Production App Check site key missing from build."; exit 1; }
-          grep -q 'content="enterprise"' www/index.html \
+          grep -q 'content="enterprise"' "$APP" \
             || { echo "::error::App Check provider is not 'enterprise'."; exit 1; }
           echo "App Check wiring verified."
 
-      - name: Verify the production build is not pointed at dev
+      - name: Verify bundle contents
         run: |
-          grep -q "marketready-tours-dev" www/index.html \
-            && echo "note: dev config present (expected — chosen at runtime by hostname)"
           test -f www/index.html && test -f www/manifest.json && test -f www/privacy-policy.html
-          echo "Bundle contents verified."
+          if [ "$MRT_MAINTENANCE" = "1" ]; then
+            test -f www/app/index.html || { echo "::error::App bundle missing at www/app/."; exit 1; }
+            grep -q "We're making some improvements" www/index.html \
+              || { echo "::error::Root is not the maintenance page."; exit 1; }
+            echo "Maintenance mode verified: holding page at /, app at /app/."
+          else
+            echo "Live mode verified: app at /."
+          fi
 
       - uses: actions/configure-pages@v5
 
