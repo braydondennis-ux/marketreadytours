@@ -1841,11 +1841,37 @@ exports.cloverWebhook = onRequest(
         return;
       }
 
+      const signatureHeader = request.get("clover-signature") || request.get("Clover-Signature");
+
+      /* TEMPORARY DIAGNOSTIC (2026-08-11): Clover's URL registration probe is being rejected
+         and its shape is not documented clearly enough to code against. Log what actually
+         arrives so the handler can be written from evidence rather than inference. Remove
+         once the shape is known. Body is truncated and this endpoint only ever receives
+         Clover's own payment notifications. */
+      if (!signatureHeader) {
+        logger.info("Clover webhook: UNSIGNED request received", {
+          method: request.method,
+          headerNames: Object.keys(request.headers || {}).join(","),
+          bodyKeys: Object.keys(event || {}).join(","),
+          bodySample: JSON.stringify(event || {}).slice(0, 500),
+          query: JSON.stringify(request.query || {}).slice(0, 200),
+        });
+        /* No signature means this cannot be a payment notification — Clover signs those. It
+           is a registration probe, so acknowledge it. Nothing is read from the body and no
+           state changes, so a forged unsigned request achieves nothing but a 200. */
+        response.status(200).json({ok: true});
+        return;
+      }
+
       if (!verifyCloverWebhook(
         request.rawBody,
-        request.get("clover-signature") || request.get("Clover-Signature"),
+        signatureHeader,
         CLOVER_WEBHOOK_SECRET.value(),
       )) {
+        logger.warn("Clover webhook: signature present but invalid", {
+          signaturePrefix: String(signatureHeader).slice(0, 24),
+          bodyKeys: Object.keys(event || {}).join(","),
+        });
         response.status(401).send("invalid signature");
         return;
       }
