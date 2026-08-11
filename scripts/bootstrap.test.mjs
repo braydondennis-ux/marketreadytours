@@ -71,13 +71,30 @@ test("admin sign-in and profile reads cannot remain pending forever", async () =
   assert.match(source, /mrtWithTimeout\([\s\S]*?_fbAuth\.signInWithEmailAndPassword[\s\S]*?12000,[\s\S]*?"Sign in"/);
 });
 
-test("legacy payment routes describe the manual sponsorship workflow", async () => {
-  const source = await readFile(new URL("../index.html", import.meta.url), "utf8");
+/* Rewritten 2026-08-11. This previously asserted the success page must say "we'll follow up
+   with payment instructions" and must NOT claim payment succeeded — correct while sponsorship
+   was manual-only and nothing could confirm a payment.
+   Clover Hosted Checkout now confirms payments, and #/payment-success is reached ONLY from
+   Clover's success redirect (functions/index.js sets it as redirectUrls.success; no in-app
+   navigation targets it). Telling someone who has just paid that we will follow up with
+   payment instructions invites a double payment. The guard that still matters is that the
+   page is reachable only after a real payment, which is asserted below. */
+test("the payment success page is reached only from Clover and confirms payment", async () => {
+  const [source, functionsSource] = await Promise.all([
+    readFile(new URL("../index.html", import.meta.url), "utf8"),
+    readFile(new URL("../functions/index.js", import.meta.url), "utf8"),
+  ]);
 
-  assert.match(source, /Sponsorship Request Received/);
-  assert.match(source, /payment instructions, and next steps/);
+  // Only Clover's success redirect sends anyone to this route.
+  assert.match(functionsSource, /success: "https:\/\/marketreadytours\.com\/#\/payment-success"/);
+  assert.doesNotMatch(source, /hash = "\/payment-success"/);
+
+  // And it tells them the payment is done, not that money is still owed.
+  assert.match(source, /"Payment Received"/);
+  assert.doesNotMatch(source, /payment instructions, and next steps/);
+
+  // The cancel page still exists for abandoned checkouts.
   assert.match(source, /Sponsorship Not Completed/);
-  assert.doesNotMatch(source, /Your payment has been processed successfully/);
 });
 
 test("every hosted build initializes App Check and targets its selected Firebase project", async () => {

@@ -15649,14 +15649,18 @@ function App() {
       fontSize: 24,
       marginBottom: 12
     }
-  }, "Sponsorship Request Received"), /*#__PURE__*/React.createElement("p", {
+  /* Clover redirects here AFTER a completed payment. The previous copy — "we'll follow up
+     with payment instructions" — was written for the pre-payment signup flow and told
+     someone who had just paid that they still owed money, which invites a double payment or
+     a support email. */
+  }, "Payment Received"), /*#__PURE__*/React.createElement("p", {
     style: {
       color: B.gray,
       fontSize: 15,
       lineHeight: 1.6,
       marginBottom: 24
     }
-  }, "Thank you for supporting MarketReady Tours. Our team received your sponsorship details and will follow up with placement, payment instructions, and next steps."), /*#__PURE__*/React.createElement("button", {
+  }, "Thank you for supporting MarketReady Tours. Your payment is confirmed and your sponsorship is now live on the tour. A receipt has been emailed to you."), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setPage("dashboard");
       window.location.hash = "/";
