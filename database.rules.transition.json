@@ -18,6 +18,7 @@
     },
 
     "mrt_tours": {
+      "//": "AUDIT M5 (2026-08-10) — KNOWN EXPOSURE, DELIBERATELY UNFIXED. This legacy node is world-readable and contains 33 tour access codes, 131 agentEmail and 128 agentPhone fields, and 642 distinct email addresses. It CANNOT be restricted while rollback is available: the pre-refresh build (cd6f980) performs NO authentication at all — zero signInAnonymously calls — so any auth requirement makes the rolled-back site load nothing. The refresh does not read this node; it uses mrt_tours_public, which carries none of that data. THE FIX IS TO DELETE THIS NODE once the rollback window closes, not to tighten the rule. Do not change .read to 'auth != null' — scripts/production-cutover.test.mjs:150 asserts this on purpose.",
       ".read": true,
       ".write": "auth != null",
       "$tour_index": {

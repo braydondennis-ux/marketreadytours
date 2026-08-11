@@ -561,7 +561,19 @@ exports.createAdmin = onCall(
         user = await getAuth().updateUser(user.uid, {disabled: false, displayName: name});
       } catch (error) {
         if (error.code !== "auth/user-not-found") throw error;
-        user = await getAuth().createUser({email, displayName: name, emailVerified: false});
+        // A user created WITHOUT a password has no password provider, and a password
+        // RESET link for such an account fails with "expired or has already been used" —
+        // which is what made every admin invitation unusable (audit 2026-08-10, reproduced
+        // three times). Setting an unguessable initial password creates the provider so the
+        // reset link below actually works. Nobody ever learns this value: it is random,
+        // never returned, never logged, and immediately superseded when the invitee sets
+        // their own password.
+        user = await getAuth().createUser({
+          email,
+          displayName: name,
+          emailVerified: false,
+          password: crypto.randomBytes(32).toString("base64url"),
+        });
       }
       await getAuth().setCustomUserClaims(user.uid, {mrtRole: role});
       await getAuth().revokeRefreshTokens(user.uid);
