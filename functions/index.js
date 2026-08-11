@@ -1876,10 +1876,29 @@ exports.cloverWebhook = onRequest(
         return;
       }
 
+      /* TEMPORARY DIAGNOSTIC (2026-08-11): the field names below came from Clover's docs and
+         had never been seen in a live event. Log the real shape so this can be finished from
+         evidence rather than inference. Remove once a genuine payment event is observed. */
+      logger.info("Clover webhook: SIGNED request received", {
+        bodyKeys: Object.keys(event || {}).join(","),
+        bodySample: JSON.stringify(event || {}).slice(0, 600),
+      });
+
+      /* Clover sends SIGNED verification and test pings that carry no checkout session.
+         Requiring one threw a TypeError and returned 500, which Clover surfaced as
+         "Webhook url verification failed". Acknowledge anything without a session id —
+         there is nothing to reconcile, so there is nothing to do. */
       const sessionId = cleanText(
         event.checkoutSessionUuid || event.checkoutSessionId || event.data?.checkoutSessionId,
-        160, "checkout session id", true,
+        160, "checkout session id",
       );
+      if (!sessionId) {
+        logger.info("Clover webhook: no checkout session on this event — acknowledging", {
+          type: event.type || "(none)",
+        });
+        response.status(200).json({ok: true});
+        return;
+      }
       const eventId = cleanText(
         event.id || event.paymentUuid || `${sessionId}:${event.status || "unknown"}`,
         160, "event id", true,
