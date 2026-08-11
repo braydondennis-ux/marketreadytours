@@ -34,7 +34,16 @@ const builtHtml = sourceHtml.replaceAll(
 // "0" in .github/workflows/pages.yml to go live again.
 if (process.env.MRT_MAINTENANCE === "1") {
   await mkdir(resolve(out, "app"), {recursive: true});
+  await mkdir(resolve(out, "app", "icons"), {recursive: true});
   await writeFile(resolve(out, "app", "index.html"), builtHtml);
+  // The app references manifest.json, sw.js and icons/ RELATIVELY, so they must sit
+  // beside it at /app/ or they 404 and service-worker registration fails.
+  for (const file of ["manifest.json", "privacy-policy.html", "offline.html", "sw.js"]) {
+    await cp(resolve(root, file), resolve(out, "app", file));
+  }
+  for (const file of ["app-icon-192.png", "app-icon-512.png"]) {
+    await cp(resolve(root, "assets/icons", file), resolve(out, "app", "icons", file));
+  }
   await cp(resolve(root, "maintenance.html"), resolve(out, "index.html"));
   console.log("Built static web bundle in www/ — MAINTENANCE MODE (app at /app/)");
 } else {
