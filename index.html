@@ -3815,6 +3815,30 @@ function TourSponsorsModal(_ref10) {
     }
     return true;
   };
+  /* Email the sponsor a Clover payment link. The link points at our own #/sponsor-pay page,
+     not at Clover — Clover checkout sessions expire in about 15 minutes, so the session is
+     minted when the sponsor clicks, not when this email is sent. */
+  const [payLinkBusy, setPayLinkBusy] = useState(null);
+  const sendPaymentLink = async sp => {
+    if (!sp || !sp.email) {
+      showToast("This sponsor has no email address on file.", "warn", 5000);
+      return;
+    }
+    setPayLinkBusy(sp.id);
+    try {
+      await mrtCall("createSponsorPaymentLink", {
+        tourId: tour.id,
+        sponsorId: sp.id,
+        plan: sp.paymentPlan || "full",
+        requestId: mrtRequestId("sponsor-pay-link")
+      });
+      showToast("Payment link emailed to " + sp.email + ".", "success", 5000);
+    } catch (error) {
+      showToast(error.message || "Could not send the payment link.", "error", 6000);
+    } finally {
+      setPayLinkBusy(null);
+    }
+  };
   const FULL_PRICE = 199;
   const SPLIT_PRICE = 49.75;
   const sponsorCount = sponsors.length;
@@ -4485,9 +4509,22 @@ function TourSponsorsModal(_ref10) {
       style: {
         display: "flex",
         gap: 6,
-        marginTop: 10
+        marginTop: 10,
+        /* Three actions can sit here; without wrapping the third is clipped off the card,
+           which is exactly how Remove went missing on the Team page. */
+        flexWrap: "wrap"
       }
-    }, (!MRT_SECURE_BACKEND || MRT_MANUAL_PAYMENTS) && /*#__PURE__*/React.createElement("button", {
+    }, !sponsorPaid && sp.email && /*#__PURE__*/React.createElement("button", {
+      onClick: () => sendPaymentLink(sp),
+      disabled: payLinkBusy === sp.id,
+      className: "mrt-btn mrt-btn--gold mrt-btn--sm",
+      style: {
+        flex: "1 1 100%",
+        opacity: payLinkBusy === sp.id ? 0.7 : 1
+      }
+    }, React.createElement("span", {
+      style: {display: "flex", alignItems: "center", justifyContent: "center", gap: 4}
+    }, LI("CreditCard", 13), payLinkBusy === sp.id ? "Sending…" : "Send Payment Link")), (!MRT_SECURE_BACKEND || MRT_MANUAL_PAYMENTS) && /*#__PURE__*/React.createElement("button", {
       onClick: () => togglePaid(sp.id),
       className: sponsorPaid ? "mrt-btn mrt-btn--ghost mrt-btn--sm" : "mrt-btn mrt-btn--gold mrt-btn--sm",
       style: {
