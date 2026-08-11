@@ -1826,6 +1826,21 @@ exports.cloverWebhook = onRequest(
   async (request, response) => {
     try {
       assertSafeProject();
+      const event = request.body || {};
+
+      /* Clover verifies the callback URL when it is first registered, BEFORE any signing
+         secret exists — so that request is necessarily unsigned and must be answered before
+         the signature check, or registration fails with "Webhook url verification failed".
+         Echoing the code back is safe: the request carries no payment data, changes no state,
+         and cannot mark anything paid. The code is logged so it can be pasted into Clover's
+         dashboard if they ask for it rather than auto-verifying. */
+      const verificationCode = cleanText(event.verificationCode, 200, "verification code");
+      if (verificationCode) {
+        logger.info("Clover webhook verification request", {verificationCode});
+        response.status(200).json({verificationCode});
+        return;
+      }
+
       if (!verifyCloverWebhook(
         request.rawBody,
         request.get("clover-signature") || request.get("Clover-Signature"),
@@ -1835,7 +1850,6 @@ exports.cloverWebhook = onRequest(
         return;
       }
 
-      const event = request.body || {};
       const sessionId = cleanText(
         event.checkoutSessionUuid || event.checkoutSessionId || event.data?.checkoutSessionId,
         160, "checkout session id", true,
