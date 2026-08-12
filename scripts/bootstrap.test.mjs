@@ -146,12 +146,40 @@ test("Square Sandbox invoicing cannot be exposed on production", async () => {
   );
 });
 
-test("production account setup uses Firebase Auth reset delivery", async () => {
-  const source = await readFile(new URL("../index.html", import.meta.url), "utf8");
+/* Rewritten 2026-08-12. This previously asserted that PRODUCTION used Firebase Auth to
+   deliver reset emails, with our own callables reserved for dev. That was right while our
+   sender was consumer Gmail SMTP and inconsistently spam-filtered. Two things changed:
+   Firebase LOCKED email template editing on this project ("Email template updates are
+   currently unavailable"), so its emails can never be branded; and our sender is now Resend
+   as noreply@marketreadytours.com, domain-authenticated with delivery logs.
 
-  assert.match(source, /if \(MRT_SECURE_BACKEND && _USE_DEV\) \{\s*await mrtCall\("requestAdminPasswordReset"/);
-  assert.match(source, /if \(!_USE_DEV && _fbAuth\) await _fbAuth\.sendPasswordResetEmail\(admin\.email\)/);
-  assert.match(source, /if \(MRT_SECURE_BACKEND && _USE_DEV\) \{\s*await mrtCall\("sendAdminPasswordReset"/);
+   The property that actually matters is ONE SENDER PER ACTION. Two senders means two
+   oobCodes, Firebase invalidates the earlier one, and the invitee receives two emails of
+   which one is always dead — observed in production on 2026-08-11. */
+test("exactly one sender handles each account email, and it is ours", async () => {
+  const [source, functionsSource] = await Promise.all([
+    readFile(new URL("../index.html", import.meta.url), "utf8"),
+    readFile(new URL("../functions/index.js", import.meta.url), "utf8"),
+  ]);
+
+  // Reset requests go through our callables in production, not only in dev.
+  assert.match(source, /if \(MRT_SECURE_BACKEND\) \{\s*await mrtCall\("requestAdminPasswordReset"/);
+  assert.match(source, /if \(MRT_SECURE_BACKEND\) \{\s*await mrtCall\("sendAdminPasswordReset"/);
+
+  // The client must NOT also send after creating an admin — that was the double-send.
+  assert.doesNotMatch(source, /sendPasswordResetEmail\(admin\.email\)/);
+
+  // createAdmin owns setup delivery, and generates exactly one link to do it.
+  const createAdmin = functionsSource.slice(
+    functionsSource.indexOf("exports.createAdmin"),
+    functionsSource.indexOf("exports.updateAdmin"),
+  );
+  assert.match(createAdmin, /generatePasswordResetLink/);
+  assert.match(createAdmin, /Set up your MarketReady Tours account/);
+  assert.equal(
+    (createAdmin.match(/generatePasswordResetLink/g) || []).length, 1,
+    "createAdmin must generate exactly one reset link — a second invalidates the first",
+  );
 });
 
 test("production preserves secure manual sponsor payment operations", async () => {

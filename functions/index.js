@@ -671,17 +671,30 @@ exports.createAdmin = onCall(
         updatedAt: Date.now(),
         updatedBy: uid,
       });
-      /* Deliberately does NOT send a setup email or generate a reset link.
-         Firebase Auth is the sole delivery path for production account setup — the client
-         calls sendPasswordResetEmail after this returns (index.html, guarded by
-         scripts/bootstrap.test.mjs:132 "production account setup uses Firebase Auth reset
-         delivery"). Generating a link here too produced a SECOND oobCode, and Firebase
-         invalidates the earlier one, so the invitee received two emails of which the
-         better-looking one was always dead. Observed 2026-08-11: the "Set up your
-         MarketReady Tours account" message arrived and its link reported "expired or has
-         already been used", because the client's send had superseded it.
-         Firebase also delivers from noreply@marketreadytours.com, which is domain
-         authenticated — our own path goes through consumer Gmail SMTP and is spam-filtered. */
+      /* This is now the ONLY sender for account setup. The client no longer calls
+         sendPasswordResetEmail afterwards — two senders meant two oobCodes, and Firebase
+         invalidates the earlier one, so invitees got two emails of which one was always dead
+         (observed 2026-08-11).
+
+         Delivery moved here because Firebase has LOCKED template editing on this project
+         ("Email template updates are currently unavailable for this project"), so its emails
+         cannot be branded. Sending our own means we control the design, and it now goes via
+         Resend as noreply@marketreadytours.com — domain-authenticated, with delivery logs
+         Firebase never gave us. */
+      const setupLink = await getAuth().generatePasswordResetLink(email);
+      await sendTransactionalEmail({
+        to: email,
+        subject: "Set up your MarketReady Tours account",
+        text: `Hi ${name},\n\nAn admin account has been created for you on MarketReady Tours.\n\n` +
+          `Choose your password here:\n${setupLink}\n\nThen sign in at https://marketreadytours.com`,
+        html: `<p style="margin:0 0 14px;">Hi ${escapeHtml(name)},</p>` +
+          `<p style="margin:0 0 14px;">An admin account has been created for you on ` +
+          `<strong>MarketReady Tours</strong>.</p>` +
+          `<p style="margin:0 0 4px;">Choose your password using the button below, then sign in at ` +
+          `marketreadytours.com.</p>`,
+        cta: {label: "Choose your password", url: setupLink},
+        footerNote: "This link can only be used once and expires after a short time.",
+      });
       return {ok: true, admin: {uid: user.uid, email, name, role, active: true}};
     });
   },
@@ -739,11 +752,28 @@ exports.sendAdminPasswordReset = onCall(
         throw new HttpsError("not-found", "Active admin account was not found.");
       }
       const resetLink = await getAuth().generatePasswordResetLink(admin.email);
+      /* An admin triggered this on someone else's behalf, so the copy says so — otherwise it
+         reads as an unrequested reset and looks like an account compromise. */
+      /* Truncate rather than cleanText() — this name is stored data, not request input, and
+         cleanText THROWS past its limit, which would kill the reset instead of sending it. */
+      const name = String(admin.name || "").trim().slice(0, 80);
       await sendTransactionalEmail({
         to: admin.email,
         subject: "Reset your MarketReady Tours password",
-        text: `Reset your password: ${resetLink}`,
-        html: `<p><a href="${escapeHtml(resetLink)}">Reset your MarketReady Tours password</a></p>`,
+        text:
+          `${name ? `Hi ${name},` : "Hello,"}\n\n` +
+          "A MarketReady Tours administrator started a password reset for your account. " +
+          `Choose a new password here:\n\n${resetLink}\n\n` +
+          "If you weren't expecting this, contact your administrator before using the link.",
+        html:
+          `<p style="margin:0 0 14px;">${name ? `Hi ${escapeHtml(name)},` : "Hello,"}</p>` +
+          `<p style="margin:0 0 14px;">A MarketReady Tours administrator started a password ` +
+          `reset for <strong>${escapeHtml(admin.email)}</strong>.</p>` +
+          `<p style="margin:0 0 4px;">Use the button below to choose a new password.</p>`,
+        cta: {label: "Set a new password", url: resetLink},
+        footerNote:
+          "If you weren't expecting this, contact your administrator before using the link. " +
+          "It can only be used once and expires after a short time.",
       });
       return {ok: true};
     });
@@ -768,8 +798,16 @@ exports.requestAdminPasswordReset = onCall(
         await sendTransactionalEmail({
           to: email,
           subject: "Reset your MarketReady Tours password",
-          text: `Reset your password: ${resetLink}`,
-          html: `<p><a href="${escapeHtml(resetLink)}">Reset your MarketReady Tours password</a></p>`,
+          text: `Hello,\n\nWe received a request to reset the password for ${email}.\n\n` +
+            `Choose a new password here:\n${resetLink}\n\n` +
+            `If you didn't ask for this, you can ignore this email — your password won't change.`,
+          html: `<p style="margin:0 0 14px;">Hello,</p>` +
+            `<p style="margin:0 0 14px;">We received a request to reset the password for ` +
+            `<strong>${escapeHtml(email)}</strong>.</p>` +
+            `<p style="margin:0 0 4px;">Choose a new password using the button below. If you didn't ` +
+            `ask for this, you can ignore this email — your password won't change.</p>`,
+          cta: {label: "Set a new password", url: resetLink},
+          footerNote: "This link can only be used once and expires after a short time.",
         });
       }
     } catch (error) {

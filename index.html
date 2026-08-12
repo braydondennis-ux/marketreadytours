@@ -1424,7 +1424,12 @@ function LoginPage(_ref5) {
     setResetError("");
     try {
       if (!_fbAuth) throw new Error("Auth unavailable");
-      if (MRT_SECURE_BACKEND && _USE_DEV) {
+      /* Production now uses our own callable too, not just dev. Firebase has LOCKED email
+         template editing on this project, so its reset emails cannot be branded — and since
+         2026-08-12 our sender is Resend as noreply@marketreadytours.com, which is
+         domain-authenticated with delivery logs. The reason to prefer Firebase's sender
+         (ours was consumer Gmail SMTP and spam-filtered) no longer holds. */
+      if (MRT_SECURE_BACKEND) {
         await mrtCall("requestAdminPasswordReset", {email: val});
       } else {
         await _fbAuth.sendPasswordResetEmail(val);
@@ -11972,20 +11977,15 @@ function TeamPage(_ref28) {
         setSubAdmins(prev => [...prev.filter(user => user.id !== nu.id), nu]);
         setNewUser({ name: "", email: "" });
         setShowAdd(false);
-        /* This Firebase-delivered reset email is the one that actually ARRIVES. createAdmin
-           also generates a link and sends it via sendTransactionalEmail, but that path was
-           observed silently not delivering on 2026-08-11 (returned success, no email, not in
-           spam). This call runs last, so its code is the valid one. Do not remove it without
-           first fixing server-side delivery \u2014 bootstrap.test.mjs:128 guards this. The two
-           competing code generations are redundant and should be reduced to one, once the
-           server path is trustworthy. */
-        if (!_USE_DEV && _fbAuth) await _fbAuth.sendPasswordResetEmail(admin.email);
+        /* createAdmin now sends the setup email itself, so there is deliberately no
+           sendPasswordResetEmail here. Two senders meant two oobCodes and Firebase
+           invalidates the earlier one, so invitees received two emails of which one was
+           always dead. Our sender also goes through Resend with the branded template, which
+           Firebase's own emails cannot use \u2014 template editing is locked on this project. */
         showToast(
-          _USE_DEV
-            ? "\u2705 Team member created. Setup email is queued."
-            : "\u2705 Team member created. Setup email sent \u2014 ask them to check spam if it doesn't arrive.",
+          "\u2705 Team member created. Setup email sent.",
           "success",
-          7000,
+          6000,
         );
         return;
       }
@@ -12092,7 +12092,8 @@ function TeamPage(_ref28) {
   const sendCredentials = async (u) => {
     setCredSending(prev => ({...prev, [u.id]: true}));
     try {
-      if (MRT_SECURE_BACKEND && _USE_DEV) {
+      /* Production uses the callable too — see the note on the forgot-password path. */
+      if (MRT_SECURE_BACKEND) {
         await mrtCall("sendAdminPasswordReset", {
           uid: u.uid || u.id,
           requestId: mrtRequestId("admin_reset")
