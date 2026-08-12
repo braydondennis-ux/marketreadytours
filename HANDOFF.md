@@ -447,6 +447,38 @@ model:
 - The exact legacy email relay remains in use for transactional admin email.
 - Instantly remains disabled. New Square/Stripe payment flows remain disabled.
 
+## Outbound email: who sends what (2026-08-12)
+
+Transactional mail goes out through **Resend** as `noreply@marketreadytours.com`
+(`MRT_RESEND_API_KEY` in Secret Manager, declared on `callableOptions` so every callable has it).
+The legacy Gmail relay is still the fallback when the key is absent. Resend's key is **send-only**,
+so it cannot list past messages — check the Resend dashboard for delivery history.
+
+**Firebase no longer sends any account email.** Its Auth templates are locked on this project:
+the Identity Toolkit API returns `EMAIL_TEMPLATE_UPDATE_NOT_ALLOWED` (that path needs Identity
+Platform) *and* the console refuses too — "Email template updates are currently unavailable for
+this project." So Firebase's mail can never be branded. All three account emails are therefore
+built and sent by our own callables, each generating exactly one reset link:
+
+| Action | Callable | Trigger |
+| --- | --- | --- |
+| New team member invite | `createAdmin` | admin adds a team member |
+| Forgot password | `requestAdminPasswordReset` | sign-in page, self-service |
+| Reset on someone's behalf | `sendAdminPasswordReset` | admin clicks resend |
+
+**The trap:** never let the client *also* call `_fbAuth.sendPasswordResetEmail` for an action a
+callable already handles. Two senders mean two oobCodes; Firebase invalidates the earlier one, so
+the recipient gets two emails and the first link is always dead. That was the real cause of the
+"expired or already used" reports, together with a separate issue — the browser API key's referrer
+allowlist was missing `marketready-tours.firebaseapp.com`, which made the action page 403.
+`scripts/bootstrap.test.mjs` guards the one-sender rule.
+
+Testing these end-to-end needs both an App Check token and an auth context (the app signs in
+anonymously before the login screen), so a bare `curl` gets 401. Register a temporary App Check
+debug token, exchange it with a `Referer: https://marketreadytours.com/` header (the API key is
+referrer-restricted), then **delete the debug token afterwards** — it bypasses App Check while it
+exists.
+
 ## Latest production data verification
 
 On 2026-08-05, production was exported again after the user asked whether Scott had added data.
