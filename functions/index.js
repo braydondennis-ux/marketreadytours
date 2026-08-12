@@ -34,6 +34,7 @@ const {
   createCloverCheckoutSession,
   verifyCloverWebhook,
 } = require("./lib/clover");
+const {ensureBranded} = require("./lib/email");
 
 if (!getApps().length) initializeApp();
 
@@ -228,7 +229,7 @@ function squareSandboxIsEnabled() {
   return isEmulator || projectId() === "marketready-tours-dev";
 }
 
-async function sendTransactionalEmail({to, subject, text, html}) {
+async function sendTransactionalEmail({to, subject, text, html, cta = null, footerNote = ""}) {
   const recipient = normalizeEmail(to);
   if (!isValidEmail(recipient)) throw new Error("Invalid email recipient");
   if (!transactionalEmailIsLive()) {
@@ -246,7 +247,21 @@ async function sendTransactionalEmail({to, subject, text, html}) {
   const response = await fetch(url, {
     method: "POST",
     headers,
-    body: JSON.stringify({to: recipient, subject, message: text, html}),
+    /* Every outbound message goes through the branded shell here rather than at each call
+       site, so all of them stay consistent and nobody has to remember. ensureBranded is a
+       no-op on anything already wrapped. `text` is sent unchanged as the plain-text
+       alternative — clients that show it, and spam filters that read it, both prefer real
+       prose over stripped markup. */
+    body: JSON.stringify({
+      to: recipient,
+      subject,
+      message: text,
+      html: ensureBranded(html, {
+        preheader: text ? String(text).split("\n")[0].slice(0, 140) : "",
+        cta,
+        footerNote,
+      }),
+    }),
     signal: AbortSignal.timeout(15000),
   });
   if (!response.ok) throw new Error(`Transactional email failed (${response.status})`);
@@ -1430,8 +1445,10 @@ exports.createSponsorPaymentLink = onCall({
     const tourId = cleanText(request.data?.tourId, 128, "tourId", true);
     const sponsorId = cleanText(request.data?.sponsorId, 128, "sponsorId", true);
     const plan = cleanText(request.data?.plan, 40, "plan", true);
-    cloverPlanDetails(plan); // rejects unknown plans before anything is sent
-    const {sponsor} = await loadPayableSponsor(tourId, sponsorId);
+    const details = cloverPlanDetails(plan); // rejects unknown plans before anything is sent
+    const {tour, sponsor} = await loadPayableSponsor(tourId, sponsorId);
+    const tourName = cleanText(tour.name, 160, "tour name", true);
+    const amount = `$${(details.amountCents / 100).toFixed(2)}`;
 
     const email = normalizeEmail(sponsor.email);
     if (!isValidEmail(email)) {
@@ -1452,10 +1469,18 @@ exports.createSponsorPaymentLink = onCall({
     await sendTransactionalEmail({
       to: email,
       subject: "Complete your MarketReady Tours sponsorship",
-      text: `Hi ${sponsor.contactName || sponsor.name},\n\nYou can pay for your sponsorship here:\n${url}\n\nThe link stays valid; payment is processed securely by Clover.`,
-      html: `<p>Hi ${escapeHtml(sponsor.contactName || sponsor.name)},</p>` +
-        `<p><a href="${escapeHtml(url)}">Complete your sponsorship payment</a></p>` +
-        `<p>Payment is processed securely by Clover.</p>`,
+      text: `Hi ${sponsor.contactName || sponsor.name},\n\n` +
+        `Thanks for sponsoring ${tourName}. You are booked as a ${details.label} at ${amount}.\n\n` +
+        `Pay securely here:\n${url}\n\n` +
+        `Your sponsorship goes live on the tour page as soon as payment clears. ` +
+        `Payments are processed by Clover; a card surcharge may be applied at checkout.`,
+      html: `<p style="margin:0 0 14px;">Hi ${escapeHtml(sponsor.contactName || sponsor.name)},</p>` +
+        `<p style="margin:0 0 14px;">Thanks for sponsoring <strong>${escapeHtml(tourName)}</strong>. ` +
+        `You are booked as a <strong>${escapeHtml(details.label)}</strong> at <strong>${escapeHtml(amount)}</strong>.</p>` +
+        `<p style="margin:0 0 4px;">Use the button below to pay securely. Your sponsorship goes live on the ` +
+        `tour page as soon as payment clears.</p>`,
+      cta: {label: `Pay ${amount} securely`, url},
+      footerNote: "Payments are processed by Clover. A card surcharge may be applied at checkout.",
     });
 
     return {ok: true, sent: true, email};
