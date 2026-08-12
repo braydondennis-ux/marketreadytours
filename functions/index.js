@@ -35,6 +35,7 @@ const {
   verifyCloverWebhook,
 } = require("./lib/clover");
 const {ensureBranded} = require("./lib/email");
+const {sendViaResend} = require("./lib/resend");
 
 if (!getApps().length) initializeApp();
 
@@ -60,6 +61,8 @@ const SQUARE_LOCATION_ID = defineSecret("MRT_SQUARE_LOCATION_ID");
 const CLOVER_API_TOKEN = defineSecret("MRT_CLOVER_API_TOKEN");
 const CLOVER_MERCHANT_ID = defineSecret("MRT_CLOVER_MERCHANT_ID");
 const CLOVER_WEBHOOK_SECRET = defineSecret("MRT_CLOVER_WEBHOOK_SECRET");
+/* Resend — the transactional email sender, replacing the legacy Gmail SMTP path. */
+const RESEND_API_KEY = defineSecret("MRT_RESEND_API_KEY");
 const runtimeParam = (name) => ({value: () => process.env[name] || ""});
 const INSTANTLY_API_KEY = runtimeParam("MRT_INSTANTLY_API_KEY");
 const OUTBOUND_ALLOWLIST = runtimeParam("MRT_OUTBOUND_ALLOWLIST");
@@ -74,6 +77,11 @@ const callableOptions = {
   invoker: "public",
   enforceAppCheck: !isEmulator,
   cors: true,
+  /* Declared on every callable rather than per-function: ten different call sites reach
+     sendTransactionalEmail, and a missing secret surfaces only at runtime when someone tries
+     to send. Granting it everywhere costs nothing and removes a whole class of "works
+     locally, fails in production" bug. */
+  secrets: [RESEND_API_KEY],
 };
 
 function projectId() {
@@ -239,33 +247,48 @@ async function sendTransactionalEmail({to, subject, text, html, cta = null, foot
   if (!allowlistIsUnrestricted() && !secretAllowlist().has(recipient)) {
     throw new Error("Recipient is not on the dev outbound allowlist");
   }
+  /* Every outbound message goes through the branded shell here rather than at each call site,
+     so all of them stay consistent and nobody has to remember. ensureBranded is a no-op on
+     anything already wrapped. `text` is sent unchanged as the plain-text alternative —
+     clients that show it, and spam filters that read it, both prefer real prose. */
+  const brandedHtml = ensureBranded(html, {
+    preheader: text ? String(text).split("\n")[0].slice(0, 140) : "",
+    cta,
+    footerNote,
+  });
+
+  /* Resend is the sender as of 2026-08-12. It sends as noreply@marketreadytours.com with
+     SPF+DKIM published on the domain, so mail is DMARC-aligned. The previous path — the
+     legacy sendEmail function using consumer Gmail SMTP as marketreadytours@gmail.com — had
+     no cryptographic relationship to the brand domain and was inconsistently spam-filtered.
+     Falls back to that legacy sender only if no Resend key is configured, so a missing secret
+     degrades rather than silently drops mail. */
+  const resendKey = RESEND_API_KEY.value();
+  if (resendKey) {
+    const result = await sendViaResend({
+      apiKey: resendKey,
+      to: recipient,
+      subject,
+      text,
+      html: brandedHtml,
+    });
+    return {ok: true, mocked: false, provider: "resend", id: result.id};
+  }
+
   const url = TRANSACTIONAL_EMAIL_URL.value();
   if (!url) throw new Error("Transactional email service is not configured");
+  logger.warn("Resend key missing — falling back to the legacy Gmail sender", {subject});
   const headers = {"Content-Type": "application/json"};
   const idToken = await metadataIdToken(url);
   if (idToken) headers.Authorization = `Bearer ${idToken}`;
   const response = await fetch(url, {
     method: "POST",
     headers,
-    /* Every outbound message goes through the branded shell here rather than at each call
-       site, so all of them stay consistent and nobody has to remember. ensureBranded is a
-       no-op on anything already wrapped. `text` is sent unchanged as the plain-text
-       alternative — clients that show it, and spam filters that read it, both prefer real
-       prose over stripped markup. */
-    body: JSON.stringify({
-      to: recipient,
-      subject,
-      message: text,
-      html: ensureBranded(html, {
-        preheader: text ? String(text).split("\n")[0].slice(0, 140) : "",
-        cta,
-        footerNote,
-      }),
-    }),
+    body: JSON.stringify({to: recipient, subject, message: text, html: brandedHtml}),
     signal: AbortSignal.timeout(15000),
   });
   if (!response.ok) throw new Error(`Transactional email failed (${response.status})`);
-  return {ok: true, mocked: false};
+  return {ok: true, mocked: false, provider: "legacy"};
 }
 
 /* Mint a Google-signed OIDC identity token for `audience` from the metadata server.
@@ -1549,7 +1572,9 @@ exports.createSponsorCheckout = onCall({
 
 exports.createSponsorInvoice = onCall({
   ...callableOptions,
-  secrets: [SQUARE_ACCESS_TOKEN, SQUARE_LOCATION_ID],
+  /* RESEND_API_KEY must be repeated here: spreading callableOptions and then setting
+     `secrets` REPLACES the array rather than merging it, and this function sends email. */
+  secrets: [SQUARE_ACCESS_TOKEN, SQUARE_LOCATION_ID, RESEND_API_KEY],
 }, async (request) => {
   assertSafeProject();
   const {uid} = assertAdmin(request);
