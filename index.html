@@ -13482,6 +13482,7 @@ function ListingRequestsAdmin(_ref34) {
     setRequests,
     tourRequests,
     setTourRequests,
+    contactRequests = [],
     tours,
     setTours,
     onSaveTour,
@@ -13804,7 +13805,12 @@ function ListingRequestsAdmin(_ref34) {
     className: "mrt-seg__btn" + (section === "tour" ? " mrt-seg__btn--active" : "")
   }, LI("Inbox", 14), "Attendance", pendingTourReqs > 0 && /*#__PURE__*/React.createElement("span", {
     className: "mrt-seg__count"
-  }, pendingTourReqs)))), /*#__PURE__*/React.createElement("div", {
+  }, pendingTourReqs)), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setSection("contact"),
+    className: "mrt-seg__btn" + (section === "contact" ? " mrt-seg__btn--active" : "")
+  }, LI("Mail", 14), "Contact", (contactRequests || []).length > 0 && /*#__PURE__*/React.createElement("span", {
+    className: "mrt-seg__count"
+  }, (contactRequests || []).length)))), /*#__PURE__*/React.createElement("div", {
     style: {
       background: "#fff",
       borderBottom: "1px solid var(--mrt-hair)",
@@ -13822,7 +13828,42 @@ function ListingRequestsAdmin(_ref34) {
     }, icon, label, count > 0 && /*#__PURE__*/React.createElement("span", {
       className: "mrt-seg__count"
     }, count));
-  }))), section === "tour" ? /*#__PURE__*/React.createElement("div", {
+  }))), section === "contact" ? /*#__PURE__*/React.createElement("div", {
+    className: "mrt-admin-col",
+    style: {padding: "16px", maxWidth: 600, margin: "0 auto"}
+  }, (contactRequests || []).length === 0 ? /*#__PURE__*/React.createElement("div", {
+    style: {textAlign: "center", padding: "60px 20px", color: B.gray}
+  }, LI("Mail", 34, {color: "var(--mrt-subtle)"}), /*#__PURE__*/React.createElement("div", {
+    style: {marginTop: 10, fontSize: 15}
+  }, "No contact messages yet."), /*#__PURE__*/React.createElement("div", {
+    style: {marginTop: 4, fontSize: 13}
+  }, "Messages sent through the Contact form appear here."))
+    /* Newest first — these are leads, and the most recent matters most. */
+    : [...(contactRequests || [])].sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0)).map(req =>
+      /*#__PURE__*/React.createElement("div", {
+        key: req.id,
+        className: "mrt-card",
+        style: {padding: "16px 18px", marginBottom: 10}
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "baseline"}
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {fontWeight: 700, color: B.ink, fontSize: 15.5}
+      }, req.name || "(no name)"), /*#__PURE__*/React.createElement("div", {
+        style: {color: "var(--mrt-subtle)", fontSize: 12.5}
+      }, req.createdAt ? new Date(Number(req.createdAt)).toLocaleString() : "")),
+      /*#__PURE__*/React.createElement("div", {
+        style: {marginTop: 4, fontSize: 13.5, display: "flex", gap: 14, flexWrap: "wrap"}
+      }, req.email && /*#__PURE__*/React.createElement("a", {
+        href: "mailto:" + req.email,
+        style: {color: "var(--mrt-cobalt, #2F44A0)", textDecoration: "none"}
+      }, LI("Mail", 12), " ", req.email), req.phone && /*#__PURE__*/React.createElement("a", {
+        href: "tel:" + req.phone,
+        style: {color: "var(--mrt-cobalt, #2F44A0)", textDecoration: "none"}
+      }, LI("Phone", 12), " ", req.phone)),
+      req.message && /*#__PURE__*/React.createElement("div", {
+        style: {marginTop: 10, fontSize: 14, lineHeight: 1.6, color: B.dark, whiteSpace: "pre-wrap"}
+      }, req.message))
+    )) : section === "tour" ? /*#__PURE__*/React.createElement("div", {
     className: "mrt-admin-col",
     style: {
       padding: "16px",
@@ -14972,6 +15013,11 @@ function App() {
     if (!sessionStorage.getItem("gat_session")) return;
     lsSet("mrt_listing_requests", listingRequests);
   }, [listingRequests]);
+  /* submitIntake has always written contact-form submissions to mrt_contact_requests, but
+     nothing ever read them back, so they were invisible in the admin UI. Leads still reached
+     the team via Formspree, which is why nobody noticed. Admin-only: the rules restrict
+     reading this node to admin/super. */
+  const [contactRequests, setContactRequests] = useState([]);
   const [tourRequests, setTourRequests] = useState(() => MRT_SECURE_BACKEND ? [] : lsGet("mrt_tour_requests", []));
   useEffect(() => {
     if (!sessionStorage.getItem("gat_session")) return;
@@ -15122,6 +15168,7 @@ function App() {
       ...(isAnyAdmin ? {
         "mrt_listing_requests": val => setListingRequests(toList(val)),
         "mrt_tour_requests": val => setTourRequests(toList(val)),
+        "mrt_contact_requests": val => setContactRequests(toList(val)),
         "admins": val => setSubAdmins(toList(val).filter(user => user.active !== false && user.role !== "super").map(user => ({...user, id: user.uid || user.id})))
       } : {})
     } : {
@@ -15655,6 +15702,7 @@ function App() {
     setRequests: setListingRequests,
     tourRequests: tourRequests,
     setTourRequests: setTourRequests,
+    contactRequests: contactRequests,
     tours: mergedTours,
     setTours: setTours,
     onSaveTour: persistTour,
