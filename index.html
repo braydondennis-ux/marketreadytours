@@ -3888,6 +3888,10 @@ function TourSponsorsModal(_ref10) {
     setLogoPreview("");
     setHeadshotPreview("");
   };
+  /* The trash icon sits next to the edit pencil at 8px padding, so a mis-tap deleted a
+     sponsor outright — including a PAID one, taking them off the public tour page with no
+     undo. Confirm first, matching the tour-delete modal. */
+  const [confirmRemoveSponsor, setConfirmRemoveSponsor] = useState(null);
   const removeSponsor = id => {
     updateAndSave(sponsors.filter(sp => sp.id !== id));
   };
@@ -4504,7 +4508,7 @@ function TourSponsorsModal(_ref10) {
       className: "mrt-btn mrt-btn--ghost mrt-btn--sm",
       style: { padding: 8 }
     }, LI("Pencil", 15, { color: "var(--mrt-muted)" })), /*#__PURE__*/React.createElement("button", {
-      onClick: () => removeSponsor(sp.id),
+      onClick: () => setConfirmRemoveSponsor(sp),
       "aria-label": "Remove sponsor ".concat(sp.name),
       className: "mrt-btn mrt-btn--ghost mrt-btn--sm",
       style: { padding: 8 }
@@ -4539,7 +4543,7 @@ function TourSponsorsModal(_ref10) {
       style: {
         flex: 1
       }
-    }, React.createElement("span",{style:{display:"flex",alignItems:"center",gap:4}},LI("CreditCard",13),MRT_MANUAL_PAYMENTS ? "Send Invoice" : sp.invoiceId ? "Open Invoice" : MRT_SECURE_BACKEND ? "Create Test Invoice" : "Send Invoice"))));
+    }, React.createElement("span",{style:{display:"flex",alignItems:"center",gap:4}},LI("FileText",13),MRT_MANUAL_PAYMENTS ? "Manual Invoice (Venmo/Check)" : sp.invoiceId ? "Open Invoice" : MRT_SECURE_BACKEND ? "Create Test Invoice" : "Send Invoice"))));
   }), /*#__PURE__*/React.createElement("button", {
     onClick: startAdd,
     className: "mrt-btn mrt-btn--gold",
@@ -4549,7 +4553,47 @@ function TourSponsorsModal(_ref10) {
   }, "+ Add Sponsor"), /*#__PURE__*/React.createElement("button", {
     onClick: onClose,
     className: "mrt-btn mrt-btn--navy"
-  }, LI("Check", 16), " Done")), showPayment && /*#__PURE__*/React.createElement("div", {
+  }, LI("Check", 16), " Done")), confirmRemoveSponsor && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed", inset: 0, background: "rgba(0,0,0,.75)", zIndex: 700,
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 20
+    },
+    onClick: () => setConfirmRemoveSponsor(null)
+  }, /*#__PURE__*/React.createElement("div", {
+    onClick: e => e.stopPropagation(),
+    style: {
+      background: "#fff", borderRadius: 16, padding: "28px 24px",
+      width: "100%", maxWidth: 380, textAlign: "center"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {display: "flex", justifyContent: "center", marginBottom: 12}
+  }, LI("Trash2", 34, {color: "var(--mrt-red)"})), /*#__PURE__*/React.createElement("h3", {
+    style: {color: B.dark, fontSize: 18, marginBottom: 8}
+  }, "Remove this sponsor?"), /*#__PURE__*/React.createElement("p", {
+    style: {color: B.gray, fontSize: 14, marginBottom: 8}
+  }, confirmRemoveSponsor.name || "This sponsor", " will be removed from this tour."),
+  /* A paid sponsor has given money and is publicly listed — say so plainly rather than
+     letting an admin discover it afterwards. */
+  (confirmRemoveSponsor.paid === true || confirmRemoveSponsor.paymentStatus === "paid") &&
+    /*#__PURE__*/React.createElement("p", {
+      style: {color: "var(--mrt-red)", fontSize: 13.5, marginBottom: 8, fontWeight: 600}
+    }, "This sponsor has PAID. Removing them takes their listing off the public tour page."),
+  /*#__PURE__*/React.createElement("p", {
+    style: {color: B.gray, fontSize: 13, marginBottom: 22}
+  }, "This can't be undone."), /*#__PURE__*/React.createElement("div", {
+    style: {display: "flex", gap: 10}
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setConfirmRemoveSponsor(null),
+    className: "mrt-btn mrt-btn--ghost",
+    style: {flex: 1}
+  }, "Cancel"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      removeSponsor(confirmRemoveSponsor.id);
+      setConfirmRemoveSponsor(null);
+    },
+    className: "mrt-btn",
+    style: {flex: 1, background: "var(--mrt-red)", color: "#fff"}
+  }, "Remove")))), showPayment && /*#__PURE__*/React.createElement("div", {
     style: {
       position: "absolute",
       inset: 0,

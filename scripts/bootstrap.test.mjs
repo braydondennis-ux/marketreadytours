@@ -131,7 +131,11 @@ test("Square Sandbox invoicing cannot be exposed on production", async () => {
     clientSource,
     /\(sp\.email \|\| sp\.phone\) && !sponsorPaid && MRT_SPONSOR_PAYMENT_ACTIONS/,
   );
-  assert.match(clientSource, /MRT_MANUAL_PAYMENTS \? "Send Invoice"/);
+  /* What matters is that production takes the MANUAL branch rather than exposing Square
+     sandbox invoicing — not the button's wording. Previously pinned to the exact string
+     "Send Invoice", which broke when the label was clarified to distinguish it from the
+     Clover payment link. Assert the guard, not the copy. */
+  assert.match(clientSource, /MRT_MANUAL_PAYMENTS \? "[^"]*Invoice[^"]*"/);
   assert.match(
     functionSource,
     /return isEmulator \|\| projectId\(\) === "marketready-tours-dev"/,
