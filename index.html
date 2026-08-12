@@ -1522,7 +1522,10 @@ function LoginPage(_ref5) {
       marginTop: 6,
       lineHeight: 1.5
     }
-  }, "Check your inbox for a link to reset your password. It may take a minute to arrive.")), /*#__PURE__*/React.createElement("button", {
+  /* Mail is sent through consumer Gmail SMTP with no SPF/DKIM alignment for
+     marketreadytours.com, so it is inconsistently spam-filtered. Until transactional mail
+     moves to a domain-authenticated sender, tell people where to look. */
+  }, "Check your inbox for a link to reset your password. It may take a minute to arrive — if you don't see it, check your spam or junk folder.")), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setForgotMode(false);
       setResetStatus("");
@@ -3832,7 +3835,7 @@ function TourSponsorsModal(_ref10) {
         plan: sp.paymentPlan || "full",
         requestId: mrtRequestId("sponsor-pay-link")
       });
-      showToast("Payment link emailed to " + sp.email + ".", "success", 5000);
+      showToast("Payment link emailed to " + sp.email + ". Ask them to check spam if it doesn't arrive.", "success", 7000);
     } catch (error) {
       showToast(error.message || "Could not send the payment link.", "error", 6000);
     } finally {
@@ -11936,9 +11939,9 @@ function TeamPage(_ref28) {
         showToast(
           _USE_DEV
             ? "\u2705 Team member created. Setup email is queued."
-            : "\u2705 Team member created. Firebase sent the setup email.",
+            : "\u2705 Team member created. Setup email sent \u2014 ask them to check spam if it doesn't arrive.",
           "success",
-          5000,
+          7000,
         );
         return;
       }
