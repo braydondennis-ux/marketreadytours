@@ -3,21 +3,20 @@
 _Updated 2026-08-13. **These controls are deployed and live in production.** The previous
 version of this file said they were not; that was true until the 2026-08-10 cutover._
 
-## Open exposure — read this first
+## Legacy `mrt_tours` exposure — CLOSED 2026-08-13 (M5)
 
-**Legacy `mrt_tours` is world-readable.** An unauthenticated request returns 38 unpaid sponsors
-with name/email/phone, 33 tour access codes, and 84 distinct agent emails (re-measured
-2026-08-13).
+Until 2026-08-13 an unauthenticated request to `mrt_tours` returned 38 unpaid sponsors with
+name/email/phone, 33 tour access codes, and 84 distinct agent emails. **The node has been
+deleted**; that request now returns `null`.
 
-This is a **known, deliberate trade-off**, not a defect — it is the price of keeping rollback
-available, and the reasoning is recorded in a `"//"` comment inside
-`database.rules.transition.json`. The rollback target `cd6f980` performs no authentication at
-all, so requiring auth on this node would make a rolled-back site load nothing.
-`scripts/production-cutover.test.mjs:150` asserts the permissive rule on purpose.
+The read rule was deliberately left permissive and **must stay that way**. The rollback build
+performs no authentication at all, so requiring auth would make a rolled-back site load nothing
+— `scripts/production-cutover.test.mjs` asserts the permissive rule on purpose. Absence of the
+data is what closes the exposure; the rule is what preserves rollback.
 
-**Do not "fix" this by tightening the rule.** The fix is to delete the node when the rollback
-window closes. New data is unaffected — the exposure is the frozen pre-cutover copy. Detail,
-including the two-rules-files trap, in `docs/TODO.md` item 1 (audit item M5).
+Rollback was rehearsed immediately after the delete: `scripts/rebuild-legacy-mrt-tours.mjs`
+reconstructs all 36 tours in the original array order (which matters — legacy ratings are keyed
+by array position). Backup of the node as deleted: `.mrt-backups/mrt_tours-2026-08-13/`.
 
 ## Implemented
 

@@ -11,16 +11,21 @@ Resend. 36 tours, with `mrt_tours_private` and `mrt_tours_public` in sync. Erik 
 
 ## ROLLBACK RUNBOOK — read this before rolling back
 
-**Rolling back is TWO steps, not one. Pushing `cd6f980` alone will serve STALE tours.** The
-legacy build reads `mrt_tours`, which is no longer maintained — the refresh writes to
-`mrt_tours_private` and the server projects `mrt_tours_public`. `mrt_tours` is only regenerated
-by the rebuild script, so it silently misses every tour created since the cutover. Verified
-2026-08-13: `mrt_tours` held 35 tours while `mrt_tours_public` held 36 — the North Phoenix tour
-created 2026-08-12 was absent. Rebuild first, or roll back onto data that is missing work.
+**Rolling back is TWO steps, not one. Pushing `cd6f980` alone will serve a site with ZERO
+tours.** The legacy build reads `mrt_tours`. **That node was DELETED on 2026-08-13** to close
+audit M5 — it was world-readable and held 38 unpaid sponsors' contact details, 33 tour access
+codes and 84 agent emails. Step 1 below rebuilds it from `mrt_tours_private`; it is mandatory,
+not optional.
 
-(Audit M5 would delete `mrt_tours` outright; it has NOT been applied, so the node still exists
-and is still publicly readable. If M5 is ever closed, rolling back without step 1 serves ZERO
-tours rather than stale ones.)
+The read rule on `mrt_tours` was deliberately LEFT PERMISSIVE (`.read: true`). Do not tighten
+it: the rollback build performs no authentication at all, so a rebuilt node must stay readable
+for it to work. The node being absent is what closes the exposure; the rule is what keeps
+rollback possible.
+
+Rehearsed 2026-08-13 immediately after the delete — the script reports `mrt_tours` absent and
+reconstructs all 36 tours in the original array order. Three recovery paths exist: this script
+(current data), `.mrt-backups/mrt_tours-2026-08-13/` (the node exactly as deleted), and the
+2026-08-10 cutover snapshots.
 
 ```bash
 cd "/Users/erikyoungberg-aspelin/Desktop/Market Ready/Market Ready Tours/mrt/marketreadytours"

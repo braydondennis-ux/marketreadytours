@@ -6,52 +6,27 @@ Verified items note how they were confirmed, so nobody has to re-derive it.
 
 ---
 
-## 🔴 1. Legacy `mrt_tours` is world-readable — M5, the cost of keeping rollback
+## ✅ 1. Legacy `mrt_tours` PII exposure — CLOSED 2026-08-13 (M5)
 
-**This is live and needs no credentials.** Re-measured 2026-08-13 with an **unauthenticated**
-request to `https://marketready-tours-default-rtdb.firebaseio.com/mrt_tours.json`: 35 tours, 38
-unpaid sponsors with name + email + phone, 33 tour access codes, 84 distinct agent emails. e.g.
-`Local Mortgage | jeff@localmortgage.com | 6023161263`, a sponsor who has not paid.
+Until 2026-08-13 an unauthenticated request to
+`https://marketready-tours-default-rtdb.firebaseio.com/mrt_tours.json` returned 35 tours, 38
+unpaid sponsors with name + email + phone, 33 tour access codes and 84 distinct agent emails.
+**The node has been deleted.** That request now returns `null`.
 
-**This is deliberate, not an oversight, and tightening the rule is the WRONG fix.** The reasoning
-is recorded in a `"//"` comment inside `database.rules.transition.json` — read it before acting.
-In short: the rollback target `cd6f980` performs **no authentication at all** (zero
-`signInAnonymously` calls), so any auth requirement on this node makes the rolled-back site load
-nothing. `scripts/production-cutover.test.mjs:150` asserts `.read: true` **on purpose** — a test
-failure there means someone tried this and it will break rollback.
+**The read rule stays permissive on purpose — do not tighten it.** The rollback build
+(`cd6f980`) performs no authentication at all, so requiring auth would make a rolled-back site
+load nothing. `scripts/production-cutover.test.mjs` asserts `.read: true` deliberately. Absence
+of the data closes the exposure; the permissive rule preserves rollback.
 
-**The fix is to DELETE the node once the rollback window closes.** Not to restrict it.
+Rollback was rehearsed against the real post-delete state: `rebuild-legacy-mrt-tours.mjs`
+reports the node absent and reconstructs all 36 tours in original array order. Recovery paths:
+that script (current data), `.mrt-backups/mrt_tours-2026-08-13/` (the node exactly as deleted),
+and the 2026-08-10 cutover snapshots.
 
-**Careful — two rules files, and `firebase.json` points at the wrong one for current reality:**
-
-| file | `mrt_tours` | status |
-| --- | --- | --- |
-| `database.rules.transition.json` | `.read: true` | **what is actually deployed** |
-| `database.rules.json` | `.read: false` | the target state, **not deployed** |
-| `firebase.json` → `database.rules` | → `database.rules.json` | so a plain deploy publishes the strict file |
-
-So **`firebase deploy --only database` would publish the strict rules** and silently break
-rollback readability. It would not break the live site — the refresh reads `mrt_tours_public`,
-which is `.read: true` in both files. Know which one you are shipping.
-
-**When closing this:** back up first (`.mrt-backups/` holds the 2026-08-10 snapshots), confirm
-`node scripts/rebuild-legacy-mrt-tours.mjs` runs cleanly, then delete the node and update the
-cutover test that asserts the permissive rule. A `close-m5.sh` existed during the 2026-08 work
-but lived in a scratch directory and is **gone** — it is not in `scripts/`.
-
-**Not the same as sponsorship gating, which is done.** New data is safe: `publicSponsor()`
-returns `null` for unpaid sponsors, so they never reach `mrt_tours_public`. The exposure is the
-frozen pre-cutover copy.
-
-**Rollback is not a reason to keep it.** The runbook already regenerates `mrt_tours` from
-`mrt_tours_private` via `scripts/rebuild-legacy-mrt-tours.mjs`, and it *must* be run at rollback
-time regardless, because the legacy node is stale — 35 tours against 36 in the public projection
-as of 2026-08-13. Keeping it buys nothing and costs the exposure above.
-
-Also worth confirming as part of this: that no unpaid sponsor leaks through share/OG preview
-images, tour route email, campaign email, or the seller report.
-
----
+**Still true — two rules files.** `database.rules.transition.json` is what production runs;
+`database.rules.json` is the stricter target state and is NOT deployed; `firebase.json` points
+at the strict one. So `firebase deploy --only database` would publish the strict rules and break
+rollback readability without breaking the live site. Know which file you are shipping.
 
 ## 🔴 2. Tour reminders do not work, and a real tour is scheduled
 
