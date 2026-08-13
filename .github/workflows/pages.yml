@@ -93,3 +93,47 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+      # Cloudflare edge-caches the HTML (see the Cache Rule on marketreadytours.com), so a
+      # deploy is invisible to visitors until the cached copy expires. Purge it here rather
+      # than relying on the TTL, otherwise "I deployed but the site is unchanged" becomes a
+      # recurring false alarm.
+      #
+      # This step must never fail the deploy: the deploy has ALREADY succeeded by this point,
+      # and a purge failure means "stale for up to the TTL", not "broken". It is skipped
+      # automatically when the secrets are absent, so forks and the dev flow are unaffected.
+      - name: Purge Cloudflare cache
+        continue-on-error: true
+        env:
+          CF_ZONE: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          # The skip check lives here, not in an `if:` — step-level env is not available to
+          # that step's own `if:` condition, so the guard would silently never fire.
+          if [ -z "$CF_ZONE" ] || [ -z "$CF_TOKEN" ]; then
+            echo "Cloudflare secrets not configured — skipping purge."
+            echo "Set CLOUDFLARE_ZONE_ID and CLOUDFLARE_API_TOKEN to enable it."
+            exit 0
+          fi
+          echo "Purging cached HTML for marketreadytours.com"
+          response=$(curl -sS -w '\n%{http_code}' -X POST \
+            "https://api.cloudflare.com/client/v4/zones/$CF_ZONE/purge_cache" \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data '{"files":[
+              "https://marketreadytours.com/",
+              "https://marketreadytours.com/index.html",
+              "https://marketreadytours.com/manifest.json",
+              "https://marketreadytours.com/offline.html",
+              "https://marketreadytours.com/privacy-policy.html",
+              "https://marketreadytours.com/sw.js"
+            ]}')
+          code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | sed '$d')
+          if [ "$code" = "200" ] && echo "$body" | grep -q '"success":true'; then
+            echo "Cache purged."
+          else
+            echo "::warning::Cache purge failed (HTTP $code). The deploy succeeded; visitors"
+            echo "::warning::may see the previous version until the edge TTL expires."
+            echo "$body" | head -c 400
+          fi
