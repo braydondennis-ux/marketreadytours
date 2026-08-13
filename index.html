@@ -100,8 +100,19 @@ textarea,input,select{font-family:inherit}
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 .fade-in{animation:fadeIn .35s cubic-bezier(.4,0,.2,1)}
-/* Subtle staggered entrance for tour cards on first load (fill:both so the stagger delay stays hidden) */
-.mrt-fade-stagger{animation:fadeIn .5s cubic-bezier(.2,.7,.3,1) both}
+/* Subtle entrance for tour cards on first load.
+   NO fill-mode and NO animation-delay, both deliberately. This previously read
+   `animation:fadeIn .5s ... both` with an inline animationDelay of up to 0.9s. The backwards
+   half of `both` applies the keyframe's `from` state during the delay — opacity:0 — so a card
+   that never actually ran its animation stayed invisible FOREVER. On mobile Safari that meant
+   tour cards present in the accessibility tree but blank on screen: the entire site looked
+   empty to an iPhone visitor, and only switching tabs (forcing a re-render that drops this
+   class) brought them back. Found by audit 2026-08-13; the identical bug had already been
+   fixed once on ranking cards.
+   Without fill-mode the element's own opacity:1 applies whenever the animation is not running,
+   so the worst case is now "no animation" rather than "invisible content". The delay goes too —
+   with no backwards fill a stagger would show the card, then blink it to 0 when its turn came. */
+.mrt-fade-stagger{animation:fadeIn .5s cubic-bezier(.2,.7,.3,1)}
 /* Cobalt focus ring — 3px halo clears WCAG 2.2 focus-appearance on both canvas and card */
 input:focus,textarea:focus,select:focus{outline:none;border-color:#2F44A0!important;box-shadow:0 0 0 3px rgba(47,68,160,.22)!important}
 /* Keyboard-only focus for every other interactive element (was previously unstyled) */
@@ -11708,23 +11719,27 @@ function ToursDashboard(_ref26) {
     return /*#__PURE__*/React.createElement("div", {
       key: tour.id,
       className: "mrt-card mrt-card--soft mrt-press" + (didAnimateRef.current ? "" : " mrt-fade-stagger"),
+      /* This card is a CONTAINER, not a control. It previously carried role="button",
+         tabIndex=0 and an Enter/Space handler while also containing real <button> elements
+         (Duplicate / Archive / Delete) and the "Open Tour" button below. Nesting interactive
+         elements is invalid, and Safari flattened the card and its admin controls into a
+         single ambiguous accessibility control — activating what looked like the card fired
+         Duplicate instead, creating a real duplicate tour in production on 2026-08-13.
+
+         The accessible activator is the "Open Tour" button at the foot of the card, which
+         already existed. The onClick below stays purely as a mouse convenience for clicking
+         the card body; it adds no keyboard or assistive-technology surface, so nothing is
+         nested inside anything interactive. Do not restore role/tabIndex/onKeyDown here. */
       onClick: () => {
         setActiveTourId(tour.id);
         window.location.hash = "/tour/" + tour.id;
       },
-      role: "button",
-      tabIndex: 0,
-      onKeyDown: e => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          setActiveTourId(tour.id);
-          window.location.hash = "/tour/" + tour.id;
-        }
-      },
       style: {
         overflow: "hidden",
         cursor: "pointer",
-        animationDelay: didAnimateRef.current ? void 0 : (Math.min(_i, 10) * 0.09) + "s",
+        /* No animationDelay — see .mrt-fade-stagger. A stagger needs backwards fill to keep the
+           card hidden until its turn, and that fill is exactly what left cards permanently
+           invisible in Safari. Content visibility beats a 0.9s flourish. */
         boxShadow: _dAway===0?"0 0 0 2px "+B.red+",0 6px 28px rgba(155,28,28,.18)":"var(--mrt-shadow-soft)"
       }
     }, /*#__PURE__*/React.createElement("div", {
@@ -11804,7 +11819,20 @@ function ToursDashboard(_ref26) {
       }
     }, LI("Heart", 12, { color: "#A23B38" }), favCount)))), isAdmin && /*#__PURE__*/React.createElement("div",{style:{display:"flex",gap:4,flexShrink:0,marginTop:1}},
       /*#__PURE__*/React.createElement("button",{
-        onClick:async e=>{e.stopPropagation();const _c={...tour,id:uid("tour"),version:0,name:tour.name+" (Copy)",ratings:{},ratingSubmissions:{},favorites:{},notes:{},campaignContacts:[],createdBy:(currentUser&&currentUser.email)||SUPER_ADMIN_EMAIL};try{if(onSaveTour)await onSaveTour(_c);else setTours(prev=>[...prev,_c]);showToast("Tour duplicated \u2014 tap to update the date.","success",3500);}catch(err){showToast("\u26A0\uFE0F "+(err.message||"Tour could not be duplicated."),"error",6000);}},
+        onClick:async e=>{e.stopPropagation();
+          /* A copy must not inherit anything that identifies the original or asserts money.
+             Sponsors get fresh ids and are reset to unpaid — otherwise a sponsor who paid for
+             one tour is published on two, and the duplicated sponsor ids break markSponsorPaid
+             and the Clover webhook, which key on tourId + sponsorId. The access `code` is
+             regenerated so the copy cannot unlock ratings on the original. The server enforces
+             the unpaid part regardless (see sanitizeSponsorPayments); this keeps the UI honest
+             about what it is about to create. */
+          const _sponsors=(Array.isArray(tour.sponsors)?tour.sponsors:[]).map(sp=>{
+            const _s={...sp,id:uid("sp"),paid:false,paymentStatus:"unpaid"};
+            delete _s.paymentMethod;delete _s.paidAt;delete _s.paymentRef;
+            return _s;
+          });
+          const _c={...tour,id:uid("tour"),version:0,name:tour.name+" (Copy)",code:String(Math.floor(1000+Math.random()*9000)),sponsors:_sponsors,ratings:{},ratingSubmissions:{},favorites:{},notes:{},campaignContacts:[],createdBy:(currentUser&&currentUser.email)||SUPER_ADMIN_EMAIL};try{if(onSaveTour)await onSaveTour(_c);else setTours(prev=>[...prev,_c]);showToast("Tour duplicated \u2014 tap to update the date.","success",3500);}catch(err){showToast("\u26A0\uFE0F "+(err.message||"Tour could not be duplicated."),"error",6000);}},
         title:"Duplicate tour",
         "aria-label":"Duplicate "+tour.name,
         className:"btn-hover",

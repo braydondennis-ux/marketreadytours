@@ -321,6 +321,43 @@ async function metadataIdToken(audience) {
   }
 }
 
+/* Payment state belongs to the server, never to the caller.
+   `normalizeTourForWrite` spreads the client's tour wholesale, and sponsors ride along inside
+   it — so before this existed, any saveTour could assert `paid: true` and the sponsor was
+   published as paid without a payment. That is how the accidental duplicate on 2026-08-13
+   published two paid sponsorships: the Duplicate button copied the sponsors verbatim, including
+   their paid flags AND their sponsor ids, and the server took the client's word for it.
+
+   Payment fields are therefore carried over from the PREVIOUS server-side record, matched by
+   sponsor id, and default to unpaid. A brand-new tour has no previous record, so its sponsors
+   are always unpaid no matter what the client sends. Only markSponsorPaid and the Clover
+   webhook — which write mrt_tours_private directly — can move a sponsor into the paid state. */
+const SPONSOR_PAYMENT_FIELDS = ["paid", "paymentStatus", "paymentMethod", "paidAt", "paymentRef"];
+
+function sanitizeSponsorPayments(rawSponsors, previousSponsors) {
+  if (!Array.isArray(rawSponsors)) return rawSponsors;
+  const priorById = new Map();
+  for (const prior of Array.isArray(previousSponsors) ? previousSponsors : []) {
+    if (prior && prior.id) priorById.set(String(prior.id), prior);
+  }
+  return rawSponsors.map((sponsor) => {
+    if (!sponsor || typeof sponsor !== "object") return sponsor;
+    const next = {...sponsor};
+    for (const field of SPONSOR_PAYMENT_FIELDS) delete next[field];
+    const prior = priorById.get(String(sponsor.id));
+    if (prior) {
+      for (const field of SPONSOR_PAYMENT_FIELDS) {
+        if (prior[field] !== undefined) next[field] = prior[field];
+      }
+    }
+    if (next.paid !== true) {
+      next.paid = false;
+      next.paymentStatus = prior && prior.paymentStatus ? prior.paymentStatus : "unpaid";
+    }
+    return next;
+  });
+}
+
 function normalizeTourForWrite(raw, uid, previous = null) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     throw new HttpsError("invalid-argument", "tour must be an object.");
@@ -355,6 +392,8 @@ function normalizeTourForWrite(raw, uid, previous = null) {
   delete next.ratings;
   delete next.ratingSubmissions;
   delete next.favorites;
+  // Sponsors carry money state, so they are re-derived from the server record, not the client.
+  next.sponsors = sanitizeSponsorPayments(raw.sponsors, previous?.sponsors);
   // Validate the materialized view before the private transaction commits so a malformed
   // public asset cannot leave private/public tour records at different versions.
   publicTourProjection(next);

@@ -63,6 +63,31 @@ test("Safari-safe rankings do not depend on the entrance animation", async () =>
   assert.doesNotMatch(rankingPage, /className: "fade-in mrt-card mrt-press"/);
 });
 
+/* Added 2026-08-13. Tour cards were invisible on mobile Safari — present in the accessibility
+   tree, blank on screen, so the whole site looked empty to an iPhone visitor. Cause:
+   `.mrt-fade-stagger` used `animation: fadeIn .5s ... both` together with an inline
+   animationDelay of up to 0.9s. The backwards half of `both` paints the keyframe's `from`
+   state (opacity:0) during that delay, so a card whose animation never ran stayed hidden
+   permanently.
+
+   This is the SECOND time this class of bug shipped — see the ranking-card test above. The
+   rule is that content visibility must never depend on an animation having run. */
+test("tour cards stay visible when the entrance animation does not run", async () => {
+  const source = await readFile(new URL("../index.html", import.meta.url), "utf8");
+
+  const stagger = source.match(/\.mrt-fade-stagger\{animation:[^}]*\}/);
+  assert.ok(stagger, ".mrt-fade-stagger rule is present");
+
+  // No fill-mode. `both`/`backwards` reintroduce the invisible-forever failure.
+  assert.doesNotMatch(stagger[0], /\b(both|backwards)\b/);
+
+  // No stagger delay: without backwards fill a delay makes cards blink from visible to hidden.
+  assert.doesNotMatch(source, /animationDelay:/);
+
+  // The keyframe itself may still start transparent — that is fine once nothing fills backwards.
+  assert.match(source, /@keyframes fadeIn\{from\{opacity:0/);
+});
+
 test("admin sign-in and profile reads cannot remain pending forever", async () => {
   const source = await readFile(new URL("../index.html", import.meta.url), "utf8");
 
@@ -215,6 +240,55 @@ test("deleting a tour survives the modal passing a bare id string", async () => 
   );
   assert.match(del, /cleanText\(request\.data\?\.tourId, 128, "tourId", true\)/);
   assert.match(del, /expectedVersion/);
+});
+
+/* Added 2026-08-13 after an accessibility audit accidentally created a real tour in production.
+   The tour card was role="button" tabIndex=0 while containing real <button> elements for
+   Duplicate / Archive / Delete. Safari flattened that into one ambiguous control, so activating
+   what looked like the card fired Duplicate. The accessible activator is the "Open Tour" button
+   that already existed inside the card. */
+test("the tour card is a container, not a control wrapping other controls", async () => {
+  const source = await readFile(new URL("../index.html", import.meta.url), "utf8");
+
+  const cardStart = source.indexOf('className: "mrt-card mrt-card--soft mrt-press"');
+  assert.ok(cardStart > 0, "tour card element is present");
+  const card = source.slice(cardStart, cardStart + 900);
+
+  assert.doesNotMatch(card, /role: "button"/);
+  assert.doesNotMatch(card, /tabIndex: 0/);
+  assert.doesNotMatch(card, /onKeyDown/);
+
+  // The real, focusable way into a tour must still exist.
+  assert.match(source, /className: "btn-hover mrt-press mrt-tourcard-open"/);
+  assert.match(source, /"Open Tour"/);
+});
+
+/* Added 2026-08-13. Duplicating a tour cloned its sponsors verbatim — same ids, and
+   paid: true — so a sponsor who paid for one tour was published on two, and tourId+sponsorId
+   stopped being unique for markSponsorPaid and the Clover webhook. It also cloned the access
+   code, letting a copy unlock ratings on the original. */
+test("duplicating a tour does not clone payments, sponsor ids, or the access code", async () => {
+  const [source, functionsSource] = await Promise.all([
+    readFile(new URL("../index.html", import.meta.url), "utf8"),
+    readFile(new URL("../functions/index.js", import.meta.url), "utf8"),
+  ]);
+
+  const dup = source.slice(source.indexOf('name:tour.name+" (Copy)"') - 900,
+    source.indexOf('name:tour.name+" (Copy)"') + 300);
+  assert.match(dup, /id:uid\("sp"\)/);
+  assert.match(dup, /paid:false/);
+  assert.match(dup, /paymentStatus:"unpaid"/);
+  assert.match(dup, /code:String\(Math\.floor\(1000\+Math\.random\(\)\*9000\)\)/);
+
+  /* The server is the real guarantee — the client is only being honest about intent. Payment
+     fields must come from the stored record, never from the request. */
+  assert.match(functionsSource, /function sanitizeSponsorPayments/);
+  assert.match(functionsSource, /next\.sponsors = sanitizeSponsorPayments\(raw\.sponsors, previous\?\.sponsors\)/);
+  const sanitize = functionsSource.slice(
+    functionsSource.indexOf("function sanitizeSponsorPayments"),
+    functionsSource.indexOf("function normalizeTourForWrite"),
+  );
+  assert.match(sanitize, /for \(const field of SPONSOR_PAYMENT_FIELDS\) delete next\[field\]/);
 });
 
 test("production preserves secure manual sponsor payment operations", async () => {
