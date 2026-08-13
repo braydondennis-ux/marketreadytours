@@ -182,6 +182,41 @@ test("exactly one sender handles each account email, and it is ours", async () =
   );
 });
 
+/* Added 2026-08-13 after deleting a tour failed in production with an opaque INTERNAL 500.
+   The confirm modal stores an id STRING (`setConfirmDelete(tour.id)`) and passes it to
+   `persistDeleteTour`, which read `.id` off it — undefined on a string — so the callable got
+   no tourId and threw. Both call sites looked correct in isolation; only the seam was wrong.
+   Pin the seam: the modal keeps passing an id, and the handler keeps accepting one. */
+test("deleting a tour survives the modal passing a bare id string", async () => {
+  const [source, functionsSource] = await Promise.all([
+    readFile(new URL("../index.html", import.meta.url), "utf8"),
+    readFile(new URL("../functions/index.js", import.meta.url), "utf8"),
+  ]);
+
+  // The modal stores an id, not the tour object.
+  assert.match(source, /setConfirmDelete\(tour\.id\)/);
+
+  // …so the handler must accept a string as well as an object.
+  assert.match(source, /persistDeleteTour = async tourOrId/);
+  assert.match(source, /typeof tourOrId === "string" \? tourOrId : tourOrId\?\.id/);
+
+  // It must never send `.id` of a possibly-string argument again.
+  const handler = source.slice(
+    source.indexOf("const persistDeleteTour"),
+    source.indexOf("const mergedTours"),
+  );
+  assert.doesNotMatch(handler, /tourId: tour\.id/);
+  assert.doesNotMatch(handler, /Number\(tour\.version/);
+
+  // The server still requires both fields, which is what made the mismatch fatal.
+  const del = functionsSource.slice(
+    functionsSource.indexOf("exports.deleteTour"),
+    functionsSource.indexOf("exports.", functionsSource.indexOf("exports.deleteTour") + 10),
+  );
+  assert.match(del, /cleanText\(request\.data\?\.tourId, 128, "tourId", true\)/);
+  assert.match(del, /expectedVersion/);
+});
+
 test("production preserves secure manual sponsor payment operations", async () => {
   const [clientSource, functionSource] = await Promise.all([
     readFile(new URL("../index.html", import.meta.url), "utf8"),

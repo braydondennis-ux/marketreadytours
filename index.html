@@ -15408,19 +15408,32 @@ function App() {
       throw error;
     }
   };
-  const persistDeleteTour = async tour => {
+  /* Accepts either a tour object or a bare tour id. The confirm modal stores an id string
+     (`setConfirmDelete(tour.id)`) and hands that straight to this function, so reading `.id`
+     off it yielded undefined and the callable rejected the request with "tourId is required"
+     — surfacing as an opaque INTERNAL 500 rather than anything actionable. The same slip made
+     `version` undefined, so expectedVersion fell to 0 and would have failed the optimistic
+     concurrency check even once the id was fixed. Resolve both from state by id. */
+  const persistDeleteTour = async tourOrId => {
+    const tourId = typeof tourOrId === "string" ? tourOrId : tourOrId?.id;
+    if (!tourId) throw new Error("This tour is missing an id, so it cannot be deleted.");
     if (!MRT_SECURE_BACKEND) {
-      setTours(prev => prev.filter(t => t.id !== tour.id));
+      setTours(prev => prev.filter(t => t.id !== tourId));
       return;
     }
+    // Prefer the version held in state — it is what the last server write returned.
+    const known = tours.find(t => t.id === tourId);
+    const expectedVersion = Number(
+      (known && known.version) || (typeof tourOrId === "object" && tourOrId?.version) || 0
+    );
     setMutationState("saving");
     try {
       await mrtCall("deleteTour", {
-        tourId: tour.id,
-        expectedVersion: Number(tour.version || 0),
+        tourId: tourId,
+        expectedVersion: expectedVersion,
         requestId: mrtRequestId("delete-tour")
       });
-      setTours(prev => prev.filter(t => t.id !== tour.id));
+      setTours(prev => prev.filter(t => t.id !== tourId));
       setMutationState("saved");
       setTimeout(() => setMutationState("idle"), 1800);
     } catch (error) {
