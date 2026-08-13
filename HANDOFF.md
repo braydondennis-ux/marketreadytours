@@ -454,6 +454,37 @@ model:
 - The exact legacy email relay remains in use for transactional admin email.
 - Instantly remains disabled. New Square/Stripe payment flows remain disabled.
 
+## Cloudflare caching — a deploy takes up to 10 minutes to appear (2026-08-13)
+
+The site is edge-cached. **After pushing to `main`, the change is live at the origin but
+visitors keep getting the previous version for up to 10 minutes.** That is expected. Do not
+re-deploy chasing it, and do not assume the build failed.
+
+To make a deploy visible immediately: Cloudflare → Caching → Configuration → **Purge Everything**.
+
+Until 2026-08-13 a Cache Rule named "No Cache" bypassed the cache for *all* incoming requests —
+almost certainly a cutover-era measure to guarantee fresh content, left in place afterwards.
+Every request therefore reached the GitHub Pages origin: TTFB measured 94ms–3558ms, wildly
+variable. That rule is now `Cache at edge (respect origin TTL)`, action **Eligible for cache**,
+still matching all requests, with **no** optional settings — Edge TTL and Browser TTL are
+deliberately unset so both inherit the origin's `cache-control: max-age=600`. Measured after:
+100% hit rate, mean TTFB 183ms, worst case 302ms.
+
+Leave Browser TTL unset. A cache purge cannot clear what is already in a visitor's browser, so
+that is the one setting here that cannot be undone from the dashboard.
+
+**Why no `/sw.js` carve-out.** The obvious instinct is to exclude the service worker so it can
+never go stale. That is backwards: Cloudflare caches `.js` by DEFAULT, so excluding `sw.js` from
+the rule drops it to the default and caches it *more*. The blanket rule is what governs it, and
+the 600s origin TTL bounds staleness everywhere. `sw.js` is also safe on its own terms — its
+fetch handler is network-first for navigations (`www/sw.js:21`), so a page load never serves a
+stale shell.
+
+`.github/workflows/pages.yml` has a purge step that removes the 10-minute delay entirely, but it
+is dormant: it no-ops until `CLOUDFLARE_ZONE_ID` and `CLOUDFLARE_API_TOKEN` exist as repository
+secrets. Setting those needs **admin** on `braydondennis-ux/marketreadytours`; Erik has only
+push/triage, so this needs Braydon.
+
 ## Outbound email: who sends what (2026-08-12)
 
 Transactional mail goes out through **Resend** as `noreply@marketreadytours.com`
