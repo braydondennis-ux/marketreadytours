@@ -4,9 +4,16 @@ _Updated 2026-08-10. Read this entire file before acting._
 
 ## ROLLBACK RUNBOOK — read this before rolling back
 
-**Rolling back is TWO steps, not one. Pushing `cd6f980` alone will serve a site with ZERO
-tours.** The legacy build reads `mrt_tours`, which has been deleted from production to close
-audit M5. It must be rebuilt first.
+**Rolling back is TWO steps, not one. Pushing `cd6f980` alone will serve STALE tours.** The
+legacy build reads `mrt_tours`, which is no longer maintained — the refresh writes to
+`mrt_tours_private` and the server projects `mrt_tours_public`. `mrt_tours` is only regenerated
+by the rebuild script, so it silently misses every tour created since the cutover. Verified
+2026-08-13: `mrt_tours` held 35 tours while `mrt_tours_public` held 36 — the North Phoenix tour
+created 2026-08-12 was absent. Rebuild first, or roll back onto data that is missing work.
+
+(Audit M5 would delete `mrt_tours` outright; it has NOT been applied, so the node still exists
+and is still publicly readable. If M5 is ever closed, rolling back without step 1 serves ZERO
+tours rather than stale ones.)
 
 ```bash
 cd "/Users/erikyoungberg-aspelin/Desktop/Market Ready/Market Ready Tours/mrt/marketreadytours"
@@ -15,7 +22,7 @@ cd "/Users/erikyoungberg-aspelin/Desktop/Market Ready/Market Ready Tours/mrt/mar
 node scripts/rebuild-legacy-mrt-tours.mjs            # inspect the counts
 node scripts/rebuild-legacy-mrt-tours.mjs --apply    # write it
 
-# 2. Confirm it landed — must print 35+ tours, NOT null
+# 2. Confirm it landed — must print every tour, NOT null (36 as of 2026-08-13)
 npx firebase-tools database:get /mrt_tours --shallow --project marketready-tours | head -5
 
 # 3. Only then, revert the site
