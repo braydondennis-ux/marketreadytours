@@ -1,6 +1,13 @@
 # MarketReady Tours — Engineering Handoff
 
-_Updated 2026-08-10. Read this entire file before acting._
+_Updated 2026-08-13. Read this entire file before acting._
+
+**Current state.** The refresh is **LIVE** on marketreadytours.com (cutover 2026-08-10) and
+edge-cached. 28 Cloud Functions. Sponsor payments run on Clover; transactional email runs on
+Resend. 36 tours, with `mrt_tours_private` and `mrt_tours_public` in sync. Erik is Owner on
+`marketready-tours` and has a standing go-ahead for production work — see `CLAUDE.md`, whose old
+"never touch production" rule is retired. Open work, including one **live PII exposure**, is in
+`docs/TODO.md`.
 
 ## ROLLBACK RUNBOOK — read this before rolling back
 
@@ -453,6 +460,62 @@ model:
 - Vercel Production has the public App Check provider/key configuration.
 - The exact legacy email relay remains in use for transactional admin email.
 - Instantly remains disabled. New Square/Stripe payment flows remain disabled.
+
+## 2026-08-11 → 08-13 — what shipped after the cutover
+
+The site went live 2026-08-10. Everything below landed after that, on production.
+
+**Sponsor payments now run on Clover.** Clover Hosted Checkout (`functions/lib/clover.js`),
+plans in `SPONSOR_PLANS`: full 19900, half 9950, split 4975 (cents). Admins send a payment link
+from the sponsor card; `#/sponsor-pay` renders the sponsor-facing page; `cloverWebhook` marks
+the sponsor paid on confirmation. Verified end to end on 2026-08-11 with a real $49.75 payment
+(then voided — **Clover sends no webhook on void**, so a voided payment stays marked paid until
+someone unmarks it). A second real payment processed unattended on 2026-08-13.
+
+Webhook specifics that cost time: Clover's URL-verification probe is **unsigned**, and its test
+pings carry dummy payloads — both must be answered `200` or registration fails. The signature is
+HMAC-SHA256 over `` `${timestamp}.${rawBody}` ``. There is no status API to poll, so the webhook
+is the only completion signal. Sessions expire after 15 minutes.
+
+**Sponsorship is gated on payment, server-side.** `publicSponsor()` returns `null` for an unpaid
+sponsor, so unpaid records never reach `mrt_tours_public` at all — the guarantee is in the
+projection, not the UI. Confirmed against live data 2026-08-13: a tour with 3 sponsors publishes
+only the 2 that are paid. **This applies to the new nodes only** — see the legacy exposure in
+`docs/TODO.md`, which is still open.
+
+**Outbound email moved to Resend** (`noreply@marketreadytours.com`). See the section below for
+who sends what. Firebase Auth templates are locked project-wide, so all account email is built
+and sent by our own callables. Mailgun is no longer in the path. Firebase's DKIM records had
+**never validated** — `firebase1/2._domainkey` were Cloudflare-proxied and resolved to Cloudflare
+IPs; they are now DNS-only.
+
+**Error alerting exists.** Cloud Monitoring alert policies plus an uptime check on
+marketreadytours.com. Three schedulers were generating ~160 errors per 20h and are now `PAUSED`
+(see below).
+
+**Edge caching enabled** 2026-08-13 — see the next section, including the 10-minute deploy delay.
+
+**Admin UX fixes:** sponsor deletion now asks for confirmation (and warns in red if the sponsor
+has paid); contact-form submissions surface in the Requests page as a third tab; the two
+competing sponsor payment buttons no longer contradict each other.
+
+**Tour deletion never worked in production, and now does** (fixed 2026-08-13). The confirm modal
+stores an id *string* and passed it to `persistDeleteTour`, which expected an *object* and read
+`.id` off it — `undefined` on a string, so the callable received no `tourId` and threw. It
+surfaced as an opaque `INTERNAL`. The same slip left `expectedVersion` at 0, which would have
+failed the concurrency check even after the id was fixed. Both call sites were individually
+correct; only the seam between them was wrong. Regression test pins both ends.
+
+### Known broken: tour reminders
+
+`sendOneHourReminder`, `sendTourReminders`, and `sendCampaignEmails` are **all `PAUSED`** in Cloud
+Scheduler. They have not worked since April. The cause is not a configuration problem: the code
+is written against **Cloud Firestore**, which is not enabled on this project and never has been —
+this app uses the Realtime Database. The functions fail with
+`PERMISSION_DENIED: Cloud Firestore API has not been used in project marketready-tours`.
+
+Pausing stopped the error noise; it fixed nothing. **A tour is scheduled for 2026-09-02 and will
+send no reminders.** Rewriting these against RTDB is the outstanding work.
 
 ## Cloudflare caching — a deploy takes up to 10 minutes to appear (2026-08-13)
 
