@@ -1797,24 +1797,59 @@ async function processDueReminders() {
     .limitToFirst(100)
     .get();
   const reminders = snapshot.val() || {};
+  /* This worker used to run completely silently: no log on scan, none on send, and the two
+     `continue` paths below discard records without a trace. A scheduled job that reports HTTP
+     200 while doing nothing is indistinguishable from a healthy one, which is how reminders
+     stayed broken for months. Log the scan unconditionally so "ran and found nothing" and
+     "never ran" stop looking identical. */
+  const scanned = Object.keys(reminders).length;
+  logger.info("processDueReminders scan", {due: scanned, now});
+  let sent = 0, skipped = 0, expired = 0, failed = 0;
   for (const [id, reminder] of Object.entries(reminders)) {
-    if (!reminder || !["pending", "failed"].includes(reminder.status)) continue;
+    if (!reminder || !["pending", "failed"].includes(reminder.status)) {
+      skipped += 1;
+      logger.info("Reminder skipped: status not sendable", {id, status: reminder?.status});
+      continue;
+    }
     if (Number(reminder.expiresAt || 0) <= now) {
+      expired += 1;
+      logger.info("Reminder expired before it could send", {id, expiresAt: reminder.expiresAt});
       await getDatabase().ref(`mrt_reminders/${id}`).update({status: "expired", updatedAt: now});
       continue;
     }
     const ref = getDatabase().ref(`mrt_reminders/${id}`);
+    /* RTDB may invoke a transaction handler with `current === null` before the server value is
+       available. Returning undefined there ABORTS the transaction rather than retrying it, so
+       the original `if (!current) return;` dropped every valid reminder on every run — the
+       worker scanned, found work, claimed nothing, and reported success. Read the record first
+       so a genuine deletion is still distinguishable from a not-yet-loaded null, then fall back
+       to that server value if the handler is called with null. Without the explicit get(), the
+       fallback could resurrect a reminder deleted between the scan and the claim. */
+    const fresh = (await ref.get()).val();
+    if (!fresh) {
+      skipped += 1;
+      logger.info("Reminder vanished between scan and claim", {id});
+      continue;
+    }
     const claim = await ref.transaction((current) => {
+      const value = current === null ? fresh : current;
       if (
-        !current ||
-        !["pending", "failed"].includes(current.status) ||
-        Number(current.nextAttemptAt || 0) > now
+        !value ||
+        !["pending", "failed"].includes(value.status) ||
+        Number(value.nextAttemptAt || 0) > now
       ) {
         return;
       }
-      return {...current, status: "processing", claimedAt: now, updatedAt: now};
+      return {...value, status: "processing", claimedAt: now, updatedAt: now};
     });
-    if (!claim.committed) continue;
+    if (!claim.committed) {
+      /* Another worker claimed it, or the record moved out from under us. Benign, but it was
+         previously indistinguishable from "found nothing" — which is what made the silent
+         failure impossible to diagnose from logs alone. */
+      skipped += 1;
+      logger.info("Reminder claim not committed", {id, status: reminder.status});
+      continue;
+    }
     const claimed = claim.snapshot.val();
     try {
       await sendTransactionalEmail({
@@ -1824,8 +1859,12 @@ async function processDueReminders() {
         html: `<p>Hello ${escapeHtml(claimed.agentName)},</p><p><strong>${escapeHtml(claimed.tourName)}</strong> is coming up.</p><p>${escapeHtml(claimed.address)}</p>`,
       });
       await ref.update({status: "sent", sentAt: Date.now(), updatedAt: Date.now()});
+      sent += 1;
+      logger.info("Reminder sent", {id, to: claimed.agentEmail, hoursAhead: claimed.hoursAhead});
     } catch (error) {
       const attempts = Number(claimed.attempts || 0) + 1;
+      failed += 1;
+      logger.error("Reminder send failed", {id, attempts, error: error?.message});
       await ref.update({
         status: attempts >= 5 ? "dead" : "failed",
         attempts,
@@ -1835,6 +1874,8 @@ async function processDueReminders() {
       });
     }
   }
+  logger.info("processDueReminders done", {scanned, sent, skipped, expired, failed});
+  return {scanned, sent, skipped, expired, failed};
 }
 
 exports.processReminders = onSchedule(
@@ -1842,6 +1883,11 @@ exports.processReminders = onSchedule(
     region: REGION,
     schedule: "every 5 minutes",
     timeZone: APP_TIME_ZONE,
+    /* Scheduled functions do not inherit callableOptions, so this needs the Resend secret
+       declared explicitly. Without it the send still "succeeds" — it silently falls back to the
+       legacy Gmail relay, which is unbranded and spam-filtered — and the only sign is a WARNING
+       buried in the logs. Observed on the first live reminder, 2026-08-14. */
+    secrets: [RESEND_API_KEY],
   },
   processDueReminders,
 );
