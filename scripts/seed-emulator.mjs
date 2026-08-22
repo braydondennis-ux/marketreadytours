@@ -16,7 +16,7 @@ const require = createRequire(new URL("../functions/package.json", import.meta.u
 const {initializeApp, deleteApp} = require("firebase-admin/app");
 const {getAuth} = require("firebase-admin/auth");
 const {getDatabase} = require("firebase-admin/database");
-const {publicTourProjection} = require("../functions/lib/domain");
+const {publicTourProjection, localYmd} = require("../functions/lib/domain");
 
 const projectId = "mrt-local-audit";
 const adminApp = initializeApp({
@@ -75,7 +75,10 @@ const tours = [
     emoji: "🏡",
     color: "#0D0D0D",
     code: "1234",
-    date: "2026-08-15",
+    // Always ~30 days out. A hardcoded date silently rots the CI suite: launchCampaign
+    // requires >=2 days of lead time and submitIntake rejects a tour whose date has passed,
+    // so a fixed date fails the campaign gate the day before it and the intake gate after it.
+    date: localYmd(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
     time: "10:00 AM",
     listings: [listing("listing-1", "100 Demo St", 1), listing("listing-2", "200 Demo Ave", 2)],
     sponsors: [
