@@ -46,6 +46,17 @@ but it would silently break **rollback**: the rollback target does no authentica
 restricting `mrt_tours` makes a rolled-back site load nothing. `docs/TODO.md` item 1 has the
 detail. Know which file you are shipping before deploying rules.
 
+**And check the file against live before you trust it.** On 2026-08-22 the transition file was
+found missing `".indexOn": ["nextAttemptAt"]` on `/mrt_reminders` — the index was added to the
+live rules out-of-band during the 2026-08-13 reminder fix, and that commit touched only
+`functions/index.js`. Deploying the file as it stood would have silently dropped the index and
+re-broken the reminder worker, with nothing in git to explain it. The file now matches live. Diff
+before deploying rules:
+
+```
+curl -s "https://marketready-tours-default-rtdb.firebaseio.com/.settings/rules.json?access_token=$(gcloud auth application-default print-access-token)"
+```
+
 ## Rule 4: client and server ship together
 
 A callable's contract lives in two files. Deploying one side alone creates a live mismatch —

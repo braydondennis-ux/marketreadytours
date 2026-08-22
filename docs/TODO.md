@@ -88,6 +88,12 @@ concurrency and rejects stale writes with 409. Verified working — the 2026-08-
 
 ## 🟡 6. Smaller open items
 
+- **Square still posts webhooks at production.** `squareWebhook` took 35 signed-but-rejected
+  POSTs in the 7 days to 2026-08-22, all HTTP 403, all from Square's own IP `34.202.99.168`
+  (`Square Connect v2`), roughly every 1-4 hours. Rejection is correct — payments moved to
+  Clover — but the webhook subscription was never removed on Square's side, so each hit
+  cold-starts a container for nothing. Remove the subscription in the Square dashboard.
+
 - **Refunded sponsors stay publicly visible.** Marking paid is what publishes a sponsor; a
   refund in Clover does not unmark them. Also, **Clover sends no webhook on void** — a voided
   payment stays marked paid until someone unmarks it by hand. Verified 2026-08-11.

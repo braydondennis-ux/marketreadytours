@@ -74,7 +74,7 @@
       ".write": false
     },
 
-    "mrt_reminders": {".read": "auth != null", ".write": "auth != null"},
+    "mrt_reminders": {".read": "auth != null", ".write": "auth != null", ".indexOn": ["nextAttemptAt"]},
     "mrt_listing_requests": {
       ".read": "auth != null",
       ".write": "auth != null",
