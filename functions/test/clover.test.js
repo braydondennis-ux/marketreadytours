@@ -21,7 +21,12 @@ function signedHeader(rawBody, {secret = SECRET, atMs = Date.now(), tamper = fal
     .createHmac("sha256", secret)
     .update(Buffer.from(`${t}.${rawBody}`, "utf8"))
     .digest("hex");
-  return `t=${t},v1=${tamper ? digest.replace(/.$/, "0") : digest}`;
+  // Flip the last hex character to a *different* one. Replacing it with a fixed
+  // "0" was a no-op whenever the digest already ended in "0" — 1 run in 16 the
+  // "tampered" signature was byte-identical to the valid one, so this assertion
+  // silently tested nothing and the suite failed intermittently.
+  const tampered = digest.replace(/.$/, (c) => (c === "0" ? "1" : "0"));
+  return `t=${t},v1=${tamper ? tampered : digest}`;
 }
 
 test("plan amounts are server-side and match the published tiers", () => {
