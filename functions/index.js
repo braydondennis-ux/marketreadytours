@@ -237,7 +237,7 @@ function squareSandboxIsEnabled() {
   return isEmulator || projectId() === "marketready-tours-dev";
 }
 
-async function sendTransactionalEmail({to, subject, text, html, cta = null, footerNote = ""}) {
+async function sendTransactionalEmail({to, subject, text, html, cta = null, footerNote = "", idempotencyKey = null}) {
   const recipient = normalizeEmail(to);
   if (!isValidEmail(recipient)) throw new Error("Invalid email recipient");
   if (!transactionalEmailIsLive()) {
@@ -271,6 +271,7 @@ async function sendTransactionalEmail({to, subject, text, html, cta = null, foot
       subject,
       text,
       html: brandedHtml,
+      idempotencyKey,
     });
     return {ok: true, mocked: false, provider: "resend", id: result.id};
   }
@@ -1787,6 +1788,16 @@ exports.createSponsorInvoice = onCall({
   });
 });
 
+/* A terminal reminder keeps whatever nextAttemptAt it was created with, which is in the past.
+   The scan below is orderByChild("nextAttemptAt").endAt(now).limitToFirst(100) — oldest first —
+   so sent, expired and dead records keep coming back forever and, once 100 of them exist, they
+   fill the entire window. Genuinely due reminders then sort behind them and are never seen: the
+   worker goes quietly blind, which is the same shape of silent failure that let reminders stay
+   broken for months. Two tours of eight listings produce 32 records, so this arrives quickly.
+   Push terminal records past the window rather than deleting them, so the audit trail survives.
+   9999-12-31, far beyond any real tour. */
+const TERMINAL_NEXT_ATTEMPT_AT = 253402300799000;
+
 async function processDueReminders() {
   assertSafeProject();
   const now = Date.now();
@@ -1814,7 +1825,11 @@ async function processDueReminders() {
     if (Number(reminder.expiresAt || 0) <= now) {
       expired += 1;
       logger.info("Reminder expired before it could send", {id, expiresAt: reminder.expiresAt});
-      await getDatabase().ref(`mrt_reminders/${id}`).update({status: "expired", updatedAt: now});
+      await getDatabase().ref(`mrt_reminders/${id}`).update({
+        status: "expired",
+        nextAttemptAt: TERMINAL_NEXT_ATTEMPT_AT,
+        updatedAt: now,
+      });
       continue;
     }
     const ref = getDatabase().ref(`mrt_reminders/${id}`);
@@ -1854,22 +1869,35 @@ async function processDueReminders() {
     try {
       await sendTransactionalEmail({
         to: claimed.agentEmail,
+        /* Keyed on the reminder id, which is a stableHash of requestId+hoursAhead — the same
+           across every retry of this one reminder, and different for every other. The payload
+           below is derived purely from the stored record, so a retry sends Resend a byte-identical
+           request and it returns the original result instead of mailing the agent again. */
+        idempotencyKey: `reminder/${id}`,
         subject: `${claimed.hoursAhead} hour reminder — ${claimed.tourName}`,
         text: `${claimed.tourName} is coming up. Your listing: ${claimed.address}`,
         html: `<p>Hello ${escapeHtml(claimed.agentName)},</p><p><strong>${escapeHtml(claimed.tourName)}</strong> is coming up.</p><p>${escapeHtml(claimed.address)}</p>`,
       });
-      await ref.update({status: "sent", sentAt: Date.now(), updatedAt: Date.now()});
+      await ref.update({
+        status: "sent",
+        sentAt: Date.now(),
+        nextAttemptAt: TERMINAL_NEXT_ATTEMPT_AT,
+        updatedAt: Date.now(),
+      });
       sent += 1;
       logger.info("Reminder sent", {id, to: claimed.agentEmail, hoursAhead: claimed.hoursAhead});
     } catch (error) {
       const attempts = Number(claimed.attempts || 0) + 1;
+      const isDead = attempts >= 5;
       failed += 1;
-      logger.error("Reminder send failed", {id, attempts, error: error?.message});
+      logger.error("Reminder send failed", {id, attempts, dead: isDead, error: error?.message});
       await ref.update({
-        status: attempts >= 5 ? "dead" : "failed",
+        status: isDead ? "dead" : "failed",
         attempts,
         lastError: cleanText(error.message, 500, "error"),
-        nextAttemptAt: Date.now() + Math.min(60, 2 ** attempts) * 60 * 1000,
+        nextAttemptAt: isDead
+          ? TERMINAL_NEXT_ATTEMPT_AT
+          : Date.now() + Math.min(60, 2 ** attempts) * 60 * 1000,
         updatedAt: Date.now(),
       });
     }

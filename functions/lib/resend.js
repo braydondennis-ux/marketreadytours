@@ -36,6 +36,7 @@ async function sendViaResend({
   replyTo = null,
   fetchImpl = fetch,
   timeoutMs = 15000,
+  idempotencyKey = null,
 }) {
   if (!apiKey) throw new Error("Resend API key is not configured");
   if (!to) throw new Error("A recipient is required");
@@ -53,12 +54,20 @@ async function sendViaResend({
     ...(replyTo ? {reply_to: replyTo} : {}),
   };
 
+  const headers = {
+    "Authorization": `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+  };
+  /* Resend dedupes on this header for 24 hours: the same key with the same payload returns the
+     original response instead of sending again. That is what makes a retry safe. A send that
+     Resend accepted but whose response we lost — a timeout is enough — otherwise throws, and
+     the caller retries it as a fresh send. Resend rejects keys over 256 characters, so clamp
+     rather than let a long key turn every retry into a hard 400. */
+  if (idempotencyKey) headers["Idempotency-Key"] = String(idempotencyKey).slice(0, 256);
+
   const response = await fetchImpl(RESEND_ENDPOINT, {
     method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(timeoutMs),
   });

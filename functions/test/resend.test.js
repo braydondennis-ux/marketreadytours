@@ -69,3 +69,44 @@ test("omits optional fields rather than sending nulls Resend would reject", asyn
   assert.equal("html" in cap.body, false);
   assert.equal("reply_to" in cap.body, false);
 });
+
+/* Duplicate-send protection. A reminder that Resend accepts but whose response we never see —
+   a 15s fetch timeout is enough — throws, and processDueReminders then retries it up to five
+   times. Without a stable idempotency key that is five copies of the same email to a real
+   agent. Resend dedupes on this header for 24h, which comfortably covers the ~30 minutes the
+   backoff spans. */
+test("passes a stable idempotency key so a retried send cannot duplicate", async () => {
+  const cap = {};
+  await sendViaResend({
+    apiKey: "re_test_key",
+    to: "agent@example.com",
+    subject: "48 hour reminder",
+    text: "body",
+    fetchImpl: okFetch(cap),
+    idempotencyKey: "reminder/abc123",
+  });
+  assert.equal(cap.options.headers["Idempotency-Key"], "reminder/abc123");
+});
+
+test("omits the idempotency header entirely when no key is given", async () => {
+  const cap = {};
+  await sendViaResend({
+    apiKey: "re_test_key",
+    to: "agent@example.com",
+    subject: "One-off",
+    fetchImpl: okFetch(cap),
+  });
+  assert.equal("Idempotency-Key" in cap.options.headers, false);
+});
+
+test("an idempotency key is truncated to the 256 characters Resend accepts", async () => {
+  const cap = {};
+  await sendViaResend({
+    apiKey: "re_test_key",
+    to: "agent@example.com",
+    subject: "Long key",
+    fetchImpl: okFetch(cap),
+    idempotencyKey: "r".repeat(400),
+  });
+  assert.equal(cap.options.headers["Idempotency-Key"].length, 256);
+});
