@@ -282,8 +282,61 @@ assert.equal(
   "refunded sponsor remained in the public projection",
 );
 
+/* Reminders. Every listing on the tour must own exactly one reminder per offset, no matter
+   whether it was typed into the editor or approved from a listing request — two rows for one
+   listing means that agent is emailed twice. This is asserted against real callables because
+   the duplicate that prompted it came from two code paths minting different ids for the same
+   listing, which no single-module unit test would have caught. */
+const reminderRows = Object.values((await get(ref(db, "mrt_reminders"))).val() || {});
+const tourListings = (await get(ref(db, "mrt_tours_private/tour-demo-1/listings"))).val() || [];
+const withAgents = Object.values(tourListings).filter((l) => l && l.agentEmail);
+
+assert.ok(withAgents.length > 0, "the demo tour should have listings with agent emails");
+assert.equal(
+  reminderRows.length,
+  withAgents.length * 2,
+  `expected 2 reminders per listing (${withAgents.length * 2}), found ${reminderRows.length}`,
+);
+
+const seen = new Set();
+for (const row of reminderRows) {
+  const key = `${row.listingId}:${row.hoursAhead}`;
+  assert.equal(seen.has(key), false, `duplicate reminder for ${key} — this agent would be emailed twice`);
+  seen.add(key);
+  assert.equal(row.tourId, "tour-demo-1");
+  assert.ok([24, 48].includes(row.hoursAhead), "unexpected reminder offset");
+  assert.ok(row.sendAt < row.expiresAt, "a reminder must be scheduled before the tour starts");
+  assert.ok(row.agentEmail, "a reminder with no recipient should never have been created");
+}
+
+/* Deleting a tour must take its reminders out of the queue, or the worker mails every agent
+   about a tour that no longer exists. */
+const deletableTour = {
+  id: "tour-reminder-cleanup",
+  name: "Cleanup Tour",
+  date: "2027-01-15",
+  time: "9:00 AM",
+  listings: [{id: "cleanup-1", address: "1 Cleanup Way", agent: "A", agentEmail: "cleanup@example.com"}],
+  sponsors: [],
+};
+await callable("saveTour", {tour: deletableTour, expectedVersion: 0, requestId: requestId("cleanup-save")});
+const afterCleanupSave = Object.values((await get(ref(db, "mrt_reminders"))).val() || {})
+  .filter((r) => r.tourId === "tour-reminder-cleanup");
+assert.equal(afterCleanupSave.length, 2, "saving a hand-built tour must create its reminders");
+assert.equal(afterCleanupSave.every((r) => r.status === "pending"), true);
+
+await callable("deleteTour", {tourId: "tour-reminder-cleanup", expectedVersion: 1, requestId: requestId("cleanup-delete")});
+const afterCleanupDelete = Object.values((await get(ref(db, "mrt_reminders"))).val() || {})
+  .filter((r) => r.tourId === "tour-reminder-cleanup");
+assert.equal(afterCleanupDelete.length, 2, "records are kept for the audit trail");
+assert.equal(
+  afterCleanupDelete.every((r) => r.status === "cancelled"),
+  true,
+  "deleting a tour must cancel its reminders, not leave them to fire",
+);
+
 console.log(
-  "Workflow suite passed: rating, intake, approval, manual payment, campaign, opt-out, Square payment, and refund.",
+  "Workflow suite passed: rating, intake, approval, manual payment, campaign, opt-out, Square payment, refund, and reminders.",
 );
 await deleteApp(app);
 process.exit(0);

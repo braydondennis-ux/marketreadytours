@@ -26,6 +26,11 @@ const {
   validateRating,
 } = require("./lib/domain");
 const {
+  cancelTourReminders,
+  candidateReminderIds,
+  reconcileTourReminders,
+} = require("./lib/reminders");
+const {
   createSquareSandboxInvoice,
   sponsorPlanDetails,
 } = require("./lib/square");
@@ -615,6 +620,16 @@ exports.submitIntake = onCall(
   },
 );
 
+/* Reads only the reminder rows a tour could own. The ids are derived, not queried, so this
+   stays a fixed handful of point reads (two per listing, plus any listing the edit removed)
+   rather than a scan of a table that grows with every tour ever run. */
+async function loadRemindersByIds(ids) {
+  const entries = await Promise.all(
+    [...ids].map(async (id) => [id, (await getDatabase().ref(`mrt_reminders/${id}`).get()).val()]),
+  );
+  return Object.fromEntries(entries.filter(([, value]) => value));
+}
+
 exports.saveTour = onCall(callableOptions, async (request) => {
   assertSafeProject();
   const {uid} = assertAdmin(request);
@@ -624,8 +639,13 @@ exports.saveTour = onCall(callableOptions, async (request) => {
     const expectedVersion = Number(request.data?.expectedVersion || 0);
     const ref = getDatabase().ref(`mrt_tours_private/${tourId}`);
     let next;
+    let previousTour = null;
     const transaction = await ref.transaction((current) => {
       if (current && Number(current.version || 0) !== expectedVersion) return;
+      /* The handler can run more than once; the committed run is the last, so this ends up
+         holding the revision we actually replaced. That is what tells us which listings were
+         removed by this edit, and therefore whose reminders to cancel. */
+      previousTour = current || null;
       next = normalizeTourForWrite(raw, uid, current);
       return next;
     });
@@ -638,7 +658,36 @@ exports.saveTour = onCall(callableOptions, async (request) => {
       logger.error("Failed to materialize public tour projection", {tourId, error});
       throw new HttpsError("internal", "The tour saved but its public view could not be updated.");
     }
-    return {ok: true, tour: next, version: next.version};
+    /* Reminders are derived from the tour, so every save reconciles them: new listings get a
+       48h and a 24h reminder, removed ones have theirs cancelled, and a moved date reschedules
+       what has not gone out yet. Before this, jobs were only ever created by
+       approveListingRequest, so a tour built by hand in the editor — which is how they are
+       actually built — silently had none.
+
+       This deliberately cannot fail the save. The tour is already committed by this point and
+       there is nothing to roll back to; throwing here would report failure for a save that
+       succeeded and invite the user to save again. It logs at error instead, which is visible
+       precisely because the worker now logs its scans too. */
+    let reminders = null;
+    try {
+      const ids = candidateReminderIds({tour: next, previous: previousTour});
+      const existing = await loadRemindersByIds(ids);
+      const result = reconcileTourReminders({
+        tour: next,
+        previous: previousTour,
+        existing,
+        now: Date.now(),
+        actorUid: uid,
+      });
+      if (Object.keys(result.updates).length > 0) {
+        await getDatabase().ref().update(result.updates);
+      }
+      reminders = result.stats;
+      logger.info("Reminders reconciled", {tourId, ...result.stats});
+    } catch (error) {
+      logger.error("Reminder reconciliation failed", {tourId, error: error?.message});
+    }
+    return {ok: true, tour: next, version: next.version, reminders};
   });
 });
 
@@ -654,12 +703,30 @@ exports.deleteTour = onCall(callableOptions, async (request) => {
     if (Number(current.version || 0) !== expectedVersion) {
       throw new HttpsError("aborted", "This tour changed elsewhere. Reload and try again.");
     }
+    /* Cancel the tour's reminders in the same atomic update as the delete. Without this the
+       worker keeps its jobs and mails every agent about a tour that no longer exists — the
+       reminder rows live under mrt_reminders, not under the tour, so nulling the tour does not
+       take them with it. Reminders that already sent are left exactly as they are. */
+    let reminderUpdates = {};
+    try {
+      const existing = await loadRemindersByIds(candidateReminderIds({tour: current, previous: null}));
+      reminderUpdates = cancelTourReminders({
+        tour: current,
+        existing,
+        now: Date.now(),
+        actorUid: uid,
+      }).updates;
+    } catch (error) {
+      logger.error("Could not load reminders while deleting a tour", {tourId, error: error?.message});
+      throw new HttpsError("internal", "The tour was not deleted because its reminders could not be cancelled.");
+    }
     await getDatabase().ref().update({
       [`mrt_tours_private/${tourId}`]: null,
       [`mrt_tours_public/${tourId}`]: null,
       [`mrt_ratings_private/${tourId}`]: null,
       [`mrt_ratings_public/${tourId}`]: null,
       [`mrt_campaigns/${tourId}`]: null,
+      ...reminderUpdates,
     });
     return {ok: true, deleted: true};
   });
@@ -899,37 +966,6 @@ function validListingForApproval(requestRecord, listingId) {
   };
 }
 
-async function createReminderJobs({tour, listing, requestId, createdBy}) {
-  const tourStart = phoenixDateTimeMs(tour.date, tour.time);
-  const now = Date.now();
-  const updates = {};
-  for (const hoursAhead of [48, 24]) {
-    const sendAt = tourStart - hoursAhead * 60 * 60 * 1000;
-    if (sendAt <= now) continue;
-    const id = stableHash(`${requestId}:${hoursAhead}`).slice(0, 40);
-    updates[`mrt_reminders/${id}`] = {
-      id,
-      status: "pending",
-      attempts: 0,
-      nextAttemptAt: sendAt,
-      sendAt,
-      expiresAt: tourStart,
-      hoursAhead,
-      tourId: tour.id,
-      tourName: tour.name,
-      tourDate: tour.date,
-      tourTime: tour.time,
-      listingId: listing.id,
-      address: listing.address,
-      agentName: listing.agent,
-      agentEmail: listing.agentEmail,
-      createdAt: now,
-      createdBy,
-    };
-  }
-  return updates;
-}
-
 exports.approveListingRequest = onCall(
   callableOptions,
   async (request) => {
@@ -1019,15 +1055,27 @@ exports.approveListingRequest = onCall(
           throw new HttpsError("not-found", "The selected tour was not found.");
         }
         nextTour = tourTransaction.snapshot.val();
-        const reminderUpdates = alreadyInTour
-          ? {}
-          : await createReminderJobs({
-              tour: nextTour,
-              listing,
-              requestId,
-              createdBy: uid,
-            });
+        /* Reminders come from exactly one place: reconciling them against the tour. This used
+           to key its own rows on the listing REQUEST id, while saveTour keys them on the tour
+           and listing id — so an approved listing would have ended up with two rows per offset
+           and its agent would have been emailed twice. Deriving from the tour means it does
+           not matter how a listing arrived. */
         const now = Date.now();
+        let reminderUpdates = {};
+        try {
+          const existingReminders = await loadRemindersByIds(
+            candidateReminderIds({tour: nextTour, previous: null}),
+          );
+          reminderUpdates = reconcileTourReminders({
+            tour: nextTour,
+            previous: null,
+            existing: existingReminders,
+            now,
+            actorUid: uid,
+          }).updates;
+        } catch (error) {
+          logger.error("Reminder reconciliation failed on approval", {tourId, error: error?.message});
+        }
         await getDatabase().ref().update({
           [`mrt_tours_public/${tourId}`]: publicTourProjection(nextTour),
           [`mrt_listing_requests/${requestIdToApprove}/status`]: "approved",
