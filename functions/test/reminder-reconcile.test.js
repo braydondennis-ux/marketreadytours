@@ -127,11 +127,22 @@ test("a reminder that already sent is never rewritten, whatever the tour does", 
     "resurrecting a sent reminder is how an agent gets the same email twice");
 });
 
-test("dead, expired and cancelled records are equally untouchable", () => {
-  for (const status of ["dead", "expired", "cancelled"]) {
-    const existing = {[idOf(1, 48)]: {id: idOf(1, 48), status}};
+test("dead and expired records are untouchable, as is an attempted cancellation", () => {
+  /* Anything that may already have reached an inbox stays put. A cancellation that never
+     attempted a send is the one exception and is covered separately below. */
+  const cases = [
+    {status: "dead", attempts: 5},
+    {status: "expired", attempts: 0},
+    {status: "cancelled", attempts: 1},
+  ];
+  for (const record of cases) {
+    const existing = {[idOf(1, 48)]: {id: idOf(1, 48), ...record}};
     const {updates} = reconcileTourReminders({tour: tour(), existing, now: NOW});
-    assert.equal(Object.keys(updates).some((p) => p.includes(idOf(1, 48))), false, status);
+    assert.equal(
+      Object.keys(updates).some((p) => p.includes(idOf(1, 48))),
+      false,
+      `${record.status} (attempts ${record.attempts})`,
+    );
   }
 });
 
@@ -259,4 +270,64 @@ test("reminder ids do not depend on the listing request that produced them", () 
   // The id is a function of the tour and listing only, so the same listing reconciles to the
   // same row no matter which code path touched it.
   assert.equal(reminderIdFor("tour-1", "listing-1", 48), idOf(1, 48));
+});
+
+// ------------------------------------------------- removing and re-adding a listing
+
+test("re-adding a removed listing restores its reminder", () => {
+  const before = tour();
+  const existing = {};
+  for (const [path, value] of Object.entries(reconcileTourReminders({tour: before, existing: {}, now: NOW}).updates)) {
+    existing[path.split("/")[1]] = value;
+  }
+  // Remove listing 2, then put it back.
+  const without = tour({listings: [listing(1)]});
+  for (const [path, value] of Object.entries(
+    reconcileTourReminders({tour: without, previous: before, existing, now: NOW}).updates)) {
+    const p = path.split("/");
+    existing[p[1]] = p.length === 2 ? value : {...existing[p[1]], [p[2]]: value};
+  }
+  assert.equal(existing[idOf(2, 48)].status, "cancelled");
+
+  const {updates, stats} = reconcileTourReminders({tour: tour(), previous: without, existing, now: NOW});
+  assert.equal(stats.revived, 2, "the agent must not silently lose their reminder");
+  const revived = updates[`mrt_reminders/${idOf(2, 48)}`];
+  assert.equal(revived.status, "pending");
+  assert.equal(revived.attempts, 0);
+  assert.equal(revived.cancelledBy, undefined, "revived whole, so no stale cancellation fields");
+});
+
+test("a cancellation that had already attempted a send is never revived", () => {
+  /* A failed attempt can still have been delivered — that is why sends carry an idempotency
+     key — and Resend only dedupes for 24h. Reviving one days later could double-mail. */
+  const existing = {
+    [idOf(1, 48)]: {id: idOf(1, 48), status: "cancelled", attempts: 2},
+  };
+  const {updates, stats} = reconcileTourReminders({tour: tour(), existing, now: NOW});
+  assert.equal(stats.locked, 1);
+  assert.equal(stats.revived, 0);
+  assert.equal(Object.keys(updates).some((p) => p.includes(idOf(1, 48))), false);
+});
+
+test("reviving preserves the original creation record", () => {
+  const existing = {
+    [idOf(1, 48)]: {
+      id: idOf(1, 48), status: "cancelled", attempts: 0,
+      createdAt: NOW - 90000, createdBy: "someone-else",
+    },
+  };
+  const {updates} = reconcileTourReminders({tour: tour(), existing, now: NOW, actorUid: "erik"});
+  const revived = updates[`mrt_reminders/${idOf(1, 48)}`];
+  assert.equal(revived.createdAt, NOW - 90000);
+  assert.equal(revived.createdBy, "someone-else");
+  assert.equal(revived.updatedAt, NOW);
+});
+
+test("sent and dead records still never revive", () => {
+  for (const status of ["sent", "dead", "expired"]) {
+    const existing = {[idOf(1, 48)]: {id: idOf(1, 48), status, attempts: 0}};
+    const {updates, stats} = reconcileTourReminders({tour: tour(), existing, now: NOW});
+    assert.equal(stats.revived, 0, status);
+    assert.equal(Object.keys(updates).some((p) => p.includes(idOf(1, 48))), false, status);
+  }
 });

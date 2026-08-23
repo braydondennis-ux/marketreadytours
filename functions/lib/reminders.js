@@ -18,6 +18,18 @@ function isSendable(status) {
   return SENDABLE_STATUSES.includes(String(status || ""));
 }
 
+/* A cancelled row can be revived, but only when nothing was ever sent for it. "sent" and
+   "dead" obviously must not come back. Neither must a cancelled row that had already ATTEMPTED
+   a send: a failed attempt can still have been delivered — that is the whole reason sends carry
+   an idempotency key — and Resend only dedupes for 24 hours, so reviving one days later could
+   put a second copy in front of an agent. attempts === 0 is the only provably-never-sent state.
+
+   Without this, removing a listing and adding it back leaves that agent with no reminder at
+   all, silently, which is the failure this system keeps producing. */
+function isRevivableCancellation(record) {
+  return String(record?.status || "") === "cancelled" && Number(record?.attempts || 0) === 0;
+}
+
 /* Deterministic in (tourId, listingId, hoursAhead), which is what makes reconciliation
    idempotent: saving a tour ten times computes the same ten ids and therefore rewrites
    nothing. It also means we never have to query mrt_reminders by tourId, so no extra
@@ -104,14 +116,15 @@ function reconcileTourReminders({tour, previous = null, existing = {}, now, acto
   for (const id of plan.keys()) candidates.add(id);
 
   const updates = {};
-  const stats = {created: 0, updated: 0, cancelled: 0, unchanged: 0, locked: 0};
+  const stats = {created: 0, revived: 0, updated: 0, cancelled: 0, unchanged: 0, locked: 0};
 
   for (const id of candidates) {
     const current = existing[id] || null;
     const wanted = plan.get(id) || null;
 
-    if (current && !isSendable(current.status)) {
-      /* Sent, dead, expired or already cancelled. Never touch it again. */
+    const revivable = wanted && isRevivableCancellation(current);
+    if (current && !isSendable(current.status) && !revivable) {
+      /* Sent, dead, expired, or a cancellation that had already attempted delivery. Finished. */
       stats.locked += 1;
       continue;
     }
@@ -127,16 +140,18 @@ function reconcileTourReminders({tour, previous = null, existing = {}, now, acto
       continue;
     }
 
-    if (!current) {
+    if (!current || revivable) {
+      /* A revived row is rewritten whole, so no stale cancellation fields survive. */
       updates[`mrt_reminders/${id}`] = {
         ...wanted,
         status: "pending",
         attempts: 0,
-        createdAt: now,
-        createdBy: actorUid,
+        createdAt: current?.createdAt || now,
+        createdBy: current?.createdBy || actorUid,
         updatedAt: now,
       };
-      stats.created += 1;
+      if (revivable) stats.revived = (stats.revived || 0) + 1;
+      else stats.created += 1;
       continue;
     }
 
@@ -182,6 +197,7 @@ function cancelTourReminders({tour, existing = {}, now, actorUid = ""}) {
 
 module.exports = {
   REMINDER_HOURS_AHEAD,
+  isRevivableCancellation,
   TERMINAL_NEXT_ATTEMPT_AT,
   SENDABLE_STATUSES,
   cancelTourReminders,
