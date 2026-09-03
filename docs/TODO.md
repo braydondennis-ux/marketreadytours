@@ -1,6 +1,6 @@
 # MarketReady Tours — open items
 
-_Updated 2026-08-13. Production is live; see `CLAUDE.md` for what you are cleared to do._
+_Updated 2026-09-02. Production is live; see `CLAUDE.md` for what you are cleared to do._
 
 Verified items note how they were confirmed, so nobody has to re-derive it.
 
@@ -28,17 +28,16 @@ and the 2026-08-10 cutover snapshots.
 at the strict one. So `firebase deploy --only database` would publish the strict rules and break
 rollback readability without breaking the live site. Know which file you are shipping.
 
-## 🔴 2. Tour reminders do not work, and a real tour is scheduled
+## ✅ 2. Tour reminders — CLOSED 2026-08-25
 
-`sendOneHourReminder`, `sendTourReminders`, `sendCampaignEmails` — all three **`PAUSED`** in
-Cloud Scheduler, none functional since April.
+Rewritten against RTDB and now created from the tour itself rather than only from listing
+approvals. `HANDOFF.md` has the full behaviour table and the four invariants that keep an agent
+from being emailed twice. The 2026-09-02 tour was armed on 2026-08-25 with 12 reminders across 6
+agents; it later grew to 8 listings, so the final row count should be higher. **Whether those
+sends actually landed is unverified** — see "First thing to check" at the top of `HANDOFF.md`.
 
-The cause is architectural, not configuration: the code targets **Cloud Firestore**, which this
-project does not use and has never enabled. It fails with `PERMISSION_DENIED: Cloud Firestore
-API has not been used in project marketready-tours`. This app stores everything in the Realtime
-Database. Pausing the jobs stopped ~160 errors per 20h; it fixed nothing.
-
-**A tour is scheduled for 2026-09-02 and will send no reminders.** Rewrite against RTDB.
+The three legacy senders stay **`PAUSED`** and target Firestore, which is not enabled on this
+project. Their source is not in this repo. Leave both locks in place.
 
 ---
 
@@ -81,8 +80,8 @@ Real fix is per-tour granular writes (`mrt_tours/<id>`), which the pre-rollback 
 `15e501f` and the February rollback discarded.
 
 Note this is partially mitigated for tours: `saveTour` uses `expectedVersion` optimistic
-concurrency and rejects stale writes with 409. Verified working — the 2026-08-12 tour reached
-`version: 8` across 8 saves with no lost updates.
+concurrency and rejects stale writes with 409. Now well evidenced — the 2026-09-02 tour was built
+in production over two weeks and reached **version 56 across ~55 saves** with no lost updates.
 
 ---
 
@@ -106,7 +105,17 @@ concurrency and rejects stale writes with 409. Verified working — the 2026-08-
   real send on 2026-08-12. The new-member invite (`createAdmin`) and the admin-triggered reset
   (`sendAdminPasswordReset`) share the same sending path but no real message has gone through
   either. The first person invited is currently the test.
-- **M7** — verify the legacy send-email Cloud Function authenticates its caller.
+- **M7** — verify the legacy send-email Cloud Function authenticates its caller. Partly
+  evidenced: since 2026-08-14 every `sendEmail` hit has been a bot probe rejected with 403
+  (Netcraft, Amazonbot, spoofed-iOS scanners), and no function has fallen back to it. The live
+  client does not reference it at all.
+- **`mrt_reminders` is indexed on `nextAttemptAt` only.** Fine for everything today —
+  reconciliation looks rows up by derived id rather than querying — but an admin view that lists
+  reminders by tour would need `tourId` added to `.indexOn`, in
+  `database.rules.transition.json`, which is the file production actually runs.
+- **Terminal reminder rows are never deleted.** They are parked at `nextAttemptAt`
+  9999-12-31 so the worker cannot see them, which is correct, but the node grows forever. Not
+  urgent at ~12 rows per tour; revisit if it reaches thousands.
 - **L5** — no captcha on public intake forms (rate limiting and a honeypot are in place).
 - **`createCheckoutSession` 404s.** The live legacy site calls it; it is deployed nowhere and
   exists in no source. Pre-existing.

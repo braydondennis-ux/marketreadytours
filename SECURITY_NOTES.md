@@ -1,6 +1,6 @@
 # MarketReady Tours — Security Status
 
-_Updated 2026-08-13. **These controls are deployed and live in production.** The previous
+_Updated 2026-09-02. **These controls are deployed and live in production.** The previous
 version of this file said they were not; that was true until the 2026-08-10 cutover._
 
 ## Legacy `mrt_tours` exposure — CLOSED 2026-08-13 (M5)
@@ -43,6 +43,15 @@ by array position). Backup of the node as deleted: `.mrt-backups/mrt_tours-2026-
 - Account email links are single-use and short-lived, and exactly one sender issues each one —
   two senders would mean two oobCodes, and Firebase invalidates the earlier.
 - Generated dependencies and `www/` are not version-controlled.
+- Reminder sends are idempotent. Every send carries `Idempotency-Key: reminder/<id>`, stable
+  across retries and distinct per reminder, and the payload is byte-stable so a retry dedupes
+  rather than colliding. Without it a Resend timeout *after acceptance* retried as a fresh send,
+  up to five copies to one recipient. Added 2026-08-22.
+- Reminder rows have one source of truth. `approveListingRequest` previously minted rows keyed on
+  the listing request id while `saveTour` keys on tour and listing id, so an approved listing
+  would have owned two rows per offset and its agent been emailed twice. Unified 2026-08-25.
+- Deleting a tour cancels its reminders in the same atomic update. Reminder rows live under
+  `mrt_reminders`, not under the tour, so this does not happen for free.
 
 ## Secrets
 
@@ -67,6 +76,23 @@ sites reach `sendTransactionalEmail`, and a missing secret only surfaces at send
 - Add Apple App Attest/DeviceCheck for a production iOS release.
 - SPF/DKIM/DMARC must resolve **DNS-only**. Firebase's DKIM records had never validated because
   `firebase1/2._domainkey` were Cloudflare-proxied and returned Cloudflare IPs.
+
+## Outbound email blast radius
+
+`MRT_OUTBOUND_ALLOWLIST=*` in production. The allowlist is a **development** guard and stops
+nothing in prod — real recipients receive real mail. What bounds the blast radius is:
+
+- No send site iterates over recipients except `processDueReminders`, which is capped at 100 rows
+  per run and claims each row with a transaction, so a row is sent by exactly one worker.
+- Retries are hard-bounded at 5 attempts, then `dead`.
+- Bulk campaigns are **off**: `MRT_ALLOW_LIVE_INSTANTLY=false`, `MRT_INSTANTLY_API_KEY=disabled`.
+- The three legacy Firestore senders are double-locked — schedulers `PAUSED` *and* the Firestore
+  API not enabled on the project.
+- `processRemindersNow` is admin-only and reuses the same claim, so repeated calls cannot
+  double-send.
+
+The four reminder invariants in `CLAUDE.md` Rule 5 are the rest of it. Weakening any of them is
+a direct path to an agent receiving duplicate mail.
 
 ## Accepted constraints
 

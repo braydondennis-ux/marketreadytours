@@ -1,13 +1,55 @@
 # MarketReady Tours — Engineering Handoff
 
-_Updated 2026-08-13. Read this entire file before acting._
+_Updated 2026-09-02. Read this entire file before acting._
 
 **Current state.** The refresh is **LIVE** on marketreadytours.com (cutover 2026-08-10) and
-edge-cached. 28 Cloud Functions. Sponsor payments run on Clover; transactional email runs on
+edge-cached. **30** Cloud Functions. Sponsor payments run on Clover; transactional email runs on
 Resend. 36 tours, with `mrt_tours_private` and `mrt_tours_public` in sync. Erik is Owner on
 `marketready-tours` and has a standing go-ahead for production work — see `CLAUDE.md`, whose old
-"never touch production" rule is retired. Open work, including one **live PII exposure**, is in
-`docs/TODO.md`.
+"never touch production" rule is retired. Open work is in `docs/TODO.md`.
+
+**Closed since this file last said otherwise:**
+
+- The **legacy `mrt_tours` PII exposure is gone** — the node was deleted 2026-08-13 and returns
+  `null`. The permissive read rule stays on purpose; see the rollback runbook below.
+- **Tour reminders work.** They were rewritten against RTDB, and as of 2026-08-25 they are
+  created from the tour itself rather than only from listing approvals. See "Tour reminders"
+  below — that section used to be headed "Known broken".
+
+**The app is genuinely in use.** The 2026-09-02 North Phoenix tour was built in production over
+two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
+exercise of the optimistic-concurrency work.
+
+## First thing to check (2026-09-02)
+
+**The 2026-09-02 North Phoenix tour was the first real outbound send to outside agents since
+April, and its outcome is NOT yet verified.**
+
+Armed 2026-08-25 by saving the tour, which created **12 reminders across 6 agents**, verified at
+the time: 12 rows, no duplicates, all `pending`, scheduled 08-31 and 09-01 at 08:30 Phoenix. The
+tour then grew to **8 listings and version 56**, so reconciliation should have added rows for the
+two new listings *if* they were added before the relevant send window — a listing added after
+09-01 08:30 gets neither reminder, by design.
+
+Nobody has confirmed the sends landed. Credentials expired before this file was written. Check:
+
+```bash
+export PATH="/opt/homebrew/share/google-cloud-sdk/bin:$PATH"
+npx firebase database:get /mrt_reminders --project marketready-tours
+```
+
+Expect every row `sent` with a `sentAt`, and `attempts: 0`. Anything `failed`, `dead` or still
+`pending` after 09-02 08:30 Phoenix is a real problem and the logs will say why:
+
+```bash
+gcloud logging read 'resource.labels.service_name="processreminders" AND
+  (jsonPayload.message="Reminder sent" OR jsonPayload.message="Reminder send failed")' \
+  --project=marketready-tours --limit=40 --freshness=7d \
+  --format="value(timestamp,jsonPayload.message,jsonPayload.to,jsonPayload.attempts)"
+```
+
+A row stuck in `processing` means the worker died mid-send. That cannot double-send (nothing
+resets `processing`), but it also never retries — it needs a human.
 
 ## ROLLBACK RUNBOOK — read this before rolling back
 
@@ -466,6 +508,63 @@ model:
 - The exact legacy email relay remains in use for transactional admin email.
 - Instantly remains disabled. New Square/Stripe payment flows remain disabled.
 
+## 2026-08-22 → 09-02 — what shipped
+
+Six commits, `70a2853` → `f7840ce`. All on `main`, CI green, all deployed by name.
+
+**Tour reminders now exist for tours built by hand.** `createReminderJobs` only ever ran from
+`approveListingRequest`, and tours are built in the editor, so in practice almost nothing had
+reminders — the Sept 2 tour had six listings and an empty queue. Reminders are now derived from
+the tour and reconciled on every save. See the reminders section above.
+
+**Two duplicate-send defects fixed before they could reach anyone.**
+
+- Sends had no idempotency key, so a Resend timeout after acceptance would retry as a fresh send
+  — up to five copies to one agent.
+- `approveListingRequest` keyed rows on the listing REQUEST id while reconciliation keys on tour
+  and listing id, so an approved listing would have owned two rows per offset. `createReminderJobs`
+  is deleted; approval reconciles like everything else. **One source of truth.**
+
+**`deleteTour` left reminders live.** Reminder rows live under `mrt_reminders`, not under the
+tour, so nulling the tour never touched them — the worker would have gone on mailing agents about
+a tour that no longer existed. Cancellation now rides in the same atomic update, and the delete
+refuses rather than proceeding if those rows cannot be read.
+
+**The worker would have gone silently blind.** Terminal rows kept a past `nextAttemptAt` and were
+never cleaned up, so they returned on every scan forever and would eventually have filled the
+100-row window. Fixed by parking them; proven in production (a scan before a test send saw 1 row,
+the scan after saw 0 while the row still existed).
+
+**Rules file had drifted from live.** `database.rules.transition.json` was missing the
+`nextAttemptAt` index that live had — added out-of-band during the 2026-08-13 reminder fix, in a
+commit that touched only `functions/index.js`. Deploying the file as it stood would have silently
+dropped the index and re-broken the worker. The file now matches live exactly; diff before
+deploying rules (command in `CLAUDE.md` Rule 3).
+
+**CI had been red for 8 days and nobody noticed.** `scripts/seed-emulator.mjs` pinned the demo
+tour to `2026-08-15`, so the emulator suite rotted as real time passed it — first failing the
+`launchCampaign` two-day lead check, later the `submitIntake` not-in-the-past check. Both gates
+were correct; the seed was wrong. It now derives from `localYmd(now + 30 days)`. **Audits must
+check the Actions run, not just `npm test`** — see `CLAUDE.md`.
+
+**A test asserted nothing 1 run in 16.** The Clover tamper helper overwrote the last hex character
+with `"0"`, so whenever the digest already ended in `0` the "tampered" signature was identical to
+the valid one. 6.7% of digests over 10,000 samples. Signature verification was never wrong; the
+test was.
+
+### Verification standard used for this work
+
+Worth matching, because two of the bugs above were found *by* it rather than by review:
+
+- 97 unit tests, including 27 over the pure reconciler covering every branch.
+- End-to-end assertions in `npm run test:workflow` against real callables — this is the only
+  thing that exercises full callable flows, and it runs **only in CI**.
+- **Both new end-to-end assertions were mutation-tested.** Making reminder ids non-deterministic
+  produced 12 rows where 6 were expected and failed the suite; removing cancellation from
+  `deleteTour` failed it too. They catch regressions rather than passing vacuously.
+- Live verification with a test reminder addressed **only** to `erik@marketreadysystems.ai`,
+  deleted afterward.
+
 ## 2026-08-11 → 08-13 — what shipped after the cutover
 
 The site went live 2026-08-10. Everything below landed after that, on production.
@@ -511,16 +610,56 @@ surfaced as an opaque `INTERNAL`. The same slip left `expectedVersion` at 0, whi
 failed the concurrency check even after the id was fixed. Both call sites were individually
 correct; only the seam between them was wrong. Regression test pins both ends.
 
-### Known broken: tour reminders
+### Tour reminders — how they work now (rewritten 2026-08-13 → 2026-08-25)
 
-`sendOneHourReminder`, `sendTourReminders`, and `sendCampaignEmails` are **all `PAUSED`** in Cloud
-Scheduler. They have not worked since April. The cause is not a configuration problem: the code
-is written against **Cloud Firestore**, which is not enabled on this project and never has been —
-this app uses the Realtime Database. The functions fail with
-`PERMISSION_DENIED: Cloud Firestore API has not been used in project marketready-tours`.
+Agents get a reminder **48 and 24 hours** before a tour, at the tour's start time, Phoenix time.
 
-Pausing stopped the error noise; it fixed nothing. **A tour is scheduled for 2026-09-02 and will
-send no reminders.** Rewriting these against RTDB is the outstanding work.
+**The three legacy senders are dead and must stay that way.** `sendOneHourReminder`,
+`sendTourReminders` and `sendCampaignEmails` are `PAUSED` in Cloud Scheduler AND target Cloud
+Firestore, which is not enabled on this project. Their source is **not in this repo**. That is a
+double lock: unpausing them alone does nothing, but do not unpause them, and do not enable
+Firestore casually.
+
+The live path is `processReminders` → `processDueReminders()` in `functions/index.js`, on Cloud
+Scheduler every 5 minutes, with reconciliation in `functions/lib/reminders.js`.
+
+**Where reminder rows come from.** Every `saveTour`, `deleteTour` and `approveListingRequest`
+reconciles the tour's reminders:
+
+| Editor action | Effect |
+| --- | --- |
+| Listing added | gets a 48h and a 24h reminder |
+| Listing removed | its pending reminders are **cancelled**, not left to fire |
+| Listing re-added | reminder revives, but only if it never attempted a send |
+| Tour date moved | pending reminders reschedule |
+| Agent email corrected | pending reminder retargets |
+| Tour archived or deleted | pending reminders cancelled |
+| Save with no changes | **nothing is written at all** |
+
+Row ids are `stableHash(tour:<tourId>:listing:<listingId>:<hours>)`. Because the id is *derived*
+rather than queried, reconciliation is idempotent and needs no `.indexOn` beyond the
+`nextAttemptAt` the worker already uses. Verified: five consecutive saves of the real Sept 2 tour
+wrote 12 paths then zero, zero, zero, zero.
+
+**Four invariants that stop an agent being spammed. Do not weaken these.**
+
+1. A row that is not `pending` or `failed` is **never** rewritten. Resurrecting a `sent` row is
+   exactly how someone receives the same reminder twice.
+2. A cancelled row revives **only when `attempts === 0`** — the one provably-never-sent state. A
+   *failed* attempt may still have been delivered, and Resend only dedupes for 24h.
+3. Sends carry `Idempotency-Key: reminder/<id>`. A send Resend accepted but whose response was
+   lost otherwise retries as a fresh send, up to five times. The retry span is 30 minutes, well
+   inside Resend's 24h dedupe window, and the payload is byte-stable so retries dedupe rather
+   than 409.
+4. Terminal rows park `nextAttemptAt` at `253402300799000` (9999-12-31). Leaving it in the past
+   meant the worker's `endAt(now).limitToFirst(100)` scan returned finished rows forever; after
+   ~100 accumulated it would have gone **silently blind**. Rows are parked, not deleted, so the
+   audit trail survives.
+
+**`MRT_OUTBOUND_ALLOWLIST=* in production**, so the allowlist is *not* a guardrail there — real
+recipients get real mail. The four invariants above are the only thing between a bug and an
+agent's inbox. Treat changes to `functions/lib/reminders.js` and `processDueReminders`
+accordingly, and run `npm run test:workflow`, not just `npm test`.
 
 ## Cloudflare caching — a deploy takes up to 10 minutes to appear (2026-08-13)
 

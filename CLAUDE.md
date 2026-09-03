@@ -1,6 +1,6 @@
 # MarketReady Tours — working rules
 
-_Updated 2026-08-13. **Production is LIVE.** The refresh serves marketreadytours.com._
+_Updated 2026-09-02. **Production is LIVE.** The refresh serves marketreadytours.com._
 
 ## Rule 1: production is live, and you are cleared to work on it
 
@@ -32,7 +32,7 @@ four fenced-off functions including `createSponsorInvoice`. Always deploy by nam
 npx firebase deploy --only functions:saveTour,functions:deleteTour --project marketready-tours
 ```
 
-The expected function count is **28**. Check it after any deploy; a changed count means
+The expected function count is **30**. Check it after any deploy; a changed count means
 something was created or destroyed that you did not intend.
 
 ## Rule 3: there are two database rules files, and `firebase.json` points at the unused one
@@ -63,6 +63,34 @@ A callable's contract lives in two files. Deploying one side alone creates a liv
 on 2026-08-12 deploying `createAdmin` before the client left `createAdmin` with two email
 senders, and every invite would have carried a dead link. If a change spans both, land both.
 
+## Rule 5: outbound email has four invariants — do not weaken them
+
+`MRT_OUTBOUND_ALLOWLIST=*` in production, so the allowlist stops nothing there: real agents get
+real mail. What prevents someone being emailed six times is the reminder state machine, and it is
+load-bearing.
+
+1. A row that is not `pending` or `failed` is **never** rewritten.
+2. A cancelled row revives **only when `attempts === 0`**.
+3. Sends carry `Idempotency-Key: reminder/<id>`, and the payload must stay byte-stable across
+   retries or Resend 409s instead of deduping.
+4. Terminal rows park `nextAttemptAt` in the far future, or the worker eventually goes blind.
+
+Touching `functions/lib/reminders.js` or `processDueReminders` means running
+`npm run test:workflow`, not just `npm test`. Full detail in `HANDOFF.md`.
+
+## Rule 6: an audit is not done until CI is green
+
+`npm test` and healthy Cloud Functions are not enough. `npm run test:workflow` — the only thing
+that exercises full callable flows — runs **only in CI**. On 2026-08-22 it had been failing for
+8 days while an audit reported everything healthy.
+
+```bash
+gh run list --workflow="Validate MarketReady Tours" --limit 8 --json createdAt,conclusion,headSha
+```
+
+If it failed, read the failing step before assuming it is unrelated, and compare `headSha` across
+runs to see whether the failure predates your changes.
+
 ## Deploying
 
 - **Client:** `git push origin HEAD:main` → GitHub Actions builds `www/` → Pages serves it.
@@ -87,7 +115,7 @@ senders, and every invite would have carried a dead link. If a change spans both
   `node -e "const h=require('fs').readFileSync('index.html','utf8');const m=h.match(/<script type=\"text\/javascript\">([\s\S]*?)<\/script>/);new Function(m[1]);console.log('parse OK')"`
 - Then `npm run check` — 58 tests plus 13 static checks.
 
-## Two traps that have each cost a day
+## Traps that have each cost a day
 
 **Do not hand Erik a command prefixed with `!`.** That prefix is Claude Code's own syntax. He
 runs commands in a real terminal, where zsh reads `!` as logical-NOT: `! cd /path && git push`
@@ -98,3 +126,38 @@ never runs and prints **no error at all**. This has silently swallowed a product
 validates with `cleanText(..., required=true)`, which throws a plain `TypeError`, not an
 `HttpsError`. The user sees only "INTERNAL" and the real message is in Cloud Logging. When a
 callable fails inexplicably, read the logs before theorising.
+
+**`gcloud` is not on the PATH, and credentials expire roughly daily.** The SDK lives at
+`/opt/homebrew/share/google-cloud-sdk/bin/gcloud` — Homebrew never symlinked it, so the bare name
+is "command not found". Export it first:
+
+```bash
+export PATH="/opt/homebrew/share/google-cloud-sdk/bin:$PATH"
+```
+
+Erik must reauth interactively; it cannot be done from a non-interactive shell. Give him the full
+path, and note `npx firebase` only works from `marketreadytours/`, which is where `package.json`
+lives:
+
+```
+/opt/homebrew/share/google-cloud-sdk/bin/gcloud auth login
+/opt/homebrew/share/google-cloud-sdk/bin/gcloud auth application-default login
+cd "<repo>/marketreadytours" && npx firebase login --reauth
+```
+
+The two expire independently — the Firebase CLI has repeatedly outlived gcloud, and
+`npx firebase database:get <path>` will read the database when gcloud is dead.
+
+**Verify a deploy by revision, not by its success message.** `firebase deploy` has reported
+"Successful update operation" while still serving the previous revision. After deploying, check
+the revision actually rolled and diff the inventory:
+
+```bash
+gcloud functions describe <fn> --project=marketready-tours --region=us-central1 \
+  --format='value(serviceConfig.revision,state)'
+```
+
+**Reading a truncated `curl` is how you get a wrong answer confidently.** A dead credential makes
+the RTDB REST API return an HTML error, and `gcloud functions list` returns a partial list before
+failing — on 2026-08-23 that briefly reported 12 functions instead of 30. Sanity-check that a
+query returns data at all before reporting "no errors found".
