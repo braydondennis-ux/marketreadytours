@@ -693,7 +693,7 @@ exports.saveTour = onCall(callableOptions, async (request) => {
 
 exports.deleteTour = onCall(callableOptions, async (request) => {
   assertSafeProject();
-  const {uid} = assertAdmin(request, true);
+  const {uid} = assertAdmin(request);
   return idempotent("deleteTour", uid, request.data?.requestId, async () => {
     const tourId = cleanText(request.data?.tourId, 128, "tourId", true);
     const expectedVersion = Number(request.data?.expectedVersion || 0);

@@ -59,6 +59,7 @@ async function callable(name, data, expectedStatus = 200) {
 
 console.log("Signing in anonymously");
 await signInAnonymously(auth);
+await callable("deleteTour", {tourId: "tour-demo-1", expectedVersion: 1, requestId: requestId("anonymous-delete")}, 403);
 await callable("verifyTourCode", {tourId: "tour-demo-1", code: "0000"}, 403);
 const grant = await callable("verifyTourCode", {tourId: "tour-demo-1", code: "1234"});
 assert.ok(grant.grantId);
@@ -325,7 +326,18 @@ const afterCleanupSave = Object.values((await get(ref(db, "mrt_reminders"))).val
 assert.equal(afterCleanupSave.length, 2, "saving a hand-built tour must create its reminders");
 assert.equal(afterCleanupSave.every((r) => r.status === "pending"), true);
 
-await callable("deleteTour", {tourId: "tour-reminder-cleanup", expectedVersion: 1, requestId: requestId("cleanup-delete")});
+// A regular admin can delete a tour created by a super-admin, but stale edits still fail.
+await signOut(auth);
+await signInWithEmailAndPassword(auth, "admin@example.com", "test1234");
+await callable("deleteTour", {tourId: "tour-reminder-cleanup", expectedVersion: 0, requestId: requestId("stale-delete")}, 409);
+assert.ok((await get(ref(db, "mrt_tours_private/tour-reminder-cleanup"))).exists(), "stale delete must preserve the tour");
+const deleteRequest = {tourId: "tour-reminder-cleanup", expectedVersion: 1, requestId: requestId("cleanup-delete")};
+const deleted = await callable("deleteTour", deleteRequest);
+assert.equal(deleted.deleted, true, "regular admins must be allowed to delete tours");
+assert.deepEqual(await callable("deleteTour", deleteRequest), deleted, "retrying the same deletion must be idempotent");
+for (const root of ["mrt_tours_private", "mrt_tours_public"]) {
+  assert.equal((await get(ref(db, `${root}/tour-reminder-cleanup`))).exists(), false, `${root} must remove the deleted tour`);
+}
 const afterCleanupDelete = Object.values((await get(ref(db, "mrt_reminders"))).val() || {})
   .filter((r) => r.tourId === "tour-reminder-cleanup");
 assert.equal(afterCleanupDelete.length, 2, "records are kept for the audit trail");
@@ -334,6 +346,12 @@ assert.equal(
   true,
   "deleting a tour must cancel its reminders, not leave them to fire",
 );
+
+await signOut(auth);
+await signInWithEmailAndPassword(auth, "super@example.com", "test1234");
+await callable("saveTour", {tour: {...deletableTour, id: "tour-super-delete", listings: []}, expectedVersion: 0, requestId: requestId("super-delete-save")});
+const superDeleted = await callable("deleteTour", {tourId: "tour-super-delete", expectedVersion: 1, requestId: requestId("super-delete")});
+assert.equal(superDeleted.deleted, true, "super-admins must retain deletion access");
 
 console.log(
   "Workflow suite passed: rating, intake, approval, manual payment, campaign, opt-out, Square payment, refund, and reminders.",
