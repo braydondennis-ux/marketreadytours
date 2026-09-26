@@ -15058,7 +15058,7 @@ function App() {
     lsSet("gat_subadmins", subAdmins);
   }, [subAdmins]);
   const [currentUser, setCurrentUser] = useState(null);
-  // #/login opens the sign-in screen directly (the landing page's "Agent login" and the admin
+  // #/login opens the sign-in screen directly (the landing page's "Admin sign-in" link and the admin
   // invite email link here). The hash is reset to the dashboard so closing login lands there.
   const [showLogin, setShowLogin] = useState(() => {
     if (window.location.hash !== "#/login") return false;
