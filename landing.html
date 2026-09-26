@@ -415,6 +415,20 @@ footer img{height:28px;width:auto}
   .final{padding-bottom:0}
   .how .step p{display:block!important}
 }
+
+/* ── Hover states for everything clickable (mouse only, so taps don't leave sticky hovers) ── */
+.nav-logo img,.faq summary,.faq summary svg,footer span a{transition:color .15s var(--ease),opacity .15s var(--ease)}
+.star{transition:color .12s var(--ease),transform .12s var(--ease)}
+@media (hover:hover){
+  .nav-logo:hover img{opacity:.75}
+  /* Stars preview the rating: every star up to the one under the cursor lights up */
+  .stars:hover .star{color:#D9DCE3}
+  .stars:hover .star:hover,.stars:hover .star:has(~ .star:hover){color:#6576C4}
+  .stars .star:hover{transform:scale(1.15)}
+  .faq summary:hover{color:var(--cobalt)}
+  .faq summary:hover svg{color:var(--cobalt)}
+  footer span a:hover{color:var(--text);text-decoration:underline}
+}
 </style>
 </head>
 <body>
