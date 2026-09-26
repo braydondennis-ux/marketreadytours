@@ -1,0 +1,884 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MarketReady Tours | Real agent feedback on your listing</title>
+<meta name="description" content="Put your listing in front of local agents on a MarketReady home tour. Every agent rates the home in 10 areas, and you get their scores, price opinions and comments.">
+<meta name="theme-color" content="#101A36">
+<script>if (!matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window) document.documentElement.classList.add("motion");</script>
+<link rel="icon" href="icons/app-icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --canvas:#F7F6F2; --paper:#FFFFFF; --ink:#101A36; --ink-2:#1A2547;
+  --cobalt:#2F44A0; --cobalt-2:#253788; --steel:#AEBFD6; --steel-soft:#D7E0EE; --steel-wash:#EEF1F7;
+  --text:#111318; --muted:#5B5F6B; --subtle:#8A8D97;
+  --hair:#E8E7E0; --hair-card:#E4E2DB;
+  --ok:#1F7A4D;
+  --well:1200px; --gutter:clamp(16px,4vw,32px);
+  --ease:cubic-bezier(.2,.7,.3,1);
+  /* One screen = the viewport minus the sticky nav. svh keeps it stable on phones as toolbars move. */
+  --nav:68px;
+  --screen:calc(100vh - var(--nav));
+  --pad-y:clamp(20px,4.5vh,64px);
+}
+@supports (height:100svh){:root{--screen:calc(100svh - var(--nav));--pad-y:clamp(20px,4.5svh,64px)}}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;scroll-snap-type:y mandatory;scroll-padding-top:var(--nav)}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{margin:0;background:var(--canvas);color:var(--text);font:400 17px/1.55 "DM Sans",system-ui,-apple-system,sans-serif;font-optical-sizing:auto}
+img{max-width:100%;display:block}
+a{color:var(--cobalt)}
+:focus-visible{outline:3px solid var(--cobalt);outline-offset:3px;border-radius:6px}
+.well{max-width:var(--well);width:100%;margin:0 auto;padding:0 var(--gutter)}
+h1,h2,h3{margin:0;color:var(--text);letter-spacing:-.025em;line-height:1.08;font-weight:700}
+h1{font-size:clamp(38px,min(6.4vw,8.6vh),76px);letter-spacing:-.04em;line-height:1}
+h2{font-size:clamp(28px,min(4vw,5.6vh),46px);letter-spacing:-.03em}
+h3{font-size:20px;letter-spacing:-.015em;line-height:1.25}
+p{margin:0}
+.lede{font-size:clamp(17px,1.6vw,21px);color:var(--muted);max-width:34em;line-height:1.5}
+
+/* ── Screens: every snap stop fills exactly one screen below the nav ── */
+.screen{min-height:var(--screen);scroll-snap-align:start;scroll-snap-stop:always;display:flex;flex-direction:column;justify-content:center;padding-block:var(--pad-y)}
+.part{min-width:0}
+.sec-head{max-width:760px;margin-bottom:clamp(20px,4.5vh,52px)}
+.sec-head .lede{margin-top:clamp(8px,1.8vh,18px)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:0 24px;border-radius:12px;font:600 16px/1 "DM Sans",sans-serif;text-decoration:none;cursor:pointer;border:1px solid transparent;transition:background .15s var(--ease),transform .12s var(--ease)}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--cobalt);color:#fff}
+.btn-primary:hover{background:var(--cobalt-2)}
+.btn-ghost{background:transparent;color:var(--text);border-color:#D6D4CC}
+.btn-ghost:hover{background:var(--paper)}
+.btn-light{background:#fff;color:var(--ink)}
+.btn-light:hover{background:var(--steel-wash)}
+.btn svg{width:18px;height:18px;flex:none}
+
+/* Nav */
+.nav{position:sticky;top:0;z-index:20;height:var(--nav);background:rgba(247,246,242,.92);backdrop-filter:saturate(1.4) blur(10px);-webkit-backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hair)}
+.nav .well{display:flex;align-items:center;justify-content:space-between;height:100%;gap:16px}
+/* Logo is 5.22:1. 46px tall on desktop; on phones it shrinks just enough to leave room for the button. */
+.nav-logo{display:block;flex:none}
+.nav-logo img{height:min(46px,calc((100vw - 170px) / 5.22));width:auto}
+.nav-links{display:none;gap:28px;align-items:center}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:15px;font-weight:500}
+.nav-links a:hover{color:var(--text)}
+.nav-cta{display:flex;gap:10px;align-items:center}
+.nav-cta .btn{min-height:42px;padding:0 16px;font-size:15px}
+.nav-login{display:none}
+@media (min-width:900px){.nav-links{display:flex}.nav-login{display:inline-flex}}
+
+/* Hero */
+.hero-grid{display:grid;gap:clamp(32px,5vw,72px);align-items:center}
+@media (min-width:1000px){.hero-grid{grid-template-columns:1.05fr .95fr}}
+.hero h1{max-width:10.5em}
+.hero .lede{margin-top:clamp(12px,2.6vh,24px)}
+.hero-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:clamp(18px,3.6vh,34px)}
+.proof{margin-top:clamp(14px,2.8vh,26px);display:flex;flex-wrap:wrap;gap:6px 28px;color:var(--muted);font-size:15px}
+.proof b{color:var(--text);font-weight:700;font-variant-numeric:tabular-nums}
+.next{margin-top:clamp(14px,2.8vh,24px);height:64px;display:flex;align-items:center;gap:12px;background:var(--paper);border:1px solid var(--hair-card);border-radius:14px;padding:12px 16px;font-size:15px;max-width:34em;color:var(--text);text-decoration:none}
+.next:hover{border-color:var(--steel)}
+.next b{font-weight:700}
+#next-copy{min-width:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;line-height:1.35}
+.next.quiet .pulse{background:var(--steel);animation:none}
+.next svg{width:18px;height:18px;color:var(--cobalt);flex:none;margin-left:auto}
+.pulse{width:10px;height:10px;border-radius:50%;background:var(--ok);flex:none;box-shadow:0 0 0 0 rgba(31,122,77,.4);animation:pulse 2.4s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 10px rgba(31,122,77,0)}100%{box-shadow:0 0 0 0 rgba(31,122,77,0)}}
+
+/* Interactive rating demo */
+.demo{max-width:500px;width:100%;justify-self:center}
+.sheet{background:var(--paper);border:1px solid var(--hair-card);border-radius:22px;padding:18px 22px 0;overflow:hidden;box-shadow:0 1px 2px rgba(16,26,54,.04),0 30px 60px -34px rgba(16,26,54,.35)}
+.sheet-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--hair)}
+.sheet-addr{font-weight:700;font-size:18px;letter-spacing:-.01em}
+.sheet-meta{color:var(--muted);font-size:14px;margin-top:2px}
+.sheet-tag{font-size:12px;font-weight:600;color:var(--cobalt);background:var(--steel-wash);border:1px solid var(--steel-soft);padding:5px 9px;border-radius:999px;white-space:nowrap}
+.cats{list-style:none;margin:2px 0 0;padding:0}
+.cat{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:clamp(0px,.35vh,4px) 0;border-bottom:1px solid #F1F0EB}
+.cat:last-child{border-bottom:0}
+.cat-name{font-size:15px;font-weight:500}
+.stars{display:flex;gap:2px}
+.star{appearance:none;border:0;background:none;padding:5px 3px;cursor:pointer;color:#D9DCE3;line-height:0;border-radius:6px}
+.star svg{width:22px;height:22px;fill:currentColor}
+.star.on{color:var(--cobalt)}
+.star:hover{color:var(--steel)}
+.star.on:hover{color:var(--cobalt-2)}
+/* The sheet's footer is the listing agent's side of the same data */
+.sheet-foot{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;margin:10px -22px 0;padding:16px 22px;background:var(--ink);color:#fff}
+.report-label{font-size:13px;color:var(--steel)}
+.report-score{font-size:40px;font-weight:700;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.report-score small{font-size:16px;color:var(--steel);font-weight:500;letter-spacing:0}
+.report-bar{height:5px;border-radius:999px;background:rgba(174,191,214,.22);margin-top:8px;overflow:hidden}
+.report-bar i{display:block;height:100%;width:0;background:var(--steel);border-radius:inherit;transition:width .35s var(--ease)}
+.report-note{font-size:14px;color:var(--steel-soft);margin-top:2px;line-height:1.35;height:2.7em}
+.report-note span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sheet-foot>div{min-width:0}
+
+/* Problem */
+.problem-grid{display:grid;gap:clamp(24px,4vw,56px)}
+@media (min-width:900px){.problem-grid{grid-template-columns:1fr 1fr;align-items:center}}
+.problem-grid .lede{margin-top:clamp(10px,2vh,18px)}
+.silence{display:grid;gap:10px}
+.msg{background:var(--paper);border:1px solid var(--hair-card);border-radius:16px 16px 16px 4px;padding:12px 16px;max-width:340px;font-size:16px}
+.msg small{display:block;color:var(--subtle);font-size:13px;margin-top:4px}
+.msg.me{justify-self:end;background:var(--steel-wash);border-color:var(--steel-soft);border-radius:16px 16px 4px 16px}
+
+/* Steps */
+.steps{display:grid;gap:12px;list-style:none;padding:0;margin:0}
+.step{background:var(--paper);border:1px solid var(--hair-card);border-radius:18px;padding:18px 18px 18px;display:grid;grid-template-columns:34px 1fr;column-gap:14px}
+.step-n{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--ink);color:#fff;font-weight:700;font-size:15px;grid-row:span 3}
+.step h3{align-self:center}
+.step p{color:var(--muted);margin-top:6px;font-size:16px}
+.step .when{display:block;margin-top:8px;font-size:14px;font-weight:600;color:var(--cobalt)}
+@media (min-width:900px){
+  .steps{grid-template-columns:repeat(3,1fr);gap:0}
+  .step{display:block;padding:28px 28px 32px;border-radius:0;border-right-width:0}
+  .step:first-child{border-radius:18px 0 0 18px}
+  .step:last-child{border-radius:0 18px 18px 0;border-right-width:1px}
+  .step-n{margin-bottom:22px}
+  .step p{margin-top:10px;font-size:17px}
+  .step .when{margin-top:18px}
+}
+
+/* Report (the one ink screen) */
+.ink{background:var(--ink);color:#fff}
+.ink h2,.ink h3{color:#fff}
+.ink .lede{color:var(--steel-soft)}
+.show-grid{display:grid;gap:clamp(36px,5vw,64px);align-items:center}
+@media (min-width:1000px){.show-grid{grid-template-columns:.9fr 1.1fr}}
+.gets{list-style:none;padding:0;margin:clamp(18px,3.4vh,32px) 0 0;display:grid;gap:clamp(12px,2.2vh,22px)}
+.gets li{display:grid;grid-template-columns:28px 1fr;gap:14px}
+.gets svg{width:22px;height:22px;color:var(--steel);margin-top:3px}
+.gets b{display:block;font-weight:600;font-size:17px}
+.gets span{color:var(--steel-soft);font-size:16px}
+.rcard{background:var(--paper);color:var(--text);border-radius:22px;padding:clamp(18px,3vw,30px)}
+.rcard-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;padding-bottom:16px;border-bottom:1px solid var(--hair)}
+.rcard-title{font-size:14px;color:var(--muted)}
+.rcard-addr{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-top:2px}
+.rank{text-align:right}
+.rank-n{font-size:40px;font-weight:700;letter-spacing:-.04em;line-height:1;color:var(--cobalt)}
+.rank-l{font-size:13px;color:var(--muted)}
+.bars{display:grid;grid-template-columns:1fr;gap:8px 28px;margin:18px 0}
+@media (min-width:600px){.bars{grid-template-columns:1fr 1fr}}
+.bar{display:grid;grid-template-columns:100px 1fr 30px;align-items:center;gap:10px;font-size:14px}
+.bar-t{height:6px;border-radius:999px;background:#ECEEF3;overflow:hidden}
+.bar-t i{display:block;height:100%;background:var(--cobalt);border-radius:inherit}
+.bar-t i.low{background:var(--steel)}
+.bar em{font-style:normal;font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.price{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.price div{background:var(--canvas);border-radius:12px;padding:10px 12px}
+.price b{display:block;font-size:22px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.price span{font-size:13px;color:var(--muted)}
+.quote{border-left:3px solid var(--steel);padding:2px 0 2px 14px;font-size:16px;color:var(--text)}
+.quote+.quote{margin-top:10px}
+.quote small{display:block;color:var(--subtle);font-size:13px;margin-top:3px}
+.sample-note{margin-top:12px;font-size:13px;color:var(--steel)}
+
+/* Audiences */
+.aud{display:grid;gap:16px}
+@media (min-width:900px){.aud{grid-template-columns:1fr 1fr}.aud .sec-head{grid-column:1/-1;margin-bottom:clamp(4px,1.5vh,36px)}}
+.aud-card{background:var(--paper);border:1px solid var(--hair-card);border-radius:18px;padding:clamp(22px,3vw,36px);display:flex;flex-direction:column}
+.aud-card h3{font-size:24px}
+.aud-card>p{color:var(--muted);margin-top:10px}
+.aud-card ul{margin:18px 0 26px;padding:0;list-style:none;display:grid;gap:10px}
+.aud-card li{display:flex;gap:10px;font-size:16px}
+.aud-card li svg{width:18px;height:18px;color:var(--cobalt);flex:none;margin-top:4px}
+.aud-card .btn{margin-top:auto;align-self:flex-start}
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0 26px}
+.tier{border:1px solid var(--hair-card);border-radius:12px;padding:12px 8px;text-align:center}
+.tier b{display:block;font-size:22px;letter-spacing:-.02em}
+.tier span{font-size:13px;color:var(--muted)}
+.tier.top{border-color:var(--cobalt);background:var(--steel-wash)}
+
+/* Tours list */
+.tours{display:grid;gap:12px}
+.tour{display:grid;grid-template-columns:auto 1fr;gap:12px 18px;align-items:center;background:var(--paper);border:1px solid var(--hair-card);border-radius:16px;padding:16px 18px}
+.tour-date{width:58px;text-align:center;border-right:1px solid var(--hair);padding-right:16px}
+.tour-date b{display:block;font-size:26px;line-height:1;letter-spacing:-.02em}
+.tour-date span{font-size:13px;color:var(--muted)}
+.tour-name{font-weight:700;font-size:17px}
+.tour-sub{color:var(--muted);font-size:15px;margin-top:2px}
+.seats{font-size:14px;font-weight:600;color:var(--ok);white-space:nowrap}
+.seats.low{color:#A1471B}
+.tour-cta{grid-column:1/-1}
+.tour-cta .btn{width:100%}
+@media (min-width:700px){.tour{grid-template-columns:auto 1fr auto}.tour-cta{grid-column:auto}.tour-cta .btn{width:auto}}
+.tour .btn{min-height:44px;padding:0 16px;font-size:15px}
+.tours-empty{background:var(--paper);border:1px dashed #D6D4CC;border-radius:16px;padding:24px;color:var(--muted)}
+
+/* FAQ */
+.faq{max-width:820px}
+.faq details{border-bottom:1px solid var(--hair)}
+.faq summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:20px;align-items:center;padding:clamp(14px,2.4vh,22px) 0;font-weight:600;font-size:18px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary svg{width:20px;height:20px;flex:none;color:var(--muted);transition:transform .2s var(--ease)}
+.faq details[open] summary svg{transform:rotate(45deg)}
+.faq details p{color:var(--muted);padding:0 0 18px;max-width:40em}
+
+/* Final screen carries the footer at its foot */
+.final{padding-bottom:0}
+.final-main{flex:1;display:flex;align-items:center}
+.final-box{background:var(--ink);color:#fff;border-radius:28px;padding:clamp(32px,6vw,72px);display:grid;gap:28px}
+@media (min-width:900px){.final-box{grid-template-columns:1.3fr auto;align-items:end}}
+.final-box h2{color:#fff;max-width:14em}
+.final-box p{color:var(--steel-soft);margin-top:14px;max-width:32em}
+footer{border-top:1px solid var(--hair);margin-top:var(--pad-y);padding:24px 0 calc(24px + env(safe-area-inset-bottom));color:var(--muted);font-size:14px}
+footer .well{display:flex;flex-wrap:wrap;gap:12px 32px;justify-content:space-between;align-items:center}
+footer a{color:var(--muted)}
+footer img{height:28px;width:auto}
+
+/* ── Phones and small tablets: sections too big for one screen split into snap parts ── */
+@media (max-width:899px){
+  .screen.split{min-height:0;padding-block:0;display:block;scroll-snap-align:none}
+  .split .part{min-height:var(--screen);scroll-snap-align:start;scroll-snap-stop:always;display:flex;flex-direction:column;justify-content:center;padding-block:var(--pad-y)}
+  .hero-grid,.show-grid,.aud,.how-grid{gap:0}
+  .hero-actions .btn{flex:1 1 auto}
+  .quote+.quote{display:none}
+}
+@media (max-width:999px) and (min-width:900px){
+  /* Two-column hero only kicks in at 1000px; between 900–999 the hero still splits */
+  .hero.split{min-height:0;padding-block:0;display:block;scroll-snap-align:none}
+  .hero .part{min-height:var(--screen);scroll-snap-align:start;scroll-snap-stop:always;display:flex;flex-direction:column;justify-content:center;padding-block:var(--pad-y)}
+  .show-grid.well{gap:24px}
+}
+@media (min-width:900px){.aud .part{display:contents}}
+
+/* Short screens: tighten type and rhythm so each screen still fits */
+@media (max-height:760px){
+  body{font-size:16px}
+  .lede{font-size:16px}
+  .star{padding:3px 3px}.star svg{width:20px;height:20px}
+  .sheet-head{padding-bottom:8px}.sheet-meta{display:none}
+  .report-score{font-size:32px}
+  .gets span{font-size:15px}
+  .step p{font-size:15px}
+  .bar{font-size:13px}
+  .price b{font-size:19px}
+  .aud-card ul{gap:6px;margin:12px 0 18px}.tiers{margin:12px 0 18px}
+}
+@media (max-width:899px){
+  .step .when{display:none}
+  .step{padding:16px}
+  .bars{gap:6px}
+}
+@media (max-width:899px) and (max-height:760px){
+  .lb-foot{display:none}
+  .bars .bar:nth-child(5),.bars .bar:nth-child(7){display:none}
+}
+@media (max-width:899px) and (max-height:620px){
+  .place{grid-template-columns:88px 1fr}.place-body{padding:10px 12px}.place-score{font-size:24px}
+  .lb .sec-head .lede{display:none}
+  .how .step{padding:12px 14px!important}.how .step p{font-size:14px!important}.how .step h3{font-size:18px}
+  .lb h2{font-size:26px}
+}
+@media (max-width:899px) and (max-height:620px){
+  :root{--pad-y:12px}
+  .proof{display:none}
+  .star{padding:2px}.star svg{width:18px;height:18px}
+  .sheet-foot{padding:12px 22px}
+  .silence .msg:nth-child(2){display:none}
+  .rcard .quote,.sample-note{display:none}
+  .price{margin-bottom:0}
+  .hero .lede{font-size:15.5px}
+}
+@media (max-width:899px) and (max-height:600px){
+  .how .step p{display:none}
+}
+@media (min-width:1000px) and (max-height:700px){
+  .quote+.quote{display:none}
+}
+@media (max-width:899px) and (max-height:700px){
+  .how .sec-head .lede,.aud .sec-head .lede{display:none}
+  .gets span{display:none}
+  .problem-grid .lede+.lede{display:none}
+}
+
+/* ── Hero on ink, over a slow wall of homes from past tours ── */
+/* contain:paint clips the wall without making the hero a scroll container; overflow:hidden would
+   capture the phone-sized snap points inside the hero and the page would jump past it on load. */
+.hero{position:relative;background:var(--ink);contain:paint;isolation:isolate}
+.wall{position:absolute;inset:0;z-index:-2;display:grid;grid-template-columns:repeat(6,1fr);gap:10px;padding:0 10px;pointer-events:none}
+.wall-col{display:flex;flex-direction:column;gap:10px;will-change:transform;animation:drift var(--dur,90s) linear infinite}
+.wall-col:nth-child(even){animation-direction:reverse}
+.wall img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;flex:none;background:var(--ink-2)}
+@keyframes drift{from{transform:translateY(0)}to{transform:translateY(calc(-1 * var(--period,0px)))}}
+.hero::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(16,26,54,.97) 0%,rgba(16,26,54,.93) 38%,rgba(16,26,54,.72) 62%,rgba(16,26,54,.6) 100%)}
+@media (max-width:999px){.wall{grid-template-columns:repeat(3,1fr)}.hero::before{background:rgba(16,26,54,.82)}}
+.hero h1{color:#fff}
+.hero .lede{color:var(--steel-soft)}
+.hero .proof{color:var(--steel)}
+.hero .proof b{color:#fff}
+.hero .btn-ghost{color:#fff;border-color:rgba(174,191,214,.4)}
+.hero .btn-ghost:hover{background:rgba(255,255,255,.08)}
+.hero .next{background:rgba(255,255,255,.07);border-color:rgba(174,191,214,.28);color:#fff}
+.hero .next:hover{border-color:var(--steel)}
+.hero .next svg{color:var(--steel)}
+.hero .sheet{box-shadow:0 40px 80px -30px rgba(0,0,0,.55)}
+.wall-caption{position:absolute;right:var(--gutter);bottom:14px;font-size:12px;color:rgba(215,224,238,.7);z-index:1}
+@media (max-width:999px){.wall-caption{display:none}}
+
+/* ── Route map ── */
+.how-grid{display:grid;gap:clamp(24px,4vw,56px);align-items:center}
+@media (min-width:900px){.how-grid{grid-template-columns:.85fr 1.15fr}}
+.how .steps{grid-template-columns:1fr!important;gap:10px!important}
+.how .step{display:grid!important;grid-template-columns:34px 1fr;column-gap:14px;border-radius:16px!important;border-right-width:1px!important;padding:16px 18px!important}
+.how .step-n{margin-bottom:0!important}
+.how .step p{margin-top:4px!important;font-size:16px!important}
+.how .step .when{display:none}
+.map{background:var(--paper);border:1px solid var(--hair-card);border-radius:22px;overflow:hidden;box-shadow:0 1px 2px rgba(16,26,54,.04),0 30px 60px -40px rgba(16,26,54,.35)}
+.map svg{display:block;width:100%;height:auto;max-height:min(440px,58vh)}
+.map-foot{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 18px;border-top:1px solid var(--hair);font-size:14px;color:var(--muted)}
+.map-foot b{color:var(--text);font-weight:600}
+.map-foot small{font-size:12px;color:var(--subtle);white-space:nowrap}
+.route{fill:none;stroke:var(--cobalt);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.pin circle{fill:var(--ink)}
+.pin text{fill:#fff;font:700 12px "DM Sans",sans-serif;text-anchor:middle;dominant-baseline:central}
+.chip rect{fill:#fff;stroke:#D6DAE3}
+.chip text{fill:var(--text);font:700 13px "DM Sans",sans-serif;text-anchor:middle;dominant-baseline:central}
+.chip.best rect{fill:var(--cobalt);stroke:var(--cobalt)}
+.chip.best text{fill:#fff}
+.start circle{fill:#fff;stroke:var(--ink);stroke-width:3}
+.start text,.finish text{fill:var(--muted);font:600 12px "DM Sans",sans-serif}
+.map.big .pin text{font-size:16px}.map.big .chip text{font-size:18px}.map.big .start text,.map.big .finish text{font-size:17px}.map.big .route{stroke-width:5}
+
+/* ── Leaderboard ── */
+.podium{display:grid;gap:14px}
+@media (min-width:900px){.podium{grid-template-columns:repeat(3,1fr);gap:18px}}
+.place{background:var(--paper);border:1px solid var(--hair-card);border-radius:18px;overflow:hidden;display:grid;grid-template-columns:112px 1fr}
+.place img{width:100%;height:100%;object-fit:cover;background:var(--steel-wash);display:block}
+.place-body{padding:14px 16px;display:grid;gap:2px;align-content:center;min-width:0}
+.place-photo{position:relative;min-height:0}
+.place-rank{position:absolute;top:8px;left:8px;background:var(--ink);color:#fff;font-weight:700;font-size:14px;line-height:1;padding:6px 9px;border-radius:999px}
+.place:first-child .place-rank{background:var(--cobalt)}
+.place-score{font-size:30px;font-weight:700;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+.place-score small{font-size:14px;color:var(--muted);font-weight:500;letter-spacing:0}
+.place-city{font-weight:600;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.place-meta{color:var(--muted);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.place:first-child{border-color:var(--cobalt);box-shadow:0 0 0 1px var(--cobalt)}
+@media (min-width:900px){
+  .place{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .place img{aspect-ratio:16/10;height:auto}
+  .place-rank{top:12px;left:12px;font-size:15px;padding:7px 11px}
+  .place-body{padding:18px 20px 20px;gap:4px}
+  .place-score{font-size:40px}
+}
+@media (min-width:900px) and (max-height:760px){.place img{aspect-ratio:2/1}.place-score{font-size:32px}.place-body{padding:14px 18px 16px}}
+.lb-foot{margin-top:clamp(14px,2.6vh,24px);font-size:14px;color:var(--muted)}
+
+/* ── One entrance per screen. Transform/opacity only, so nothing changes size. ── */
+.motion [data-enter]{opacity:0;transform:translateY(14px)}
+.motion .in [data-enter]{opacity:1;transform:none;transition:opacity .6s var(--ease) var(--d,0s),transform .6s var(--ease) var(--d,0s)}
+.motion .route{stroke-dasharray:var(--len);stroke-dashoffset:var(--len)}
+.motion .in .route{stroke-dashoffset:0;transition:stroke-dashoffset 3.4s cubic-bezier(.45,.05,.35,1)}
+.motion .chip,.motion .finish{opacity:0;transform:translateY(6px) scale(.85);transform-box:fill-box;transform-origin:50% 100%}
+.motion .in .chip,.motion .in .finish{opacity:1;transform:none;transition:opacity .35s var(--ease) var(--d,0s),transform .45s cubic-bezier(.2,.8,.3,1.4) var(--d,0s)}
+.motion .rcard .bar-t i{transform:scaleX(0);transform-origin:left}
+.motion .in .rcard .bar-t i{transform:none;transition:transform .9s var(--ease) var(--d,0s)}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2.8l2.8 5.7 6.3.9-4.55 4.43 1.07 6.27L12 17.13 6.38 20.1l1.07-6.27L2.9 9.4l6.3-.9z"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15v2M12 10v7M17 6v11"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></symbol>
+</svg>
+
+<header class="nav">
+  <div class="well">
+    <a class="nav-logo" href="#top" aria-label="MarketReady Tours home"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2MjYuNiAxMjAuMCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsPSJNYXJrZXQgUmVhZHkgVG91cnMiPjxnIGZpbGw9IiMxMDFBMzYiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0xMTguMjMgMTIuMDApIHNjYWxlKDAuNTEzNjQpIj48cGF0aCBkPSJNMzMwLjIzLDE2MS4yNkwyNDQuNjMsMjIuMTd2MTY0LjczaC0xNC40NlYwaDI4LjkzbDc2Ljk5LDEyOC43MUw0MTQuNTksMGgyNy40MnYxODYuOWgtMjYuMjJWMjEuOSIvPjxwYXRoIGQ9Ik01MzAuMTUsMTAzLjU2YzI0Ljk1LS44Myw1NC40NC0xNC40Nyw1NC40NC00OS4wOCwwLTQ3LjMtMzUuMTMtNTQuNDgtODEuMTEtNTQuNDhoLTQ4Ljc1djExLjc1aDQzLjMyYzU1LjMxLDAsNjIuMjEsMTYuODQsNjIuMjEsNDMuMjdzLTI3LjAzLDM5LjIzLTYxLjg0LDM5LjIzaC0zMC41NHYxMC40NGgzNS45M2M3LjQzLDExLjA1LDU0LjkyLDgyLjIxLDY0LjgxLDgyLjIxaDMzLjk0Yy0xMy44NCwwLTYyLjk4LTY5LjgxLTcyLjQyLTgzLjM0aC4wMSwwWiIvPjwvZz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyMzcuMjggNTUuMjUpIiBmaWxsPSIjMTAxQTM2Ij48cGF0aCBkPSJNMS44MCAwLjAwTDEuODAgLTI4LjAwTDYuNzYgLTI4LjAwTDE1LjcyIC02LjgwTDE1Ljg4IC02LjgwTDI0LjgwIC0yOC4wMEwyOS43NiAtMjguMDBMMjkuNzYgMC4wMEwyNi40MCAwLjAwTDI2LjQwIC0yMi45MkwyNi4yNCAtMjIuOTJMMTguMTYgLTQuMDBMMTMuNDQgLTQuMDBMNS4zMiAtMjIuOTJMNS4xNiAtMjIuOTJMNS4xNiAwLjAwWk00My4zNiAwLjAwTDUyLjkyIC0yOC4wMEw1OC4xMiAtMjguMDBMNjcuNTIgMC4wMEw2My45NyAwLjAwTDU1LjYwIC0yNS41Mkw1NS40NCAtMjUuNTJMNDYuODggMC4wMFpNNDguMDggLTguNzZMNDkuMDQgLTExLjQ4TDYxLjcyIC0xMS40OEw2Mi42OCAtOC43NlpNODEuMTIgMC4wMEw4MS4xMiAtMjguMDBMOTAuMTYgLTI4LjAwUTkzLjQ0IC0yOC4wMCA5NS41MiAtMjYuOTBROTcuNjAgLTI1LjgwIDk4LjYwIC0yMy45NlE5OS42MCAtMjIuMTIgOTkuNjAgLTE5LjgwUTk5LjYwIC0xNy41NiA5OC41OCAtMTUuNjhROTcuNTYgLTEzLjgwIDk1LjQ0IC0xMi42OFE5My4zMiAtMTEuNTYgOTAuMDAgLTExLjU2TDg0LjQ4IC0xMS41Nkw4NC40OCAwLjAwWk05NS45MiAwLjAwTDg5Ljc2IC0xMi41Mkw5My41MiAtMTIuNTJMOTkuODggMC4wMFpNODQuNDggLTE0LjIwTDg5LjkyIC0xNC4yMFE5My4xMiAtMTQuMjAgOTQuNjIgLTE1Ljc2UTk2LjEyIC0xNy4zMiA5Ni4xMiAtMTkuNzZROTYuMTIgLTIyLjI0IDk0LjY2IC0yMy43MFE5My4yMCAtMjUuMTYgODkuODggLTI1LjE2TDg0LjQ4IC0yNS4xNlpNMTEzLjg4IDAuMDBMMTEzLjg4IC0yOC4wMEwxMTcuMjQgLTI4LjAwTDExNy4yNCAtMTUuNjBMMTI4LjkyIC0yOC4wMEwxMzMuMTYgLTI4LjAwTDEyMC4yNCAtMTQuNDRMMTMzLjMyIDAuMDBMMTI5LjA0IDAuMDBMMTE3LjI0IC0xMi45NkwxMTcuMjQgLTEyLjk2TDExNy4yNCAwLjAwWk0xNDYuOTIgMC4wMEwxNDYuOTIgLTI4LjAwTDE2NC4yNCAtMjguMDBMMTY0LjI0IC0yNS4yNEwxNTAuMjggLTI1LjI0TDE1MC4yOCAtMTUuNDhMMTYzLjA0IC0xNS40OEwxNjMuMDQgLTEyLjc2TDE1MC4yOCAtMTIuNzZMMTUwLjI4IC0yLjc2TDE2NC4yNCAtMi43NkwxNjQuMjQgMC4wMFpNMTg1LjYwIDAuMDBMMTg1LjYwIC0yNS4yNEwxNzcuMjQgLTI1LjI0TDE3Ny4yNCAtMjguMDBMMTk3LjMyIC0yOC4wMEwxOTcuMzIgLTI1LjI0TDE4OC45NiAtMjUuMjRMMTg4Ljk2IDAuMDBaTTIzMC41MiAwLjAwTDIzMC41MiAtMjguMDBMMjM5LjU2IC0yOC4wMFEyNDIuODQgLTI4LjAwIDI0NC45MiAtMjYuOTBRMjQ3LjAwIC0yNS44MCAyNDguMDAgLTIzLjk2UTI0OS4wMCAtMjIuMTIgMjQ5LjAwIC0xOS44MFEyNDkuMDAgLTE3LjU2IDI0Ny45OCAtMTUuNjhRMjQ2Ljk2IC0xMy44MCAyNDQuODQgLTEyLjY4UTI0Mi43MiAtMTEuNTYgMjM5LjQwIC0xMS41NkwyMzMuODggLTExLjU2TDIzMy44OCAwLjAwWk0yNDUuMzIgMC4wMEwyMzkuMTYgLTEyLjUyTDI0Mi45MiAtMTIuNTJMMjQ5LjI4IDAuMDBaTTIzMy44OCAtMTQuMjBMMjM5LjMyIC0xNC4yMFEyNDIuNTIgLTE0LjIwIDI0NC4wMiAtMTUuNzZRMjQ1LjUyIC0xNy4zMiAyNDUuNTIgLTE5Ljc2UTI0NS41MiAtMjIuMjQgMjQ0LjA2IC0yMy43MFEyNDIuNjAgLTI1LjE2IDIzOS4yOCAtMjUuMTZMMjMzLjg4IC0yNS4xNlpNMjYzLjI4IDAuMDBMMjYzLjI4IC0yOC4wMEwyODAuNjAgLTI4LjAwTDI4MC42MCAtMjUuMjRMMjY2LjY0IC0yNS4yNEwyNjYuNjQgLTE1LjQ4TDI3OS40MCAtMTUuNDhMMjc5LjQwIC0xMi43NkwyNjYuNjQgLTEyLjc2TDI2Ni42NCAtMi43NkwyODAuNjAgLTIuNzZMMjgwLjYwIDAuMDBaTTI5My42MCAwLjAwTDMwMy4xNiAtMjguMDBMMzA4LjM2IC0yOC4wMEwzMTcuNzYgMC4wMEwzMTQuMjEgMC4wMEwzMDUuODQgLTI1LjUyTDMwNS42OCAtMjUuNTJMMjk3LjEyIDAuMDBaTTI5OC4zMiAtOC43NkwyOTkuMjggLTExLjQ4TDMxMS45NiAtMTEuNDhMMzEyLjkyIC04Ljc2Wk0zMzEuMzYgMC4wMEwzMzEuMzYgLTI4LjAwTDMzOS45NiAtMjguMDBRMzQ0Ljg4IC0yOC4wMCAzNDguMDggLTI2LjMwUTM1MS4yOCAtMjQuNjAgMzUyLjgyIC0yMS40NlEzNTQuMzYgLTE4LjMyIDM1NC4zNiAtMTMuOTJRMzU0LjM2IC05LjYwIDM1Mi44MiAtNi40OFEzNTEuMjggLTMuMzYgMzQ4LjA4IC0xLjY4UTM0NC44OCAwLjAwIDMzOS45NiAwLjAwWk0zMzQuNzIgLTIuODBMMzM5Ljg4IC0yLjgwUTM0My45NiAtMi44MCAzNDYuMzggLTQuMTRRMzQ4LjgwIC01LjQ4IDM0OS44NCAtNy45OFEzNTAuODggLTEwLjQ4IDM1MC44OCAtMTMuOTJRMzUwLjg4IC0xNy40NCAzNDkuODQgLTE5Ljk2UTM0OC44MCAtMjIuNDggMzQ2LjM4IC0yMy44NFEzNDMuOTYgLTI1LjIwIDMzOS44OCAtMjUuMjBMMzM0LjcyIC0yNS4yMFpNMzc2LjY4IDAuMDBMMzc2LjY4IC0xMC4wOEwzNjcuNTYgLTI4LjAwTDM3MS4zNiAtMjguMDBMMzc4LjM2IC0xMy41NkwzNzguNTIgLTEzLjU2TDM4NS40OCAtMjguMDBMMzg5LjEyIC0yOC4wMEwzODAuMDQgLTEwLjA4TDM4MC4wNCAwLjAwWiIvPjwvZz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyMzcuMjggOTIuNzUpIiBmaWxsPSIjNUI1RjZCIj48cGF0aCBkPSJNNS45MSAwLjAwTDUuOTEgLTE1Ljc4TDAuNjkgLTE1Ljc4TDAuNjkgLTE3LjUwTDEzLjI0IC0xNy41MEwxMy4yNCAtMTUuNzhMOC4wMSAtMTUuNzhMOC4wMSAwLjAwWk0zNS4xOSAwLjMwUTMyLjY0IDAuMzAgMzAuNzAgLTAuODRRMjguNzYgLTEuOTggMjcuNjcgLTQuMDFRMjYuNTggLTYuMDUgMjYuNTggLTguNzVRMjYuNTggLTExLjQzIDI3LjY3IC0xMy40NlEyOC43NiAtMTUuNTAgMzAuNzAgLTE2LjY1UTMyLjY0IC0xNy44MCAzNS4xOSAtMTcuODBRMzcuODAgLTE3LjgwIDM5Ljc0IC0xNi42NVE0MS42OCAtMTUuNTAgNDIuNzYgLTEzLjQ2UTQzLjgzIC0xMS40MyA0My44MyAtOC43NVE0My44MyAtNi4wNSA0Mi43NiAtNC4wMVE0MS42OCAtMS45OCAzOS43NCAtMC44NFEzNy44MCAwLjMwIDM1LjE5IDAuMzBaTTM1LjIxIC0xLjU1UTM3LjEzIC0xLjU1IDM4LjYwIC0yLjQxUTQwLjA2IC0zLjI4IDQwLjg3IC00Ljg5UTQxLjY4IC02LjUwIDQxLjY4IC04Ljc1UTQxLjY4IC0xMS4wMCA0MC44NyAtMTIuNjFRNDAuMDYgLTE0LjIzIDM4LjYwIC0xNS4wOFEzNy4xMyAtMTUuOTMgMzUuMjEgLTE1LjkzUTMzLjI3IC0xNS45MyAzMS44MiAtMTUuMDhRMzAuMzYgLTE0LjIzIDI5LjU1IC0xMi42MVEyOC43MyAtMTEuMDAgMjguNzMgLTguNzVRMjguNzMgLTYuNTAgMjkuNTUgLTQuODlRMzAuMzYgLTMuMjggMzEuODIgLTIuNDFRMzMuMjcgLTEuNTUgMzUuMjEgLTEuNTVaTTY0LjYyIDAuMzBRNjIuODIgMC4zMCA2MS4zNiAtMC40M1E1OS44OSAtMS4xNSA1OS4wMiAtMi42NFE1OC4xNCAtNC4xMiA1OC4xNCAtNi40NUw1OC4xNCAtMTcuNTBMNjAuMjQgLTE3LjUwTDYwLjI0IC02LjQzUTYwLjI0IC00LjczIDYwLjgxIC0zLjY1UTYxLjM3IC0yLjU4IDYyLjM3IC0yLjA4UTYzLjM3IC0xLjU4IDY0LjY3IC0xLjU4UTY1Ljk5IC0xLjU4IDY2Ljk3IC0yLjA4UTY3Ljk0IC0yLjU4IDY4LjQ5IC0zLjY1UTY5LjA0IC00LjczIDY5LjA0IC02LjQzTDY5LjA0IC0xNy41MEw3MS4xNCAtMTcuNTBMNzEuMTQgLTYuNDVRNzEuMTQgLTQuMTIgNzAuMjcgLTIuNjRRNjkuMzkgLTEuMTUgNjcuOTIgLTAuNDNRNjYuNDQgMC4zMCA2NC42MiAwLjMwWk04Ni4xMCAwLjAwTDg2LjEwIC0xNy41MEw5MS43NSAtMTcuNTBROTMuODAgLTE3LjUwIDk1LjEwIC0xNi44MVE5Ni40MCAtMTYuMTIgOTcuMDMgLTE0Ljk4UTk3LjY1IC0xMy44MyA5Ny42NSAtMTIuMzhROTcuNjUgLTEwLjk4IDk3LjAyIC05LjgwUTk2LjM4IC04LjYyIDk1LjA1IC03LjkzUTkzLjczIC03LjIzIDkxLjY1IC03LjIzTDg4LjIwIC03LjIzTDg4LjIwIDAuMDBaTTk1LjM1IDAuMDBMOTEuNTAgLTcuODNMOTMuODUgLTcuODNMOTcuODMgMC4wMFpNODguMjAgLTguODhMOTEuNjAgLTguODhROTMuNjAgLTguODggOTQuNTQgLTkuODVROTUuNDggLTEwLjgzIDk1LjQ4IC0xMi4zNVE5NS40OCAtMTMuOTAgOTQuNTcgLTE0LjgxUTkzLjY1IC0xNS43MyA5MS41OCAtMTUuNzNMODguMjAgLTE1LjczWk0xMTcuOTIgMC4zMFExMTYuMDAgMC4zMCAxMTQuNTcgLTAuNDBRMTEzLjE1IC0xLjEwIDExMi4zNyAtMi4zNVExMTEuNjAgLTMuNjAgMTExLjYwIC01LjI1TDExMy44MCAtNS4yNVExMTMuODAgLTQuMjMgMTE0LjI3IC0zLjM2UTExNC43NCAtMi41MCAxMTUuNjYgLTEuOTlRMTE2LjU3IC0xLjQ4IDExNy45MiAtMS40OFExMTkuMDkgLTEuNDggMTE5LjkzIC0xLjg2UTEyMC43NyAtMi4yNCAxMjEuMjEgLTIuOTJRMTIxLjY1IC0zLjU5IDEyMS42NSAtNC40NVExMjEuNjUgLTUuNDkgMTIxLjIwIC02LjEzUTEyMC43NSAtNi43NyAxMTkuOTkgLTcuMTdRMTE5LjIzIC03LjU3IDExOC4yNSAtNy44N1ExMTcuMjYgLTguMTcgMTE2LjIwIC04LjU0UTExNC4xNiAtOS4yNSAxMTMuMTggLTEwLjI5UTExMi4yMCAtMTEuMzQgMTEyLjIwIC0xMy4wMVExMTIuMjAgLTE0LjQzIDExMi44NiAtMTUuNTBRMTEzLjUyIC0xNi41OCAxMTQuNzYgLTE3LjE5UTExNi4wMCAtMTcuODAgMTE3LjcwIC0xNy44MFExMTkuMzcgLTE3LjgwIDEyMC42MSAtMTcuMThRMTIxLjg1IC0xNi41NSAxMjIuNTUgLTE1LjQ2UTEyMy4yNSAtMTQuMzggMTIzLjI1IC0xMi45NUwxMjEuMDUgLTEyLjk1UTEyMS4wNSAtMTMuNjkgMTIwLjY3IC0xNC4zOVExMjAuMjkgLTE1LjA5IDExOS41MyAtMTUuNTVRMTE4Ljc3IC0xNi4wMSAxMTcuNjEgLTE2LjAxUTExNi42NyAtMTYuMDMgMTE1LjkzIC0xNS43MFExMTUuMTkgLTE1LjM2IDExNC43OCAtMTQuNzRRMTE0LjM3IC0xNC4xMiAxMTQuMzcgLTEzLjIxUTExNC4zNyAtMTIuMzcgMTE0LjczIC0xMS44NFExMTUuMDkgLTExLjMyIDExNS43NyAtMTAuOTVRMTE2LjQ1IC0xMC41OSAxMTcuMzggLTEwLjI4UTExOC4zMSAtOS45OCAxMTkuNDQgLTkuNjBRMTIwLjcxIC05LjE3IDEyMS43MCAtOC41NlExMjIuNjkgLTcuOTUgMTIzLjI1IC03LjAwUTEyMy44MiAtNi4wNSAxMjMuODIgLTQuNThRMTIzLjgyIC0zLjMzIDEyMy4xNiAtMi4yMVExMjIuNTAgLTEuMTAgMTIxLjIwIC0wLjQwUTExOS45MCAwLjMwIDExNy45MiAwLjMwWiIvPjwvZz48L3N2Zz4=" alt="MarketReady Tours" width="178" height="34"></a>
+    <nav class="nav-links" aria-label="Page sections">
+      <a href="#how">How it works</a>
+      <a href="#report">The report</a>
+      <a href="#tours" id="nav-tours">Upcoming tours</a>
+      <a href="#sponsors">Sponsors</a>
+    </nav>
+    <div class="nav-cta">
+      <a class="btn btn-ghost nav-login" data-app="">Agent login</a>
+      <a class="btn btn-primary" data-app="#/request">List a home</a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <section class="screen split hero" id="top" aria-labelledby="hero-h">
+    <div class="wall" id="wall" aria-hidden="true"></div>
+    <span class="wall-caption">Homes from recent MarketReady tours</span>
+    <div class="well hero-grid">
+      <div class="part">
+        <h1 id="hero-h">Find out what agents really think of your listing.</h1>
+        <p class="lede">Put your home on a MarketReady tour. Local agents walk through it, score it in 10 areas, and tell you if the price is right. You get every answer in one report.</p>
+        <div class="hero-actions">
+          <a class="btn btn-light" data-app="#/request">Put my listing on a tour <svg aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          <a class="btn btn-ghost" href="#report">See a sample report</a>
+        </div>
+        <div class="proof">
+          <span><b data-stat="tours">37</b> tours run</span>
+          <span><b data-stat="homes">107</b> homes toured</span>
+          <span>Across the Phoenix Valley</span>
+        </div>
+        <a class="next" id="next" href="#tours"><span class="pulse" aria-hidden="true"></span><span id="next-copy">Checking the next tour date…</span><svg aria-hidden="true"><use href="#i-arrow"/></svg></a>
+      </div>
+
+      <div class="part">
+        <div class="demo" aria-label="Try the rating sheet agents use on tour">
+          <div class="sheet">
+            <div class="sheet-head">
+              <div>
+                <div class="sheet-addr">Try it: rate this home</div>
+                <div class="sheet-meta">This is the sheet agents fill out on tour</div>
+              </div>
+              <span class="sheet-tag">Tap the stars</span>
+            </div>
+            <ul class="cats" id="cats"></ul>
+            <div class="sheet-foot" aria-live="polite">
+              <div>
+                <div class="report-label">Average</div>
+                <div class="report-score" id="avg">4.1<small> / 5</small></div>
+              </div>
+              <div>
+                <div class="report-label">What the listing agent sees</div>
+                <div class="report-note" id="avgnote"></div>
+                <div class="report-bar"><i id="avgbar"></i></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" aria-labelledby="prob-h">
+    <div class="well problem-grid">
+      <div>
+        <h2 id="prob-h">Showing feedback is usually silence.</h2>
+        <p class="lede">You ask. Agents are busy. Days on market climb, and the seller wants to know why. Without real feedback, the only lever left is a price cut.</p>
+        <p class="lede" style="color:var(--text)">A tour puts a group of local agents in your listing in one morning, and each one leaves a score before they walk out.</p>
+      </div>
+      <div class="silence" aria-hidden="true">
+        <div class="msg me" data-enter style="--d:.15s">Hi! Any feedback on 14 Saguaro Way from your showing?<small>Tue 10:12 AM</small></div>
+        <div class="msg me" data-enter style="--d:.75s">Just following up on the showing. Anything helps!<small>Thu 4:40 PM</small></div>
+        <div class="msg" data-enter style="--d:1.6s">Nice house. Buyers went another direction.<small>Mon 8:03 PM</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen split how" id="how" aria-labelledby="how-h">
+    <div class="well how-grid">
+      <div class="part">
+        <div class="sec-head">
+          <h2 id="how-h">How it works</h2>
+          <p class="lede">Three steps. You spend two minutes. The agents do the rest.</p>
+        </div>
+        <ol class="steps">
+        <li class="step">
+          <span class="step-n">1</span>
+          <h3>Pick a tour and add your listing</h3>
+          <p>Choose a tour near your home. Enter the address, price, beds and baths.</p>
+          <span class="when">About 2 minutes</span>
+        </li>
+        <li class="step">
+          <span class="step-n">2</span>
+          <h3>Agents tour and rate it</h3>
+          <p>Agents follow the route. At your home they rate 10 areas, give a price opinion and leave comments.</p>
+          <span class="when">Tour morning</span>
+        </li>
+        <li class="step">
+          <span class="step-n">3</span>
+          <h3>You get the report</h3>
+          <p>Scores, your rank on the tour, a price check and every comment.</p>
+          <span class="when">As agents rate</span>
+        </li>
+      </ol>
+      </div>
+      <div class="part">
+        <figure class="map" style="margin:0">
+          <svg viewBox="0 0 600 420" role="img" aria-labelledby="map-t">
+            <title id="map-t">A tour route through 8 homes, with a score at each stop</title>
+            <g id="map-grid"></g>
+            <path d="M-20 350 C 120 318, 230 380, 360 280 S 520 90, 630 70" fill="none" stroke="#AEBFD6" stroke-width="9" stroke-linecap="round" opacity=".45"/>
+            <path d="M 470 360 q 40 -46 90 -20 q 28 22 -8 52 q -44 26 -82 -32z" fill="#EEF1F7"/>
+            <path class="route" id="route"/>
+            <g id="pins"></g>
+          </svg>
+          <figcaption class="map-foot"><span><b>Tour morning.</b> One route, 8 homes, a score at every stop.</span><small>Illustration</small></figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen split ink" id="report" aria-labelledby="rep-h">
+    <div class="well show-grid">
+      <div class="part">
+        <h2 id="rep-h">One report you can hand to your seller.</h2>
+        <p class="lede" style="margin-top:clamp(10px,2vh,18px)">No more guessing. The numbers come from agents who stood in the house.</p>
+        <ul class="gets">
+          <li><svg aria-hidden="true"><use href="#i-chart"/></svg><div><b>Scores in 10 areas</b><span>Curb appeal, landscape, cleanliness, flooring, paint, showability, price, kitchen, bedrooms and windows.</span></div></li>
+          <li><svg aria-hidden="true"><use href="#i-tag"/></svg><div><b>A price check</b><span>Each agent says if it is priced right, or what they would list it for.</span></div></li>
+          <li><svg aria-hidden="true"><use href="#i-trophy"/></svg><div><b>Your rank on the tour</b><span>See how your listing stacked up against the other homes that day.</span></div></li>
+          <li><svg aria-hidden="true"><use href="#i-msg"/></svg><div><b>Their words</b><span>Written comments you can share with the seller as-is.</span></div></li>
+        </ul>
+      </div>
+
+      <div class="part">
+        <div class="rcard">
+          <div class="rcard-top">
+            <div>
+              <div class="rcard-title">Tour feedback report</div>
+              <div class="rcard-addr">14 Saguaro Way</div>
+            </div>
+            <div class="rank"><div class="rank-n">#2</div><div class="rank-l">of 8 homes</div></div>
+          </div>
+          <div class="bars">
+            <div class="bar"><span>Curb appeal</span><span class="bar-t"><i style="--d:0.27s;width:92%"></i></span><em>4.6</em></div>
+            <div class="bar"><span>Kitchen</span><span class="bar-t"><i style="--d:0.34s;width:94%"></i></span><em>4.7</em></div>
+            <div class="bar"><span>Cleanliness</span><span class="bar-t"><i style="--d:0.41s;width:88%"></i></span><em>4.4</em></div>
+            <div class="bar"><span>Showability</span><span class="bar-t"><i style="--d:0.48s;width:84%"></i></span><em>4.2</em></div>
+            <div class="bar"><span>Flooring</span><span class="bar-t"><i style="--d:0.55s;width:76%"></i></span><em>3.8</em></div>
+            <div class="bar"><span>Paint</span><span class="bar-t"><i class="low" style="--d:0.62s;width:58%"></i></span><em>2.9</em></div>
+            <div class="bar"><span>Landscape</span><span class="bar-t"><i style="--d:0.69s;width:80%"></i></span><em>4.0</em></div>
+            <div class="bar"><span>Price</span><span class="bar-t"><i class="low" style="--d:0.76s;width:62%"></i></span><em>3.1</em></div>
+          </div>
+          <div class="price">
+            <div><b>14</b><span>agents rated</span></div>
+            <div><b>6</b><span>say priced right</span></div>
+            <div><b>$689k</b><span>median suggested</span></div>
+          </div>
+          <p class="quote">Kitchen is the best on the tour. The beige paint makes it feel dated in photos.<small>Agent on tour</small></p>
+          <p class="quote">I'd show it at $689k. At $715k my buyers skip it.<small>Agent on tour</small></p>
+        </div>
+        <p class="sample-note">Sample report with example numbers.</p>
+      </div>
+    </div>
+  </section>
+  <section class="screen lb" id="results" aria-labelledby="lb-h">
+    <div class="well">
+      <div class="sec-head">
+        <h2 id="lb-h">The top homes from our last tour</h2>
+        <p class="lede" id="lb-sub">North Phoenix Tour on September 2. 8 homes, every one rated by the agents who walked it.</p>
+      </div>
+      <div class="podium" id="podium">
+        <article class="place" data-enter style="--d:.1s"><div class="place-photo"><img src="assets/landing/top-1.webp" alt="" loading="lazy" width="640" height="427"><span class="place-rank">#1</span></div><div class="place-body"><div class="place-score">5.0<small> / 5</small></div><div class="place-city">Phoenix 85032</div><div class="place-meta">$459,000, 2 bd, 2 ba</div></div></article>
+        <article class="place" data-enter style="--d:.3s"><div class="place-photo"><img src="assets/landing/top-2.webp" alt="" loading="lazy" width="640" height="427"><span class="place-rank">#2</span></div><div class="place-body"><div class="place-score">4.8<small> / 5</small></div><div class="place-city">Phoenix 85022</div><div class="place-meta">$1,179,000, 5 bd, 4 ba</div></div></article>
+        <article class="place" data-enter style="--d:.5s"><div class="place-photo"><img src="assets/landing/top-3.webp" alt="" loading="lazy" width="640" height="427"><span class="place-rank">#3</span></div><div class="place-body"><div class="place-score">4.4<small> / 5</small></div><div class="place-city">Phoenix 85022</div><div class="place-meta">$339,000, 3 bd, 2 ba</div></div></article>
+      </div>
+      <p class="lb-foot">Average of the 10 scores agents gave on tour. Addresses left out on purpose.</p>
+    </div>
+  </section>
+
+  <section class="screen" id="tours" aria-labelledby="tours-h">
+    <div class="well">
+      <div class="sec-head">
+        <h2 id="tours-h">Upcoming tours</h2>
+        <p class="lede" id="tours-sub">Spots are first come, first served. Each tour holds 8 homes.</p>
+      </div>
+      <div class="tours" id="tour-list">
+        <div class="tour" aria-busy="true"><div class="tour-date"><b>&nbsp;</b><span>&nbsp;</span></div><div><div class="tour-name">Loading tours…</div><div class="tour-sub">&nbsp;</div></div><div class="tour-cta"><span class="btn btn-ghost" style="visibility:hidden">Add my listing</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen split" id="sponsors" aria-labelledby="aud-h">
+    <div class="well aud">
+      <div class="part">
+        <div class="sec-head">
+          <h2 id="aud-h">Not listing right now?</h2>
+          <p class="lede">There are two other ways to be part of a tour.</p>
+        </div>
+        <div class="aud-card">
+          <h3>Tour with other agents</h3>
+          <p>See new inventory before your buyers ask about it, and meet the agents working your area.</p>
+          <ul>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>Open to licensed agents</li>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>Meeting spot and route sent the morning of the tour</li>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>See how every home ranked when the tour ends</li>
+          </ul>
+          <a class="btn btn-ghost" data-app="#/tour-signup">Sign up for a tour</a>
+        </div>
+      </div>
+      <div class="part">
+        <div class="aud-card">
+          <h3>Sponsor a tour</h3>
+          <p>Lenders, title and service pros: put your brand in front of every agent on the tour, in the app and on the day.</p>
+          <div class="tiers">
+            <div class="tier top"><b>$199</b><span>Full, exclusive</span></div>
+            <div class="tier"><b>$99.50</b><span>Half</span></div>
+            <div class="tier"><b>$49.75</b><span>Quarter</span></div>
+          </div>
+          <a class="btn btn-ghost" data-app="#/sponsor-signup">Sponsor a tour</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" aria-labelledby="faq-h">
+    <div class="well">
+      <div class="sec-head"><h2 id="faq-h">Questions agents ask</h2></div>
+      <div class="faq">
+        <details name="faq">
+          <summary>Who tours my listing?<svg aria-hidden="true"><use href="#i-plus"/></svg></summary>
+          <p>Licensed agents who signed up for that tour. Tours are organized by zip code and neighborhood, so they are the agents working your area.</p>
+        </details>
+        <details name="faq">
+          <summary>Do I need to be there?<svg aria-hidden="true"><use href="#i-plus"/></svg></summary>
+          <p>Your home needs to be open and show-ready at its time on the route. Many listing agents stay to meet the group, but the ratings come in either way.</p>
+        </details>
+        <details name="faq">
+          <summary>Does my seller see the report?<svg aria-hidden="true"><use href="#i-plus"/></svg></summary>
+          <p>Only if you share it. The report comes to you, and you decide what to pass along.</p>
+        </details>
+        <details name="faq">
+          <summary>Which areas do you cover?<svg aria-hidden="true"><use href="#i-plus"/></svg></summary>
+          <p>The Phoenix Valley, including Scottsdale, Cave Creek, Peoria, Glendale, Fountain Hills, Sun City West and San Tan Valley.</p>
+        </details>
+        <details name="faq">
+          <summary>What happens after I sign up?<svg aria-hidden="true"><use href="#i-plus"/></svg></summary>
+          <p>You get a confirmation email right away. We review the listing and email you when it is approved. Then you get reminders 48 and 24 hours before the tour.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen final" aria-labelledby="final-h">
+    <div class="final-main">
+      <div class="well">
+        <div class="final-box">
+          <div>
+            <h2 id="final-h">Your next price cut should be a decision, not a guess.</h2>
+            <p>Get scores, a price check and comments from the agents working your area.</p>
+          </div>
+          <a class="btn btn-light" data-app="#/request">Put my listing on a tour <svg aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        </div>
+      </div>
+    </div>
+    <footer>
+      <div class="well">
+        <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2MjYuNiAxMjAuMCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsPSJNYXJrZXQgUmVhZHkgVG91cnMiPjxnIGZpbGw9IiMxMDFBMzYiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0xMTguMjMgMTIuMDApIHNjYWxlKDAuNTEzNjQpIj48cGF0aCBkPSJNMzMwLjIzLDE2MS4yNkwyNDQuNjMsMjIuMTd2MTY0LjczaC0xNC40NlYwaDI4LjkzbDc2Ljk5LDEyOC43MUw0MTQuNTksMGgyNy40MnYxODYuOWgtMjYuMjJWMjEuOSIvPjxwYXRoIGQ9Ik01MzAuMTUsMTAzLjU2YzI0Ljk1LS44Myw1NC40NC0xNC40Nyw1NC40NC00OS4wOCwwLTQ3LjMtMzUuMTMtNTQuNDgtODEuMTEtNTQuNDhoLTQ4Ljc1djExLjc1aDQzLjMyYzU1LjMxLDAsNjIuMjEsMTYuODQsNjIuMjEsNDMuMjdzLTI3LjAzLDM5LjIzLTYxLjg0LDM5LjIzaC0zMC41NHYxMC40NGgzNS45M2M3LjQzLDExLjA1LDU0LjkyLDgyLjIxLDY0LjgxLDgyLjIxaDMzLjk0Yy0xMy44NCwwLTYyLjk4LTY5LjgxLTcyLjQyLTgzLjM0aC4wMSwwWiIvPjwvZz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyMzcuMjggNTUuMjUpIiBmaWxsPSIjMTAxQTM2Ij48cGF0aCBkPSJNMS44MCAwLjAwTDEuODAgLTI4LjAwTDYuNzYgLTI4LjAwTDE1LjcyIC02LjgwTDE1Ljg4IC02LjgwTDI0LjgwIC0yOC4wMEwyOS43NiAtMjguMDBMMjkuNzYgMC4wMEwyNi40MCAwLjAwTDI2LjQwIC0yMi45MkwyNi4yNCAtMjIuOTJMMTguMTYgLTQuMDBMMTMuNDQgLTQuMDBMNS4zMiAtMjIuOTJMNS4xNiAtMjIuOTJMNS4xNiAwLjAwWk00My4zNiAwLjAwTDUyLjkyIC0yOC4wMEw1OC4xMiAtMjguMDBMNjcuNTIgMC4wMEw2My45NyAwLjAwTDU1LjYwIC0yNS41Mkw1NS40NCAtMjUuNTJMNDYuODggMC4wMFpNNDguMDggLTguNzZMNDkuMDQgLTExLjQ4TDYxLjcyIC0xMS40OEw2Mi42OCAtOC43NlpNODEuMTIgMC4wMEw4MS4xMiAtMjguMDBMOTAuMTYgLTI4LjAwUTkzLjQ0IC0yOC4wMCA5NS41MiAtMjYuOTBROTcuNjAgLTI1LjgwIDk4LjYwIC0yMy45NlE5OS42MCAtMjIuMTIgOTkuNjAgLTE5LjgwUTk5LjYwIC0xNy41NiA5OC41OCAtMTUuNjhROTcuNTYgLTEzLjgwIDk1LjQ0IC0xMi42OFE5My4zMiAtMTEuNTYgOTAuMDAgLTExLjU2TDg0LjQ4IC0xMS41Nkw4NC40OCAwLjAwWk05NS45MiAwLjAwTDg5Ljc2IC0xMi41Mkw5My41MiAtMTIuNTJMOTkuODggMC4wMFpNODQuNDggLTE0LjIwTDg5LjkyIC0xNC4yMFE5My4xMiAtMTQuMjAgOTQuNjIgLTE1Ljc2UTk2LjEyIC0xNy4zMiA5Ni4xMiAtMTkuNzZROTYuMTIgLTIyLjI0IDk0LjY2IC0yMy43MFE5My4yMCAtMjUuMTYgODkuODggLTI1LjE2TDg0LjQ4IC0yNS4xNlpNMTEzLjg4IDAuMDBMMTEzLjg4IC0yOC4wMEwxMTcuMjQgLTI4LjAwTDExNy4yNCAtMTUuNjBMMTI4LjkyIC0yOC4wMEwxMzMuMTYgLTI4LjAwTDEyMC4yNCAtMTQuNDRMMTMzLjMyIDAuMDBMMTI5LjA0IDAuMDBMMTE3LjI0IC0xMi45NkwxMTcuMjQgLTEyLjk2TDExNy4yNCAwLjAwWk0xNDYuOTIgMC4wMEwxNDYuOTIgLTI4LjAwTDE2NC4yNCAtMjguMDBMMTY0LjI0IC0yNS4yNEwxNTAuMjggLTI1LjI0TDE1MC4yOCAtMTUuNDhMMTYzLjA0IC0xNS40OEwxNjMuMDQgLTEyLjc2TDE1MC4yOCAtMTIuNzZMMTUwLjI4IC0yLjc2TDE2NC4yNCAtMi43NkwxNjQuMjQgMC4wMFpNMTg1LjYwIDAuMDBMMTg1LjYwIC0yNS4yNEwxNzcuMjQgLTI1LjI0TDE3Ny4yNCAtMjguMDBMMTk3LjMyIC0yOC4wMEwxOTcuMzIgLTI1LjI0TDE4OC45NiAtMjUuMjRMMTg4Ljk2IDAuMDBaTTIzMC41MiAwLjAwTDIzMC41MiAtMjguMDBMMjM5LjU2IC0yOC4wMFEyNDIuODQgLTI4LjAwIDI0NC45MiAtMjYuOTBRMjQ3LjAwIC0yNS44MCAyNDguMDAgLTIzLjk2UTI0OS4wMCAtMjIuMTIgMjQ5LjAwIC0xOS44MFEyNDkuMDAgLTE3LjU2IDI0Ny45OCAtMTUuNjhRMjQ2Ljk2IC0xMy44MCAyNDQuODQgLTEyLjY4UTI0Mi43MiAtMTEuNTYgMjM5LjQwIC0xMS41NkwyMzMuODggLTExLjU2TDIzMy44OCAwLjAwWk0yNDUuMzIgMC4wMEwyMzkuMTYgLTEyLjUyTDI0Mi45MiAtMTIuNTJMMjQ5LjI4IDAuMDBaTTIzMy44OCAtMTQuMjBMMjM5LjMyIC0xNC4yMFEyNDIuNTIgLTE0LjIwIDI0NC4wMiAtMTUuNzZRMjQ1LjUyIC0xNy4zMiAyNDUuNTIgLTE5Ljc2UTI0NS41MiAtMjIuMjQgMjQ0LjA2IC0yMy43MFEyNDIuNjAgLTI1LjE2IDIzOS4yOCAtMjUuMTZMMjMzLjg4IC0yNS4xNlpNMjYzLjI4IDAuMDBMMjYzLjI4IC0yOC4wMEwyODAuNjAgLTI4LjAwTDI4MC42MCAtMjUuMjRMMjY2LjY0IC0yNS4yNEwyNjYuNjQgLTE1LjQ4TDI3OS40MCAtMTUuNDhMMjc5LjQwIC0xMi43NkwyNjYuNjQgLTEyLjc2TDI2Ni42NCAtMi43NkwyODAuNjAgLTIuNzZMMjgwLjYwIDAuMDBaTTI5My42MCAwLjAwTDMwMy4xNiAtMjguMDBMMzA4LjM2IC0yOC4wMEwzMTcuNzYgMC4wMEwzMTQuMjEgMC4wMEwzMDUuODQgLTI1LjUyTDMwNS42OCAtMjUuNTJMMjk3LjEyIDAuMDBaTTI5OC4zMiAtOC43NkwyOTkuMjggLTExLjQ4TDMxMS45NiAtMTEuNDhMMzEyLjkyIC04Ljc2Wk0zMzEuMzYgMC4wMEwzMzEuMzYgLTI4LjAwTDMzOS45NiAtMjguMDBRMzQ0Ljg4IC0yOC4wMCAzNDguMDggLTI2LjMwUTM1MS4yOCAtMjQuNjAgMzUyLjgyIC0yMS40NlEzNTQuMzYgLTE4LjMyIDM1NC4zNiAtMTMuOTJRMzU0LjM2IC05LjYwIDM1Mi44MiAtNi40OFEzNTEuMjggLTMuMzYgMzQ4LjA4IC0xLjY4UTM0NC44OCAwLjAwIDMzOS45NiAwLjAwWk0zMzQuNzIgLTIuODBMMzM5Ljg4IC0yLjgwUTM0My45NiAtMi44MCAzNDYuMzggLTQuMTRRMzQ4LjgwIC01LjQ4IDM0OS44NCAtNy45OFEzNTAuODggLTEwLjQ4IDM1MC44OCAtMTMuOTJRMzUwLjg4IC0xNy40NCAzNDkuODQgLTE5Ljk2UTM0OC44MCAtMjIuNDggMzQ2LjM4IC0yMy44NFEzNDMuOTYgLTI1LjIwIDMzOS44OCAtMjUuMjBMMzM0LjcyIC0yNS4yMFpNMzc2LjY4IDAuMDBMMzc2LjY4IC0xMC4wOEwzNjcuNTYgLTI4LjAwTDM3MS4zNiAtMjguMDBMMzc4LjM2IC0xMy41NkwzNzguNTIgLTEzLjU2TDM4NS40OCAtMjguMDBMMzg5LjEyIC0yOC4wMEwzODAuMDQgLTEwLjA4TDM4MC4wNCAwLjAwWiIvPjwvZz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyMzcuMjggOTIuNzUpIiBmaWxsPSIjNUI1RjZCIj48cGF0aCBkPSJNNS45MSAwLjAwTDUuOTEgLTE1Ljc4TDAuNjkgLTE1Ljc4TDAuNjkgLTE3LjUwTDEzLjI0IC0xNy41MEwxMy4yNCAtMTUuNzhMOC4wMSAtMTUuNzhMOC4wMSAwLjAwWk0zNS4xOSAwLjMwUTMyLjY0IDAuMzAgMzAuNzAgLTAuODRRMjguNzYgLTEuOTggMjcuNjcgLTQuMDFRMjYuNTggLTYuMDUgMjYuNTggLTguNzVRMjYuNTggLTExLjQzIDI3LjY3IC0xMy40NlEyOC43NiAtMTUuNTAgMzAuNzAgLTE2LjY1UTMyLjY0IC0xNy44MCAzNS4xOSAtMTcuODBRMzcuODAgLTE3LjgwIDM5Ljc0IC0xNi42NVE0MS42OCAtMTUuNTAgNDIuNzYgLTEzLjQ2UTQzLjgzIC0xMS40MyA0My44MyAtOC43NVE0My44MyAtNi4wNSA0Mi43NiAtNC4wMVE0MS42OCAtMS45OCAzOS43NCAtMC44NFEzNy44MCAwLjMwIDM1LjE5IDAuMzBaTTM1LjIxIC0xLjU1UTM3LjEzIC0xLjU1IDM4LjYwIC0yLjQxUTQwLjA2IC0zLjI4IDQwLjg3IC00Ljg5UTQxLjY4IC02LjUwIDQxLjY4IC04Ljc1UTQxLjY4IC0xMS4wMCA0MC44NyAtMTIuNjFRNDAuMDYgLTE0LjIzIDM4LjYwIC0xNS4wOFEzNy4xMyAtMTUuOTMgMzUuMjEgLTE1LjkzUTMzLjI3IC0xNS45MyAzMS44MiAtMTUuMDhRMzAuMzYgLTE0LjIzIDI5LjU1IC0xMi42MVEyOC43MyAtMTEuMDAgMjguNzMgLTguNzVRMjguNzMgLTYuNTAgMjkuNTUgLTQuODlRMzAuMzYgLTMuMjggMzEuODIgLTIuNDFRMzMuMjcgLTEuNTUgMzUuMjEgLTEuNTVaTTY0LjYyIDAuMzBRNjIuODIgMC4zMCA2MS4zNiAtMC40M1E1OS44OSAtMS4xNSA1OS4wMiAtMi42NFE1OC4xNCAtNC4xMiA1OC4xNCAtNi40NUw1OC4xNCAtMTcuNTBMNjAuMjQgLTE3LjUwTDYwLjI0IC02LjQzUTYwLjI0IC00LjczIDYwLjgxIC0zLjY1UTYxLjM3IC0yLjU4IDYyLjM3IC0yLjA4UTYzLjM3IC0xLjU4IDY0LjY3IC0xLjU4UTY1Ljk5IC0xLjU4IDY2Ljk3IC0yLjA4UTY3Ljk0IC0yLjU4IDY4LjQ5IC0zLjY1UTY5LjA0IC00LjczIDY5LjA0IC02LjQzTDY5LjA0IC0xNy41MEw3MS4xNCAtMTcuNTBMNzEuMTQgLTYuNDVRNzEuMTQgLTQuMTIgNzAuMjcgLTIuNjRRNjkuMzkgLTEuMTUgNjcuOTIgLTAuNDNRNjYuNDQgMC4zMCA2NC42MiAwLjMwWk04Ni4xMCAwLjAwTDg2LjEwIC0xNy41MEw5MS43NSAtMTcuNTBROTMuODAgLTE3LjUwIDk1LjEwIC0xNi44MVE5Ni40MCAtMTYuMTIgOTcuMDMgLTE0Ljk4UTk3LjY1IC0xMy44MyA5Ny42NSAtMTIuMzhROTcuNjUgLTEwLjk4IDk3LjAyIC05LjgwUTk2LjM4IC04LjYyIDk1LjA1IC03LjkzUTkzLjczIC03LjIzIDkxLjY1IC03LjIzTDg4LjIwIC03LjIzTDg4LjIwIDAuMDBaTTk1LjM1IDAuMDBMOTEuNTAgLTcuODNMOTMuODUgLTcuODNMOTcuODMgMC4wMFpNODguMjAgLTguODhMOTEuNjAgLTguODhROTMuNjAgLTguODggOTQuNTQgLTkuODVROTUuNDggLTEwLjgzIDk1LjQ4IC0xMi4zNVE5NS40OCAtMTMuOTAgOTQuNTcgLTE0LjgxUTkzLjY1IC0xNS43MyA5MS41OCAtMTUuNzNMODguMjAgLTE1LjczWk0xMTcuOTIgMC4zMFExMTYuMDAgMC4zMCAxMTQuNTcgLTAuNDBRMTEzLjE1IC0xLjEwIDExMi4zNyAtMi4zNVExMTEuNjAgLTMuNjAgMTExLjYwIC01LjI1TDExMy44MCAtNS4yNVExMTMuODAgLTQuMjMgMTE0LjI3IC0zLjM2UTExNC43NCAtMi41MCAxMTUuNjYgLTEuOTlRMTE2LjU3IC0xLjQ4IDExNy45MiAtMS40OFExMTkuMDkgLTEuNDggMTE5LjkzIC0xLjg2UTEyMC43NyAtMi4yNCAxMjEuMjEgLTIuOTJRMTIxLjY1IC0zLjU5IDEyMS42NSAtNC40NVExMjEuNjUgLTUuNDkgMTIxLjIwIC02LjEzUTEyMC43NSAtNi43NyAxMTkuOTkgLTcuMTdRMTE5LjIzIC03LjU3IDExOC4yNSAtNy44N1ExMTcuMjYgLTguMTcgMTE2LjIwIC04LjU0UTExNC4xNiAtOS4yNSAxMTMuMTggLTEwLjI5UTExMi4yMCAtMTEuMzQgMTEyLjIwIC0xMy4wMVExMTIuMjAgLTE0LjQzIDExMi44NiAtMTUuNTBRMTEzLjUyIC0xNi41OCAxMTQuNzYgLTE3LjE5UTExNi4wMCAtMTcuODAgMTE3LjcwIC0xNy44MFExMTkuMzcgLTE3LjgwIDEyMC42MSAtMTcuMThRMTIxLjg1IC0xNi41NSAxMjIuNTUgLTE1LjQ2UTEyMy4yNSAtMTQuMzggMTIzLjI1IC0xMi45NUwxMjEuMDUgLTEyLjk1UTEyMS4wNSAtMTMuNjkgMTIwLjY3IC0xNC4zOVExMjAuMjkgLTE1LjA5IDExOS41MyAtMTUuNTVRMTE4Ljc3IC0xNi4wMSAxMTcuNjEgLTE2LjAxUTExNi42NyAtMTYuMDMgMTE1LjkzIC0xNS43MFExMTUuMTkgLTE1LjM2IDExNC43OCAtMTQuNzRRMTE0LjM3IC0xNC4xMiAxMTQuMzcgLTEzLjIxUTExNC4zNyAtMTIuMzcgMTE0LjczIC0xMS44NFExMTUuMDkgLTExLjMyIDExNS43NyAtMTAuOTVRMTE2LjQ1IC0xMC41OSAxMTcuMzggLTEwLjI4UTExOC4zMSAtOS45OCAxMTkuNDQgLTkuNjBRMTIwLjcxIC05LjE3IDEyMS43MCAtOC41NlExMjIuNjkgLTcuOTUgMTIzLjI1IC03LjAwUTEyMy44MiAtNi4wNSAxMjMuODIgLTQuNThRMTIzLjgyIC0zLjMzIDEyMy4xNiAtMi4yMVExMjIuNTAgLTEuMTAgMTIxLjIwIC0wLjQwUTExOS45MCAwLjMwIDExNy45MiAwLjMwWiIvPjwvZz48L3N2Zz4=" alt="MarketReady Tours" width="146" height="28">
+        <span>
+          <a data-app="#/contact">Contact</a> &nbsp; <a href="privacy-policy.html">Privacy</a> &nbsp; <a data-app="">Agent login</a>
+        </span>
+      </div>
+    </footer>
+  </section>
+</main>
+
+<script>
+(function(){
+  // Where the app lives. The landing page links into its existing forms by hash route.
+  var APP = window.MRT_APP_URL || "./";
+  document.querySelectorAll("[data-app]").forEach(function(a){ a.href = APP + a.getAttribute("data-app"); });
+
+  // Hero demo: the real 10 rating categories, 1 to 5 stars.
+  var cats = [["Curb Appeal",5],["Landscape",4],["Cleanliness",5],["Flooring",4],["Paint",3],["Showability",4],["Price",3],["Kitchen",5],["Bedrooms",4],["Windows",4]];
+  var ul = document.getElementById("cats");
+  cats.forEach(function(c, idx){
+    var li = document.createElement("li"); li.className = "cat";
+    var name = document.createElement("span"); name.className = "cat-name"; name.id = "cat-" + idx; name.textContent = c[0];
+    var st = document.createElement("div"); st.className = "stars"; st.setAttribute("role","group"); st.setAttribute("aria-labelledby", name.id);
+    for (var s = 1; s <= 5; s++) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "star"; b.dataset.i = idx; b.dataset.s = s;
+      b.setAttribute("aria-label", c[0] + ": " + s + " of 5");
+      b.innerHTML = '<svg aria-hidden="true"><use href="#i-star"/></svg>';
+      st.appendChild(b);
+    }
+    li.appendChild(name); li.appendChild(st); ul.appendChild(li);
+  });
+  function paint(){
+    ul.querySelectorAll(".star").forEach(function(b){
+      var on = +b.dataset.s <= cats[+b.dataset.i][1];
+      b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(+b.dataset.s === cats[+b.dataset.i][1]));
+    });
+    var sum = 0; cats.forEach(function(c){ sum += c[1]; });
+    var avg = sum / cats.length;
+    document.getElementById("avg").innerHTML = avg.toFixed(1) + "<small> / 5</small>";
+    document.getElementById("avgbar").style.width = (avg / 5 * 100) + "%";
+    // Always exactly two short lines, so the panel never changes height as scores change.
+    var hi = cats[0], lo = cats[0];
+    cats.forEach(function(c){ if (c[1] > hi[1]) hi = c; if (c[1] < lo[1]) lo = c; });
+    var lines = hi[1] === lo[1] ? ["Every area scored", "the same"] : ["Strongest: " + hi[0].toLowerCase(), "Weakest: " + lo[0].toLowerCase()];
+    document.getElementById("avgnote").innerHTML = "<span>" + lines[0] + "</span><span>" + lines[1] + "</span>";
+  }
+  ul.addEventListener("click", function(e){
+    var b = e.target.closest(".star"); if (!b) return;
+    cats[+b.dataset.i][1] = +b.dataset.s; paint();
+  });
+  paint();
+
+  // Live tours from the public tour feed. Falls back quietly if it can't load.
+  var DB = "https://marketready-tours-default-rtdb.firebaseio.com/mrt_tours_public.json";
+  var list = document.getElementById("tour-list");
+  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function count(l){ return !l ? 0 : Array.isArray(l) ? l.filter(Boolean).length : Object.keys(l).length; }
+  function label(t){ return /^\d{5}$/.test(String(t.name).trim()) ? t.name + " home tour" : t.name; }
+  // No upcoming tours (or the feed can't load): drop the tours screen and its nav link entirely,
+  // and point the hero card at the contact form instead.
+  function noTours(){
+    document.getElementById("tours").hidden = true;
+    document.getElementById("nav-tours").hidden = true;
+    var next = document.getElementById("next");
+    next.classList.add("quiet");
+    next.href = APP + "#/contact";
+    document.getElementById("next-copy").textContent = "New tours are posted every few weeks. Tell us your area.";
+  }
+  var ctrl = "AbortController" in window ? new AbortController() : null;
+  if (ctrl) setTimeout(function(){ ctrl.abort(); }, 8000);
+  fetch(DB, ctrl ? { signal: ctrl.signal } : {}).then(function(r){ if (!r.ok) throw 0; return r.json(); }).then(function(data){
+    var all = Object.values(data || {}).filter(function(t){ return t && t.date; });
+    var homes = all.reduce(function(n,t){ return n + count(t.listings); }, 0);
+    if (all.length) document.querySelector('[data-stat="tours"]').textContent = all.length;
+    if (homes) document.querySelector('[data-stat="homes"]').textContent = homes;
+
+    var today = new Date(); today.setHours(0,0,0,0);
+    var up = all.filter(function(t){ return !t.archived && new Date(t.date + "T12:00:00") >= today; })
+      .sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+    if (!up.length) return noTours();
+    if (up.length === 1) {
+      document.getElementById("tours-h").textContent = "Upcoming tour";
+      document.getElementById("tours-sub").textContent = "Spots are first come, first served. This tour holds " + (+up[0].maxListings || 8) + " homes.";
+    }
+    // Four fit on one screen; the rest live in the app.
+    list.innerHTML = up.slice(0, 4).map(function(t){
+      var d = new Date(t.date + "T12:00:00"), max = +t.maxListings || 8, left = Math.max(0, max - count(t.listings));
+      return '<div class="tour"><div class="tour-date"><b>' + d.getDate() + '</b><span>' + d.toLocaleDateString("en-US",{month:"short"}) + '</span></div>' +
+        '<div><div class="tour-name">' + esc(label(t)) + '</div><div class="tour-sub">' + d.toLocaleDateString("en-US",{weekday:"long"}) + (t.time ? ", " + esc(t.time) : "") +
+        ' <span class="seats' + (left <= 2 ? " low" : "") + '">' + (left ? left + " of " + max + " spots open" : "Full") + '</span></div></div>' +
+        '<div class="tour-cta">' + (left ? '<a class="btn btn-primary" href="' + APP + '#/request">Add my listing</a>' : '<a class="btn btn-ghost" href="' + APP + '#/tour-signup">Join as an agent</a>') + '</div></div>';
+    }).join("");
+    var n = up[0], nd = new Date(n.date + "T12:00:00"), nmax = +n.maxListings || 8, nleft = Math.max(0, nmax - count(n.listings));
+    if (!nleft) {
+      document.getElementById("next").classList.add("quiet");
+      document.getElementById("next-copy").innerHTML = "Next tour: <b>" + esc(label(n)) + "</b> is full. See other dates.";
+    } else {
+      document.getElementById("next-copy").innerHTML = "Next tour: <b>" + esc(label(n)) + "</b>, " +
+        nd.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}) + ". " +
+        (nleft === nmax ? "All " + nmax + " spots open." : "Only " + nleft + " of " + nmax + " spots left.");
+    }
+  }).catch(noTours);
+
+
+  // ── Hero photo wall: columns drift slowly; each column repeats until it can loop seamlessly.
+  var wall = document.getElementById("wall");
+  var HOMES = []; for (var h = 1; h <= 24; h++) HOMES.push("assets/landing/home-" + (h < 10 ? "0" : "") + h + ".webp");
+  function buildWall(){
+    var cols = innerWidth >= 1000 ? 6 : 3, sec = wall.parentNode;
+    wall.innerHTML = "";
+    for (var c = 0; c < cols; c++) {
+      var col = document.createElement("div"); col.className = "wall-col";
+      var set = HOMES.filter(function(_, i){ return i % cols === c; });
+      wall.appendChild(col);
+      var once = function(){ set.forEach(function(src){ var im = new Image(); im.src = src; im.alt = ""; im.decoding = "async"; col.appendChild(im); }); };
+      once();
+      var period = col.scrollHeight + 10;
+      var need = sec.offsetHeight + period, guard = 0;
+      while (col.scrollHeight < need && guard++ < 12) once();
+      col.style.setProperty("--period", period + "px");
+      col.style.setProperty("--dur", Math.round(period / 14) + "s");
+      col.style.animationDelay = (-c * 7) + "s";
+    }
+  }
+  buildWall();
+  var ww = innerWidth; addEventListener("resize", function(){ if ((innerWidth >= 1000) !== (ww >= 1000)) { ww = innerWidth; buildWall(); } });
+
+  // ── Route map: Phoenix-style mile grid, an orthogonal route, a score chip at every stop.
+  var NS = "http://www.w3.org/2000/svg";
+  var big = innerWidth < 700, U = big ? 1.4 : 1;  // map drawn at ~60% on phones; scale marks up to stay legible
+  function el(tag, attrs, parent){ var e = document.createElementNS(NS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+  var grid = document.getElementById("map-grid");
+  for (var gx = 0; gx <= 600; gx += 50) el("line", {x1:gx, y1:0, x2:gx, y2:420, stroke: gx % 150 ? "#EEF0F4" : "#E0E4EC", "stroke-width": gx % 150 ? 1 : 2}, grid);
+  for (var gy = 0; gy <= 420; gy += 50) el("line", {x1:0, y1:gy, x2:600, y2:gy, stroke: gy % 150 ? "#EEF0F4" : "#E0E4EC", "stroke-width": gy % 150 ? 1 : 2}, grid);
+  var START = [60, 60];
+  // Drawn so the route never crosses itself: each leg runs across, then up or down.
+  var STOPS = [[140,120,4.6],[260,90,3.9],[330,170,4.8],[220,230,4.1],[140,320,3.4],[290,360,4.4],[420,280,5.0],[530,180,4.2]];
+  var d = "M" + START[0] + " " + START[1], at = START.slice(), len = 0, marks = [];
+  STOPS.forEach(function(p){
+    len += Math.abs(p[0] - at[0]); d += " H" + p[0];
+    len += Math.abs(p[1] - at[1]); d += " V" + p[1];
+    at = [p[0], p[1]]; marks.push(len);
+  });
+  var route = document.getElementById("route"); if (big) document.querySelector(".map").classList.add("big"); route.setAttribute("d", d); route.style.setProperty("--len", len);
+  var pins = document.getElementById("pins"), best = Math.max.apply(null, STOPS.map(function(p){ return p[2]; }));
+  var st = el("g", {"class":"start"}, pins); el("circle", {cx:START[0], cy:START[1], r:8 * U}, st); el("text", {x:START[0] + 14, y:START[1] - 12 * U}, st).textContent = "Meet 9:00 AM";
+  STOPS.forEach(function(p, i){
+    var pin = el("g", {"class":"pin"}, pins); el("circle", {cx:p[0], cy:p[1], r:12 * U}, pin); el("text", {x:p[0], y:p[1]}, pin).textContent = i + 1;
+    var chip = el("g", {"class":"chip" + (p[2] === best ? " best" : "")}, pins);
+    chip.style.setProperty("--d", (marks[i] / len * 3.4 + 0.1).toFixed(2) + "s");
+    // Chip sits beside the pin, on the side the route does not leave from; the last one sits above.
+    var off = 47 * U, next = STOPS[i + 1], cx = !next ? p[0] : next[0] > p[0] ? p[0] - off : p[0] + off, cy = !next ? p[1] - 34 * U : p[1];
+    el("rect", {x:cx - 25 * U, y:cy - 12 * U, width:50 * U, height:24 * U, rx:12 * U}, chip);
+    el("text", {x:cx, y:cy}, chip).textContent = p[2].toFixed(1);
+  });
+  var fin = el("g", {"class":"finish"}, pins); fin.style.setProperty("--d", "3.6s");
+  el("text", {x:560, y:180 - 62 * U, "text-anchor":"end"}, fin).textContent = "Rankings are in";
+
+  // ── Leaderboard: swap in a newer fully rated tour when one exists.
+  var BAKED = "tour-1786572529515-1-6k9qj";
+  Promise.all([
+    fetch("https://marketready-tours-default-rtdb.firebaseio.com/mrt_ratings_public.json").then(function(r){ return r.json(); }),
+    fetch(DB).then(function(r){ return r.json(); })
+  ]).then(function(res){
+    var ratings = res[0] || {}, tours = res[1] || {}, pick = null;
+    Object.keys(ratings).forEach(function(id){
+      var t = tours[id]; if (!t || !t.date) return;
+      var ls = (Array.isArray(t.listings) ? t.listings : Object.values(t.listings || {})).filter(Boolean);
+      var rated = ls.filter(function(l){ return ratings[id][l.id] && ratings[id][l.id].averages; });
+      if (ls.length >= 3 && rated.length === ls.length && (!pick || t.date > pick.t.date)) pick = {id:id, t:t, ls:rated};
+    });
+    if (!pick || pick.id === BAKED) return;
+    var avg = function(l){ var a = ratings[pick.id][l.id].averages, v = Object.keys(a).map(function(k){ return a[k]; }); return v.reduce(function(x, y){ return x + y; }, 0) / v.length; };
+    var top = pick.ls.slice().sort(function(a, b){ return avg(b) - avg(a); }).slice(0, 3);
+    var dd = new Date(pick.t.date + "T12:00:00");
+    document.getElementById("lb-sub").textContent = label(pick.t) + " on " + dd.toLocaleDateString("en-US", {month:"long", day:"numeric"}) + ". " + pick.ls.length + " homes, every one rated by the agents who walked it.";
+    [].slice.call(document.querySelectorAll("#podium .place")).forEach(function(card, i){
+      var l = top[i]; if (!l) return;
+      var city = String(l.city || "").replace(/,\s*AZ\s*/i, " ");
+      card.querySelector("img").src = (l.photos && l.photos[0]) || "";
+      card.querySelector(".place-score").innerHTML = avg(l).toFixed(1) + "<small> / 5</small>";
+      card.querySelector(".place-city").textContent = city;
+      card.querySelector(".place-meta").textContent = "$" + Number(String(l.price).replace(/[^0-9]/g, "")).toLocaleString() + ", " + l.beds + " bd, " + l.baths + " ba";
+    });
+  }).catch(function(){});
+
+  // ── Entrances: one per screen, fired once when it snaps into view.
+  var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!reduce && "IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
+    }, {threshold: 0.45});
+    document.querySelectorAll(".screen, .part").forEach(function(n){ io.observe(n); });
+  }
+
+  // FAQ: opening a question must not grow the section. Only one opens at a time
+  // (native name= grouping, with a fallback), and the list reserves room for the longest answer.
+  var faq = document.querySelector(".faq"), items = [].slice.call(faq.querySelectorAll("details"));
+  faq.addEventListener("toggle", function(e){
+    if (!e.target.open) return;
+    items.forEach(function(d){ if (d !== e.target) d.open = false; });
+  }, true);
+  function sizeFaq(){
+    var was = items.map(function(d){ return d.open; }), max = 0;
+    faq.style.height = "auto";
+    items.forEach(function(d, i){
+      items.forEach(function(x, j){ x.open = i === j; });
+      max = Math.max(max, faq.offsetHeight);
+    });
+    items.forEach(function(d, i){ d.open = was[i]; });
+    faq.style.height = max + "px";
+  }
+  sizeFaq();
+  var rt; addEventListener("resize", function(){ clearTimeout(rt); rt = setTimeout(sizeFaq, 150); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(sizeFaq);
+})();
+</script>
+</body>
+</html>

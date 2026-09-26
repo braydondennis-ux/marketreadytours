@@ -8,12 +8,14 @@ const out = resolve(root, "www");
 
 await mkdir(out, {recursive: true});
 await mkdir(resolve(out, "icons"), {recursive: true});
-for (const file of ["manifest.json", "privacy-policy.html", "offline.html", "sw.js"]) {
+for (const file of ["manifest.json", "privacy-policy.html", "offline.html", "sw.js", "landing.html"]) {
   await cp(resolve(root, file), resolve(out, file));
 }
 for (const file of ["app-icon-192.png", "app-icon-512.png"]) {
   await cp(resolve(root, "assets/icons", file), resolve(out, "icons", file));
 }
+// Landing page imagery (resized copies of photos from past tours).
+await cp(resolve(root, "assets/landing"), resolve(out, "assets/landing"), {recursive: true});
 const appCheckSiteKey = process.env.MRT_APP_CHECK_SITE_KEY || "";
 const appCheckProvider = process.env.MRT_APP_CHECK_PROVIDER || "v3";
 if (process.env.VERCEL === "1" && !appCheckSiteKey) {
