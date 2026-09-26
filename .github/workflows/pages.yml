@@ -40,6 +40,9 @@ jobs:
       # "1" = public root serves maintenance.html, app moves to /app/.
       # "0" = normal launch. This is the single switch for going live.
       MRT_MAINTENANCE: "0"
+      # "1" = the landing page is the front door at / and the app lives at /app/ (the landing
+      # page forwards every #/ app link there). "0" = app at / as before. Flip to roll back.
+      MRT_LANDING: "1"
     steps:
       - uses: actions/checkout@v4
 
@@ -53,7 +56,7 @@ jobs:
       - name: Verify App Check placeholders were substituted
         run: |
           # In maintenance mode the app lives at /app/; the root is the holding page.
-          if [ "$MRT_MAINTENANCE" = "1" ]; then APP=www/app/index.html; else APP=www/index.html; fi
+          if [ "$MRT_MAINTENANCE" = "1" ] || [ "$MRT_LANDING" = "1" ]; then APP=www/app/index.html; else APP=www/index.html; fi
           echo "Verifying $APP"
           if grep -q "__MRT_APP_CHECK_SITE_KEY__\|__MRT_APP_CHECK_PROVIDER__" "$APP"; then
             echo "::error::App Check placeholders survived the build — deploying this would"
@@ -74,6 +77,14 @@ jobs:
             grep -q "We're making some improvements" www/index.html \
               || { echo "::error::Root is not the maintenance page."; exit 1; }
             echo "Maintenance mode verified: holding page at /, app at /app/."
+          elif [ "$MRT_LANDING" = "1" ]; then
+            test -f www/app/index.html && test -f www/app/sw.js && test -f www/app/manifest.json \
+              || { echo "::error::App bundle incomplete at www/app/."; exit 1; }
+            grep -q "Put my listing on a tour" www/index.html \
+              || { echo "::error::Root is not the landing page."; exit 1; }
+            grep -q '"app/"' www/index.html && ! grep -q "__MRT_APP_BASE__" www/index.html \
+              || { echo "::error::Landing page does not point at /app/."; exit 1; }
+            echo "Landing mode verified: landing page at /, app at /app/."
           else
             echo "Live mode verified: app at /."
           fi
@@ -126,7 +137,12 @@ jobs:
               "https://marketreadytours.com/manifest.json",
               "https://marketreadytours.com/offline.html",
               "https://marketreadytours.com/privacy-policy.html",
-              "https://marketreadytours.com/sw.js"
+              "https://marketreadytours.com/sw.js",
+              "https://marketreadytours.com/landing.html",
+              "https://marketreadytours.com/app/",
+              "https://marketreadytours.com/app/index.html",
+              "https://marketreadytours.com/app/manifest.json",
+              "https://marketreadytours.com/app/sw.js"
             ]}')
           code=$(echo "$response" | tail -1)
           body=$(echo "$response" | sed '$d')

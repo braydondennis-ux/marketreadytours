@@ -793,12 +793,12 @@ exports.createAdmin = onCall(
         to: email,
         subject: "Set up your MarketReady Tours account",
         text: `Hi ${name},\n\nAn admin account has been created for you on MarketReady Tours.\n\n` +
-          `Choose your password here:\n${setupLink}\n\nThen sign in at https://marketreadytours.com`,
+          `Choose your password here:\n${setupLink}\n\nThen sign in at https://marketreadytours.com/#/login`,
         html: `<p style="margin:0 0 14px;">Hi ${escapeHtml(name)},</p>` +
           `<p style="margin:0 0 14px;">An admin account has been created for you on ` +
           `<strong>MarketReady Tours</strong>.</p>` +
-          `<p style="margin:0 0 4px;">Choose your password using the button below, then sign in at ` +
-          `marketreadytours.com.</p>`,
+          `<p style="margin:0 0 4px;">Choose your password using the button below, then ` +
+          `<a href="https://marketreadytours.com/#/login">sign in to MarketReady Tours</a>.</p>`,
         cta: {label: "Choose your password", url: setupLink},
         footerNote: "This link can only be used once and expires after a short time.",
       });

@@ -8,7 +8,7 @@ const out = resolve(root, "www");
 
 await mkdir(out, {recursive: true});
 await mkdir(resolve(out, "icons"), {recursive: true});
-for (const file of ["manifest.json", "privacy-policy.html", "offline.html", "sw.js", "landing.html"]) {
+for (const file of ["manifest.json", "privacy-policy.html", "offline.html", "sw.js"]) {
   await cp(resolve(root, file), resolve(out, file));
 }
 for (const file of ["app-icon-192.png", "app-icon-512.png"]) {
@@ -30,25 +30,44 @@ const builtHtml = sourceHtml.replaceAll(
   appCheckSiteKey || "__MRT_APP_CHECK_SITE_KEY__",
 ).replaceAll("__MRT_APP_CHECK_PROVIDER__", appCheckProvider);
 
-// Maintenance mode: the public root serves maintenance.html and the real app moves to
-// /app/. The app is a static bundle, so /app/ is obscurity, NOT access control — put
-// Cloudflare Access in front if genuine protection is needed. Flip MRT_MAINTENANCE to
-// "0" in .github/workflows/pages.yml to go live again.
-if (process.env.MRT_MAINTENANCE === "1") {
-  await mkdir(resolve(out, "app"), {recursive: true});
+// The app sits at /app/ in maintenance and landing modes. It references manifest.json, sw.js
+// and icons/ RELATIVELY, so they must sit beside it there or they 404 and service-worker
+// registration fails.
+async function writeAppAtSubpath() {
   await mkdir(resolve(out, "app", "icons"), {recursive: true});
   await writeFile(resolve(out, "app", "index.html"), builtHtml);
-  // The app references manifest.json, sw.js and icons/ RELATIVELY, so they must sit
-  // beside it at /app/ or they 404 and service-worker registration fails.
   for (const file of ["manifest.json", "privacy-policy.html", "offline.html", "sw.js"]) {
     await cp(resolve(root, file), resolve(out, "app", file));
   }
   for (const file of ["app-icon-192.png", "app-icon-512.png"]) {
     await cp(resolve(root, "assets/icons", file), resolve(out, "app", "icons", file));
   }
+}
+
+// The landing page links into the app, so it needs to know where the app is.
+const landingHtml = await readFile(resolve(root, "landing.html"), "utf8");
+const landingFor = appBase => landingHtml.replaceAll("__MRT_APP_BASE__", appBase);
+
+// Maintenance mode: the public root serves maintenance.html and the real app moves to
+// /app/. The app is a static bundle, so /app/ is obscurity, NOT access control — put
+// Cloudflare Access in front if genuine protection is needed. Flip MRT_MAINTENANCE to
+// "0" in .github/workflows/pages.yml to go live again.
+if (process.env.MRT_MAINTENANCE === "1") {
+  await writeAppAtSubpath();
+  await writeFile(resolve(out, "landing.html"), landingFor("app/"));
   await cp(resolve(root, "maintenance.html"), resolve(out, "index.html"));
   console.log("Built static web bundle in www/ — MAINTENANCE MODE (app at /app/)");
+} else if (process.env.MRT_LANDING === "1") {
+  // Landing mode (the public website): the landing page is the front door at / and the app
+  // lives at /app/. The landing page forwards every #/ link to the app, so invite, opt-out
+  // and payment links sent before the switch keep working. Only pages.yml sets this; local,
+  // Vercel and Capacitor (iOS, webDir "www") builds keep the app at the root.
+  await writeAppAtSubpath();
+  await writeFile(resolve(out, "index.html"), landingFor("app/"));
+  await writeFile(resolve(out, "landing.html"), landingFor("app/"));
+  console.log("Built static web bundle in www/ — LANDING MODE (landing at /, app at /app/)");
 } else {
   await writeFile(resolve(out, "index.html"), builtHtml);
+  await writeFile(resolve(out, "landing.html"), landingFor("./"));
   console.log("Built static web bundle in www/");
 }

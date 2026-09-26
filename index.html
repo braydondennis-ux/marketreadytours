@@ -15058,7 +15058,13 @@ function App() {
     lsSet("gat_subadmins", subAdmins);
   }, [subAdmins]);
   const [currentUser, setCurrentUser] = useState(null);
-  const [showLogin, setShowLogin] = useState(false);
+  // #/login opens the sign-in screen directly (the landing page's "Agent login" and the admin
+  // invite email link here). The hash is reset to the dashboard so closing login lands there.
+  const [showLogin, setShowLogin] = useState(() => {
+    if (window.location.hash !== "#/login") return false;
+    history.replaceState(null, "", window.location.pathname + window.location.search + "#/");
+    return true;
+  });
   const [authLoading, setAuthLoading] = useState(true);
   const isSuperAdmin = (currentUser === null || currentUser === void 0 ? void 0 : currentUser.role) === "super";
   const isAnyAdmin = !!currentUser;
@@ -15075,6 +15081,10 @@ function App() {
       if (authEffectActive) setAuthLoading(false);
     };
     const authLoadingTimeout = setTimeout(finishAuthLoading, 5000);
+    // The landing page at / reads this flag to send signed-in staff straight to the app.
+    const mrtRememberSignedIn = on => {
+      try { on ? localStorage.setItem("mrt_signed_in", "1") : localStorage.removeItem("mrt_signed_in"); } catch (e) {}
+    };
     const unsub = _fbAuth.onAuthStateChanged(async user => {
       if (user && !user.isAnonymous) {
         try {
@@ -15089,9 +15099,11 @@ function App() {
             };
             sessionStorage.setItem("gat_session", JSON.stringify(userData));
             setCurrentUser(userData);
+            mrtRememberSignedIn(true);
           } else {
             sessionStorage.removeItem("gat_session");
             setCurrentUser(null);
+            mrtRememberSignedIn(false);
             if (MRT_SECURE_BACKEND) await _fbAuth.signOut();
           }
         } catch (e) {
@@ -15101,9 +15113,11 @@ function App() {
       } else if (user && user.isAnonymous) {
         sessionStorage.removeItem("gat_session");
         setCurrentUser(null);
+        mrtRememberSignedIn(false);
       } else {
         sessionStorage.removeItem("gat_session");
         setCurrentUser(null);
+        mrtRememberSignedIn(false);
         // Render the public app immediately. Anonymous auth is useful for ratings/favorites,
         // but it is not a prerequisite for reading the paid-only public tour projection.
         finishAuthLoading();

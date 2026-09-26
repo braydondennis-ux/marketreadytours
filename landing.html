@@ -5,8 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MarketReady Tours | Real agent feedback on your listing</title>
 <meta name="description" content="Put your listing in front of local agents on a MarketReady home tour. Every agent rates the home in 10 areas, and you get their scores, price opinions and comments.">
-<meta name="theme-color" content="#101A36">
-<script>if (!matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window) document.documentElement.classList.add("motion");</script>
+<meta name="theme-color" content="#F7F6F2">
+<script>
+(function(){
+  // Where the app lives relative to this page; the build fills it in ("./" or "app/").
+  var APP = window.MRT_APP_BASE = "__MRT_APP_BASE__";
+  // Every link the app sends out is a #/ route (invites, opt-outs, sponsor payments, the
+  // home-screen app). Those belong to the app, so pass them straight through, query intact.
+  function toApp(){ if (location.hash.indexOf("#/") === 0) { location.replace(APP + location.search + location.hash); return true; } }
+  if (toApp()) return;
+  addEventListener("hashchange", toApp);
+  // Staff who have signed in on this device go straight to the app. ?home shows this page anyway.
+  try { if (localStorage.getItem("mrt_signed_in") === "1" && !/[?&]home(=|&|$)/.test(location.search)) { location.replace(APP); return; } } catch (e) {}
+})();
+if (!matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window) document.documentElement.classList.add("motion");
+</script>
 <link rel="icon" href="icons/app-icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -35,7 +48,7 @@ body{margin:0;background:var(--canvas);color:var(--text);font:400 17px/1.55 "DM 
 img{max-width:100%;display:block}
 a{color:var(--cobalt)}
 :focus-visible{outline:3px solid var(--cobalt);outline-offset:3px;border-radius:6px}
-.well{max-width:var(--well);width:100%;margin:0 auto;padding:0 var(--gutter)}
+.well{max-width:var(--well);width:100%;margin:0 auto;padding:0 max(var(--gutter),env(safe-area-inset-right)) 0 max(var(--gutter),env(safe-area-inset-left))}
 h1,h2,h3{margin:0;color:var(--text);letter-spacing:-.025em;line-height:1.08;font-weight:700}
 h1{font-size:clamp(38px,min(6.4vw,8.6vh),76px);letter-spacing:-.04em;line-height:1}
 h2{font-size:clamp(28px,min(4vw,5.6vh),46px);letter-spacing:-.03em}
@@ -67,7 +80,7 @@ p{margin:0}
 .nav-logo{display:block;flex:none}
 .nav-logo img{height:min(46px,calc((100vw - 170px) / 5.22));width:auto}
 .nav-links{display:none;gap:28px;align-items:center}
-.nav-links a{color:var(--muted);text-decoration:none;font-size:15px;font-weight:500}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:15px;font-weight:500;padding:12px 0}
 .nav-links a:hover{color:var(--text)}
 .nav-cta{display:flex;gap:10px;align-items:center}
 .nav-cta .btn{min-height:42px;padding:0 16px;font-size:15px}
@@ -125,7 +138,7 @@ p{margin:0}
 .problem-grid .lede{margin-top:clamp(10px,2vh,18px)}
 .silence{display:grid;gap:10px}
 .msg{background:var(--paper);border:1px solid var(--hair-card);border-radius:16px 16px 16px 4px;padding:12px 16px;max-width:340px;font-size:16px}
-.msg small{display:block;color:var(--subtle);font-size:13px;margin-top:4px}
+.msg small{display:block;color:var(--muted);font-size:13px;margin-top:4px}
 .msg.me{justify-self:end;background:var(--steel-wash);border-color:var(--steel-soft);border-radius:16px 16px 4px 16px}
 
 /* Steps */
@@ -176,7 +189,7 @@ p{margin:0}
 .price span{font-size:13px;color:var(--muted)}
 .quote{border-left:3px solid var(--steel);padding:2px 0 2px 14px;font-size:16px;color:var(--text)}
 .quote+.quote{margin-top:10px}
-.quote small{display:block;color:var(--subtle);font-size:13px;margin-top:3px}
+.quote small{display:block;color:var(--muted);font-size:13px;margin-top:3px}
 .sample-note{margin-top:12px;font-size:13px;color:var(--steel)}
 
 /* Audiences */
@@ -230,7 +243,11 @@ p{margin:0}
 footer{border-top:1px solid var(--hair);margin-top:var(--pad-y);padding:24px 0 calc(24px + env(safe-area-inset-bottom));color:var(--muted);font-size:14px}
 footer .well{display:flex;flex-wrap:wrap;gap:12px 32px;justify-content:space-between;align-items:center}
 footer a{color:var(--muted)}
+footer span a{display:inline-block;padding:12px 2px;margin:-12px 0}
 footer img{height:28px;width:auto}
+.credit{flex-basis:100%;margin:0;font-size:13px;color:var(--muted)}
+.credit a{color:var(--text);text-decoration:none;font-weight:600;display:inline-block;padding:12px 0;margin:-12px 0}
+.credit a:hover{color:var(--text);text-decoration:underline}
 
 /* ── Phones and small tablets: sections too big for one screen split into snap parts ── */
 @media (max-width:899px){
@@ -266,18 +283,19 @@ footer img{height:28px;width:auto}
   .step{padding:16px}
   .bars{gap:6px}
 }
-@media (max-width:899px) and (max-height:760px){
+@media (max-width:899px) and (max-height:760px) and (orientation:portrait){
   .lb-foot{display:none}
   .bars .bar:nth-child(5),.bars .bar:nth-child(7){display:none}
 }
-@media (max-width:899px) and (max-height:620px){
+@media (max-width:899px) and (max-height:620px) and (orientation:portrait){
   .place{grid-template-columns:88px 1fr}.place-body{padding:10px 12px}.place-score{font-size:24px}
   .lb .sec-head .lede{display:none}
   .how .step{padding:12px 14px!important}.how .step p{font-size:14px!important}.how .step h3{font-size:18px}
   .lb h2{font-size:26px}
 }
-@media (max-width:899px) and (max-height:620px){
+@media (max-width:899px) and (max-height:620px) and (orientation:portrait){
   :root{--pad-y:12px}
+  footer{padding:12px 0 calc(12px + env(safe-area-inset-bottom))}
   .proof{display:none}
   .star{padding:2px}.star svg{width:18px;height:18px}
   .sheet-foot{padding:12px 22px}
@@ -286,13 +304,13 @@ footer img{height:28px;width:auto}
   .price{margin-bottom:0}
   .hero .lede{font-size:15.5px}
 }
-@media (max-width:899px) and (max-height:600px){
+@media (max-width:899px) and (max-height:600px) and (orientation:portrait){
   .how .step p{display:none}
 }
 @media (min-width:1000px) and (max-height:700px){
   .quote+.quote{display:none}
 }
-@media (max-width:899px) and (max-height:700px){
+@media (max-width:899px) and (max-height:700px) and (orientation:portrait){
   .how .sec-head .lede,.aud .sec-head .lede{display:none}
   .gets span{display:none}
   .problem-grid .lede+.lede{display:none}
@@ -379,6 +397,24 @@ footer img{height:28px;width:auto}
 .motion .in .chip,.motion .in .finish{opacity:1;transform:none;transition:opacity .35s var(--ease) var(--d,0s),transform .45s cubic-bezier(.2,.8,.3,1.4) var(--d,0s)}
 .motion .rcard .bar-t i{transform:scaleX(0);transform-origin:left}
 .motion .in .rcard .bar-t i{transform:none;transition:transform .9s var(--ease) var(--d,0s)}
+
+/* ── Touch screens: 44px-tall tap targets ── */
+@media (pointer:coarse){
+  .nav-cta .btn{min-height:44px}
+  .stars{gap:0}
+  .star{padding:10px 7px}
+}
+@media (pointer:coarse) and (max-height:760px){.star{padding:5px 6px}}
+@media (pointer:coarse) and (max-height:620px){.star{padding:3px 5px}}
+
+/* ── Phones in landscape: too short for one-screen sections, so scroll normally ── */
+@media (max-height:500px) and (orientation:landscape){
+  html{scroll-snap-type:none}
+  .screen,.split .part,.screen.split{min-height:0;scroll-snap-align:none;padding-block:44px}
+  .screen.split{padding-block:0}
+  .final{padding-bottom:0}
+  .how .step p{display:block!important}
+}
 </style>
 </head>
 <body>
@@ -404,7 +440,7 @@ footer img{height:28px;width:auto}
       <a href="#sponsors">Sponsors</a>
     </nav>
     <div class="nav-cta">
-      <a class="btn btn-ghost nav-login" data-app="">Agent login</a>
+      <a class="btn btn-ghost nav-login" data-app="#/login">Agent login</a>
       <a class="btn btn-primary" data-app="#/request">List a home</a>
     </div>
   </div>
@@ -664,8 +700,9 @@ footer img{height:28px;width:auto}
       <div class="well">
         <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2MjYuNiAxMjAuMCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsPSJNYXJrZXQgUmVhZHkgVG91cnMiPjxnIGZpbGw9IiMxMDFBMzYiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0xMTguMjMgMTIuMDApIHNjYWxlKDAuNTEzNjQpIj48cGF0aCBkPSJNMzMwLjIzLDE2MS4yNkwyNDQuNjMsMjIuMTd2MTY0LjczaC0xNC40NlYwaDI4LjkzbDc2Ljk5LDEyOC43MUw0MTQuNTksMGgyNy40MnYxODYuOWgtMjYuMjJWMjEuOSIvPjxwYXRoIGQ9Ik01MzAuMTUsMTAzLjU2YzI0Ljk1LS44Myw1NC40NC0xNC40Nyw1NC40NC00OS4wOCwwLTQ3LjMtMzUuMTMtNTQuNDgtODEuMTEtNTQuNDhoLTQ4Ljc1djExLjc1aDQzLjMyYzU1LjMxLDAsNjIuMjEsMTYuODQsNjIuMjEsNDMuMjdzLTI3LjAzLDM5LjIzLTYxLjg0LDM5LjIzaC0zMC41NHYxMC40NGgzNS45M2M3LjQzLDExLjA1LDU0LjkyLDgyLjIxLDY0LjgxLDgyLjIxaDMzLjk0Yy0xMy44NCwwLTYyLjk4LTY5LjgxLTcyLjQyLTgzLjM0aC4wMSwwWiIvPjwvZz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyMzcuMjggNTUuMjUpIiBmaWxsPSIjMTAxQTM2Ij48cGF0aCBkPSJNMS44MCAwLjAwTDEuODAgLTI4LjAwTDYuNzYgLTI4LjAwTDE1LjcyIC02LjgwTDE1Ljg4IC02LjgwTDI0LjgwIC0yOC4wMEwyOS43NiAtMjguMDBMMjkuNzYgMC4wMEwyNi40MCAwLjAwTDI2LjQwIC0yMi45MkwyNi4yNCAtMjIuOTJMMTguMTYgLTQuMDBMMTMuNDQgLTQuMDBMNS4zMiAtMjIuOTJMNS4xNiAtMjIuOTJMNS4xNiAwLjAwWk00My4zNiAwLjAwTDUyLjkyIC0yOC4wMEw1OC4xMiAtMjguMDBMNjcuNTIgMC4wMEw2My45NyAwLjAwTDU1LjYwIC0yNS41Mkw1NS40NCAtMjUuNTJMNDYuODggMC4wMFpNNDguMDggLTguNzZMNDkuMDQgLTExLjQ4TDYxLjcyIC0xMS40OEw2Mi42OCAtOC43NlpNODEuMTIgMC4wMEw4MS4xMiAtMjguMDBMOTAuMTYgLTI4LjAwUTkzLjQ0IC0yOC4wMCA5NS41MiAtMjYuOTBROTcuNjAgLTI1LjgwIDk4LjYwIC0yMy45NlE5OS42MCAtMjIuMTIgOTkuNjAgLTE5LjgwUTk5LjYwIC0xNy41NiA5OC41OCAtMTUuNjhROTcuNTYgLTEzLjgwIDk1LjQ0IC0xMi42OFE5My4zMiAtMTEuNTYgOTAuMDAgLTExLjU2TDg0LjQ4IC0xMS41Nkw4NC40OCAwLjAwWk05NS45MiAwLjAwTDg5Ljc2IC0xMi41Mkw5My41MiAtMTIuNTJMOTkuODggMC4wMFpNODQuNDggLTE0LjIwTDg5LjkyIC0xNC4yMFE5My4xMiAtMTQuMjAgOTQuNjIgLTE1Ljc2UTk2LjEyIC0xNy4zMiA5Ni4xMiAtMTkuNzZROTYuMTIgLTIyLjI0IDk0LjY2IC0yMy43MFE5My4yMCAtMjUuMTYgODkuODggLTI1LjE2TDg0LjQ4IC0yNS4xNlpNMTEzLjg4IDAuMDBMMTEzLjg4IC0yOC4wMEwxMTcuMjQgLTI4LjAwTDExNy4yNCAtMTUuNjBMMTI4LjkyIC0yOC4wMEwxMzMuMTYgLTI4LjAwTDEyMC4yNCAtMTQuNDRMMTMzLjMyIDAuMDBMMTI5LjA0IDAuMDBMMTE3LjI0IC0xMi45NkwxMTcuMjQgLTEyLjk2TDExNy4yNCAwLjAwWk0xNDYuOTIgMC4wMEwxNDYuOTIgLTI4LjAwTDE2NC4yNCAtMjguMDBMMTY0LjI0IC0yNS4yNEwxNTAuMjggLTI1LjI0TDE1MC4yOCAtMTUuNDhMMTYzLjA0IC0xNS40OEwxNjMuMDQgLTEyLjc2TDE1MC4yOCAtMTIuNzZMMTUwLjI4IC0yLjc2TDE2NC4yNCAtMi43NkwxNjQuMjQgMC4wMFpNMTg1LjYwIDAuMDBMMTg1LjYwIC0yNS4yNEwxNzcuMjQgLTI1LjI0TDE3Ny4yNCAtMjguMDBMMTk3LjMyIC0yOC4wMEwxOTcuMzIgLTI1LjI0TDE4OC45NiAtMjUuMjRMMTg4Ljk2IDAuMDBaTTIzMC41MiAwLjAwTDIzMC41MiAtMjguMDBMMjM5LjU2IC0yOC4wMFEyNDIuODQgLTI4LjAwIDI0NC45MiAtMjYuOTBRMjQ3LjAwIC0yNS44MCAyNDguMDAgLTIzLjk2UTI0OS4wMCAtMjIuMTIgMjQ5LjAwIC0xOS44MFEyNDkuMDAgLTE3LjU2IDI0Ny45OCAtMTUuNjhRMjQ2Ljk2IC0xMy44MCAyNDQuODQgLTEyLjY4UTI0Mi43MiAtMTEuNTYgMjM5LjQwIC0xMS41NkwyMzMuODggLTExLjU2TDIzMy44OCAwLjAwWk0yNDUuMzIgMC4wMEwyMzkuMTYgLTEyLjUyTDI0Mi45MiAtMTIuNTJMMjQ5LjI4IDAuMDBaTTIzMy44OCAtMTQuMjBMMjM5LjMyIC0xNC4yMFEyNDIuNTIgLTE0LjIwIDI0NC4wMiAtMTUuNzZRMjQ1LjUyIC0xNy4zMiAyNDUuNTIgLTE5Ljc2UTI0NS41MiAtMjIuMjQgMjQ0LjA2IC0yMy43MFEyNDIuNjAgLTI1LjE2IDIzOS4yOCAtMjUuMTZMMjMzLjg4IC0yNS4xNlpNMjYzLjI4IDAuMDBMMjYzLjI4IC0yOC4wMEwyODAuNjAgLTI4LjAwTDI4MC42MCAtMjUuMjRMMjY2LjY0IC0yNS4yNEwyNjYuNjQgLTE1LjQ4TDI3OS40MCAtMTUuNDhMMjc5LjQwIC0xMi43NkwyNjYuNjQgLTEyLjc2TDI2Ni42NCAtMi43NkwyODAuNjAgLTIuNzZMMjgwLjYwIDAuMDBaTTI5My42MCAwLjAwTDMwMy4xNiAtMjguMDBMMzA4LjM2IC0yOC4wMEwzMTcuNzYgMC4wMEwzMTQuMjEgMC4wMEwzMDUuODQgLTI1LjUyTDMwNS42OCAtMjUuNTJMMjk3LjEyIDAuMDBaTTI5OC4zMiAtOC43NkwyOTkuMjggLTExLjQ4TDMxMS45NiAtMTEuNDhMMzEyLjkyIC04Ljc2Wk0zMzEuMzYgMC4wMEwzMzEuMzYgLTI4LjAwTDMzOS45NiAtMjguMDBRMzQ0Ljg4IC0yOC4wMCAzNDguMDggLTI2LjMwUTM1MS4yOCAtMjQuNjAgMzUyLjgyIC0yMS40NlEzNTQuMzYgLTE4LjMyIDM1NC4zNiAtMTMuOTJRMzU0LjM2IC05LjYwIDM1Mi44MiAtNi40OFEzNTEuMjggLTMuMzYgMzQ4LjA4IC0xLjY4UTM0NC44OCAwLjAwIDMzOS45NiAwLjAwWk0zMzQuNzIgLTIuODBMMzM5Ljg4IC0yLjgwUTM0My45NiAtMi44MCAzNDYuMzggLTQuMTRRMzQ4LjgwIC01LjQ4IDM0OS44NCAtNy45OFEzNTAuODggLTEwLjQ4IDM1MC44OCAtMTMuOTJRMzUwLjg4IC0xNy40NCAzNDkuODQgLTE5Ljk2UTM0OC44MCAtMjIuNDggMzQ2LjM4IC0yMy44NFEzNDMuOTYgLTI1LjIwIDMzOS44OCAtMjUuMjBMMzM0LjcyIC0yNS4yMFpNMzc2LjY4IDAuMDBMMzc2LjY4IC0xMC4wOEwzNjcuNTYgLTI4LjAwTDM3MS4zNiAtMjguMDBMMzc4LjM2IC0xMy41NkwzNzguNTIgLTEzLjU2TDM4NS40OCAtMjguMDBMMzg5LjEyIC0yOC4wMEwzODAuMDQgLTEwLjA4TDM4MC4wNCAwLjAwWiIvPjwvZz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyMzcuMjggOTIuNzUpIiBmaWxsPSIjNUI1RjZCIj48cGF0aCBkPSJNNS45MSAwLjAwTDUuOTEgLTE1Ljc4TDAuNjkgLTE1Ljc4TDAuNjkgLTE3LjUwTDEzLjI0IC0xNy41MEwxMy4yNCAtMTUuNzhMOC4wMSAtMTUuNzhMOC4wMSAwLjAwWk0zNS4xOSAwLjMwUTMyLjY0IDAuMzAgMzAuNzAgLTAuODRRMjguNzYgLTEuOTggMjcuNjcgLTQuMDFRMjYuNTggLTYuMDUgMjYuNTggLTguNzVRMjYuNTggLTExLjQzIDI3LjY3IC0xMy40NlEyOC43NiAtMTUuNTAgMzAuNzAgLTE2LjY1UTMyLjY0IC0xNy44MCAzNS4xOSAtMTcuODBRMzcuODAgLTE3LjgwIDM5Ljc0IC0xNi42NVE0MS42OCAtMTUuNTAgNDIuNzYgLTEzLjQ2UTQzLjgzIC0xMS40MyA0My44MyAtOC43NVE0My44MyAtNi4wNSA0Mi43NiAtNC4wMVE0MS42OCAtMS45OCAzOS43NCAtMC44NFEzNy44MCAwLjMwIDM1LjE5IDAuMzBaTTM1LjIxIC0xLjU1UTM3LjEzIC0xLjU1IDM4LjYwIC0yLjQxUTQwLjA2IC0zLjI4IDQwLjg3IC00Ljg5UTQxLjY4IC02LjUwIDQxLjY4IC04Ljc1UTQxLjY4IC0xMS4wMCA0MC44NyAtMTIuNjFRNDAuMDYgLTE0LjIzIDM4LjYwIC0xNS4wOFEzNy4xMyAtMTUuOTMgMzUuMjEgLTE1LjkzUTMzLjI3IC0xNS45MyAzMS44MiAtMTUuMDhRMzAuMzYgLTE0LjIzIDI5LjU1IC0xMi42MVEyOC43MyAtMTEuMDAgMjguNzMgLTguNzVRMjguNzMgLTYuNTAgMjkuNTUgLTQuODlRMzAuMzYgLTMuMjggMzEuODIgLTIuNDFRMzMuMjcgLTEuNTUgMzUuMjEgLTEuNTVaTTY0LjYyIDAuMzBRNjIuODIgMC4zMCA2MS4zNiAtMC40M1E1OS44OSAtMS4xNSA1OS4wMiAtMi42NFE1OC4xNCAtNC4xMiA1OC4xNCAtNi40NUw1OC4xNCAtMTcuNTBMNjAuMjQgLTE3LjUwTDYwLjI0IC02LjQzUTYwLjI0IC00LjczIDYwLjgxIC0zLjY1UTYxLjM3IC0yLjU4IDYyLjM3IC0yLjA4UTYzLjM3IC0xLjU4IDY0LjY3IC0xLjU4UTY1Ljk5IC0xLjU4IDY2Ljk3IC0yLjA4UTY3Ljk0IC0yLjU4IDY4LjQ5IC0zLjY1UTY5LjA0IC00LjczIDY5LjA0IC02LjQzTDY5LjA0IC0xNy41MEw3MS4xNCAtMTcuNTBMNzEuMTQgLTYuNDVRNzEuMTQgLTQuMTIgNzAuMjcgLTIuNjRRNjkuMzkgLTEuMTUgNjcuOTIgLTAuNDNRNjYuNDQgMC4zMCA2NC42MiAwLjMwWk04Ni4xMCAwLjAwTDg2LjEwIC0xNy41MEw5MS43NSAtMTcuNTBROTMuODAgLTE3LjUwIDk1LjEwIC0xNi44MVE5Ni40MCAtMTYuMTIgOTcuMDMgLTE0Ljk4UTk3LjY1IC0xMy44MyA5Ny42NSAtMTIuMzhROTcuNjUgLTEwLjk4IDk3LjAyIC05LjgwUTk2LjM4IC04LjYyIDk1LjA1IC03LjkzUTkzLjczIC03LjIzIDkxLjY1IC03LjIzTDg4LjIwIC03LjIzTDg4LjIwIDAuMDBaTTk1LjM1IDAuMDBMOTEuNTAgLTcuODNMOTMuODUgLTcuODNMOTcuODMgMC4wMFpNODguMjAgLTguODhMOTEuNjAgLTguODhROTMuNjAgLTguODggOTQuNTQgLTkuODVROTUuNDggLTEwLjgzIDk1LjQ4IC0xMi4zNVE5NS40OCAtMTMuOTAgOTQuNTcgLTE0LjgxUTkzLjY1IC0xNS43MyA5MS41OCAtMTUuNzNMODguMjAgLTE1LjczWk0xMTcuOTIgMC4zMFExMTYuMDAgMC4zMCAxMTQuNTcgLTAuNDBRMTEzLjE1IC0xLjEwIDExMi4zNyAtMi4zNVExMTEuNjAgLTMuNjAgMTExLjYwIC01LjI1TDExMy44MCAtNS4yNVExMTMuODAgLTQuMjMgMTE0LjI3IC0zLjM2UTExNC43NCAtMi41MCAxMTUuNjYgLTEuOTlRMTE2LjU3IC0xLjQ4IDExNy45MiAtMS40OFExMTkuMDkgLTEuNDggMTE5LjkzIC0xLjg2UTEyMC43NyAtMi4yNCAxMjEuMjEgLTIuOTJRMTIxLjY1IC0zLjU5IDEyMS42NSAtNC40NVExMjEuNjUgLTUuNDkgMTIxLjIwIC02LjEzUTEyMC43NSAtNi43NyAxMTkuOTkgLTcuMTdRMTE5LjIzIC03LjU3IDExOC4yNSAtNy44N1ExMTcuMjYgLTguMTcgMTE2LjIwIC04LjU0UTExNC4xNiAtOS4yNSAxMTMuMTggLTEwLjI5UTExMi4yMCAtMTEuMzQgMTEyLjIwIC0xMy4wMVExMTIuMjAgLTE0LjQzIDExMi44NiAtMTUuNTBRMTEzLjUyIC0xNi41OCAxMTQuNzYgLTE3LjE5UTExNi4wMCAtMTcuODAgMTE3LjcwIC0xNy44MFExMTkuMzcgLTE3LjgwIDEyMC42MSAtMTcuMThRMTIxLjg1IC0xNi41NSAxMjIuNTUgLTE1LjQ2UTEyMy4yNSAtMTQuMzggMTIzLjI1IC0xMi45NUwxMjEuMDUgLTEyLjk1UTEyMS4wNSAtMTMuNjkgMTIwLjY3IC0xNC4zOVExMjAuMjkgLTE1LjA5IDExOS41MyAtMTUuNTVRMTE4Ljc3IC0xNi4wMSAxMTcuNjEgLTE2LjAxUTExNi42NyAtMTYuMDMgMTE1LjkzIC0xNS43MFExMTUuMTkgLTE1LjM2IDExNC43OCAtMTQuNzRRMTE0LjM3IC0xNC4xMiAxMTQuMzcgLTEzLjIxUTExNC4zNyAtMTIuMzcgMTE0LjczIC0xMS44NFExMTUuMDkgLTExLjMyIDExNS43NyAtMTAuOTVRMTE2LjQ1IC0xMC41OSAxMTcuMzggLTEwLjI4UTExOC4zMSAtOS45OCAxMTkuNDQgLTkuNjBRMTIwLjcxIC05LjE3IDEyMS43MCAtOC41NlExMjIuNjkgLTcuOTUgMTIzLjI1IC03LjAwUTEyMy44MiAtNi4wNSAxMjMuODIgLTQuNThRMTIzLjgyIC0zLjMzIDEyMy4xNiAtMi4yMVExMjIuNTAgLTEuMTAgMTIxLjIwIC0wLjQwUTExOS45MCAwLjMwIDExNy45MiAwLjMwWiIvPjwvZz48L3N2Zz4=" alt="MarketReady Tours" width="146" height="28">
         <span>
-          <a data-app="#/contact">Contact</a> &nbsp; <a href="privacy-policy.html">Privacy</a> &nbsp; <a data-app="">Agent login</a>
+          <a data-app="#/contact">Contact</a> &nbsp; <a href="privacy-policy.html">Privacy</a> &nbsp; <a data-app="#/login">Agent login</a>
         </span>
+        <p class="credit">Built and supported by <a href="https://marketreadysystems.ai" rel="noopener">Market Ready Systems</a></p>
       </div>
     </footer>
   </section>
@@ -674,7 +711,7 @@ footer img{height:28px;width:auto}
 <script>
 (function(){
   // Where the app lives. The landing page links into its existing forms by hash route.
-  var APP = window.MRT_APP_URL || "./";
+  var APP = window.MRT_APP_BASE || "./";
   document.querySelectorAll("[data-app]").forEach(function(a){ a.href = APP + a.getAttribute("data-app"); });
 
   // Hero demo: the real 10 rating categories, 1 to 5 stars.
