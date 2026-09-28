@@ -1,6 +1,7 @@
 # MarketReady Tours — working rules
 
-_Updated 2026-09-02. **Production is LIVE.** The refresh serves marketreadytours.com._
+_Updated 2026-09-27. **Production is LIVE.** `marketreadytours.com` is the sales landing page; the
+app is at `marketreadytours.com/app/` (since 2026-09-26)._
 
 ## Rule 1: production is live, and you are cleared to work on it
 
@@ -99,6 +100,11 @@ runs to see whether the failure predates your changes.
 - **Edge cache: a deploy takes up to 10 minutes to appear.** This is expected — do not
   re-deploy chasing it. For an immediate update: Cloudflare → Caching → Configuration →
   Purge Everything.
+- **Site layout** is chosen by env vars in `.github/workflows/pages.yml`: `MRT_LANDING: "1"` puts
+  `landing.html` at `/` and the app at `/app/`; `MRT_PUBLISH_APP_SUBPATH: "1"` keeps `/app/`
+  serving even with the landing page off (emailed links point there). A plain `npm run build`
+  keeps the app at `/` — that is what Capacitor/iOS bundles, so never set `MRT_LANDING` there.
+  To test the website layout locally: `MRT_LANDING=1 npm run build`.
 - **Functions:** deploy by name (Rule 2).
 - Verify the deployed artifact, not the absence of an error. `curl` the live URL and grep for
   a marker you just changed. A silent no-op is the common failure here.
@@ -111,9 +117,12 @@ runs to see whether the failure predates your changes.
 - The whole app is one file: **`index.html`** (compiled `React.createElement`, no JSX source).
   `www/` is **gitignored** — the Actions workflow builds it. `cp index.html www/index.html`
   is still worth doing for local serving, but it is not what gets deployed.
+- The landing page is one file too: **`landing.html`** (+ images in `assets/landing/`). Its first
+  `<head>` script forwards every `#/` link to the app — don't remove it, or old invite, opt-out
+  and payment links land on the marketing page.
 - After editing the script region, always run the parse check:
   `node -e "const h=require('fs').readFileSync('index.html','utf8');const m=h.match(/<script type=\"text\/javascript\">([\s\S]*?)<\/script>/);new Function(m[1]);console.log('parse OK')"`
-- Then `npm run check` — 58 tests plus 13 static checks.
+- Then `npm run check` — 97 tests plus 13 static checks.
 
 ## Traps that have each cost a day
 

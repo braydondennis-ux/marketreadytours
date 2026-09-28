@@ -1,6 +1,6 @@
 # MarketReady Tours — open items
 
-_Updated 2026-09-02. Production is live; see `CLAUDE.md` for what you are cleared to do._
+_Updated 2026-09-27. Production is live; see `CLAUDE.md` for what you are cleared to do._
 
 Verified items note how they were confirmed, so nobody has to re-derive it.
 
@@ -104,7 +104,8 @@ in production over two weeks and reached **version 56 across ~55 saves** with no
 - **Two of three account emails are untested end to end.** Forgot-password was verified with a
   real send on 2026-08-12. The new-member invite (`createAdmin`) and the admin-triggered reset
   (`sendAdminPasswordReset`) share the same sending path but no real message has gone through
-  either. The first person invited is currently the test.
+  either. The first person invited is currently the test — when they are, also confirm the
+  invite's "sign in" link (`/#/login`, changed 2026-09-26) opens the sign-in screen.
 - **M7** — verify the legacy send-email Cloud Function authenticates its caller. Partly
   evidenced: since 2026-08-14 every `sendEmail` hit has been a bot probe rejected with 403
   (Netcraft, Amazonbot, spoofed-iOS scanners), and no function has fallen back to it. The live
@@ -119,6 +120,22 @@ in production over two weeks and reached **version 56 across ~55 saves** with no
 - **L5** — no captcha on public intake forms (rate limiting and a honeypot are in place).
 - **`createCheckoutSession` 404s.** The live legacy site calls it; it is deployed nowhere and
   exists in no source. Pre-existing.
+
+---
+
+## 🟡 7. Landing page follow-ups (live since 2026-09-26)
+
+- **No real reviews or testimonials.** The competitor (besthomeontour.com) leads with "5.0 · 336
+  Google reviews" next to its main button; we have nothing equivalent. Real agent quotes are the
+  single biggest conversion gap. Nothing was fabricated to fill it.
+- **Listing photos need Braydon's OK.** The hero wall and leaderboard reuse photos that agents
+  submitted to promote a listing on a tour. Addresses are never shown, but the reuse itself is
+  his call.
+- **Unconfirmed claims to check with Braydon:** that listing agents actually receive a
+  feedback report, and that the seller only sees it if the agent shares it (both appear in the
+  page's copy and FAQ). Listing-agent pricing is not stated anywhere on the page.
+- **Possible next step:** a shorter multi-step listing form in place of the app's current
+  one-page `#/request` form.
 
 ---
 

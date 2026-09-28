@@ -43,6 +43,9 @@ jobs:
       # "1" = the landing page is the front door at / and the app lives at /app/ (the landing
       # page forwards every #/ app link there). "0" = app at / as before. Flip to roll back.
       MRT_LANDING: "1"
+      # Always publish the app at /app/ too. Links the app has emailed since 2026-09-26 point
+      # there, so it must keep serving even if MRT_LANDING is switched back to "0".
+      MRT_PUBLISH_APP_SUBPATH: "1"
     steps:
       - uses: actions/checkout@v4
 
@@ -86,7 +89,8 @@ jobs:
               || { echo "::error::Landing page does not point at /app/."; exit 1; }
             echo "Landing mode verified: landing page at /, app at /app/."
           else
-            echo "Live mode verified: app at /."
+            test -f www/app/index.html || { echo "::error::/app/ missing — links emailed since 2026-09-26 would 404."; exit 1; }
+            echo "Live mode verified: app at / (and at /app/ for links already sent)."
           fi
 
       - uses: actions/configure-pages@v5

@@ -1,9 +1,10 @@
 # MarketReady Tours — Engineering Handoff
 
-_Updated 2026-09-02. Read this entire file before acting._
+_Updated 2026-09-27. Read this entire file before acting._
 
-**Current state.** The refresh is **LIVE** on marketreadytours.com (cutover 2026-08-10) and
-edge-cached. **30** Cloud Functions. Sponsor payments run on Clover; transactional email runs on
+**Current state.** The refresh is **LIVE** (cutover 2026-08-10) and edge-cached. Since
+2026-09-26 **marketreadytours.com is a sales landing page and the app lives at `/app/`** — every
+old `#/` link still reaches the app; see "2026-09-26 — landing page" below. **30** Cloud Functions. Sponsor payments run on Clover; transactional email runs on
 Resend. 36 tours, with `mrt_tours_private` and `mrt_tours_public` in sync. Erik is Owner on
 `marketready-tours` and has a standing go-ahead for production work — see `CLAUDE.md`, whose old
 "never touch production" rule is retired. Open work is in `docs/TODO.md`.
@@ -102,6 +103,79 @@ and costs you the refresh.
 
 **Rollback target:** `cd6f9808fc8a90237012834fcba9587b4e512c47`. Our work remains on
 `erik/agent/mrt-refresh-release-2026-08-06`.
+
+**Links under `/app/` do not survive this rollback.** Since 2026-09-26 the app emails tour-invite
+and opt-out links as `marketreadytours.com/app/#/…`. The legacy tree has no `/app/`, so those links
+404 after a full rollback. To undo only the landing page, use the landing-page rollback in the
+2026-09-26 section instead — it keeps `/app/` serving.
+
+## 2026-09-26 — landing page at `/`, app at `/app/`
+
+**marketreadytours.com is now a sales landing page; the app lives at `marketreadytours.com/app/`.**
+Commits `2faf924` → `de97818` on `main`. Everything below was verified on the live site in a real
+browser, not just built.
+
+**Files.** `landing.html` (standalone page: inline CSS/JS, DM Sans, brand tokens) and
+`assets/landing/` (24 hero photos + 3 leaderboard photos, resized WebP copies of listing photos
+from past tours — ~600 KB total). `scripts/build.mjs` writes both into `www/`.
+
+**Build modes** (`scripts/build.mjs`, switched by env vars that only `pages.yml` sets):
+
+| Env | `/` serves | `/app/` serves | Used by |
+|---|---|---|---|
+| none | app | — | local, Vercel preview, **Capacitor/iOS** (`webDir: "www"`) |
+| `MRT_LANDING=1` | landing page | app | the website (`pages.yml`) |
+| `MRT_PUBLISH_APP_SUBPATH=1` only | app | app | website with the landing page switched off |
+| `MRT_MAINTENANCE=1` | maintenance page | app | wins over the others |
+
+Never set `MRT_LANDING` for a Capacitor build — the iPhone app would open on the landing page.
+
+**Why no old link broke.** Every link the app issues is a `#/` route: tour invites
+(`#/request/<id>`), opt-outs (`?token=…#/not-interested`), sponsor payment (`?spt=…#/sponsor-pay`),
+`#/payment-success`, and the PWA `start_url` (`./#/`). The landing page's first `<head>` script
+forwards any `#/` address to `app/` with the query string intact (also on `hashchange`). Links the
+app builds *now* use `location.pathname`, so new emails carry `/app/…` directly.
+
+**Behaviour to know about:**
+
+- **Signed-in staff skip the landing page.** The app's auth handler sets
+  `localStorage.mrt_signed_in` on admin sign-in and clears it on sign-out/anonymous; the landing
+  page sends flagged devices straight to `/app/`. `?home` shows the landing page anyway.
+- **`#/login` opens the sign-in modal** (it had no route before). The landing footer's "Admin
+  sign-in" and the `createAdmin` invite email (revision `createadmin-00011`, deployed by name
+  2026-09-26, count still 30) both link to `https://marketreadytours.com/#/login`, which works
+  whichever build mode is live.
+- **Only admins have accounts.** Touring/listing agents never sign in, so nothing on the landing
+  page may say "Agent login" — the nav button is "Open the app" (public tour dashboard).
+- **Live data, no backend.** The page reads `mrt_tours_public` (tour/home counts, next tour and
+  open spots, upcoming list — the whole screen and its nav link disappear when there are no
+  upcoming tours) and `mrt_ratings_public` (top 3 from the newest *fully rated* tour; a baked
+  snapshot of the 2026-09-02 North Phoenix tour shows until a newer one qualifies).
+- **Service worker.** The app registers `sw.js` relatively, so at `/app/` its scope is `/app/`
+  (verified). Returning visitors still hold the old root-scope worker; it is network-first for
+  navigations, so it serves the landing page correctly and is otherwise inert.
+- **Cloudflare.** `pages.yml`'s purge list now includes `/landing.html` and the `/app/` paths —
+  still dormant until Braydon adds the two repository secrets.
+
+**Design rules the page follows** (Erik's explicit preferences — keep them):
+
+- Full-screen sections with mandatory scroll snap, each fitting one screen under the 68px nav.
+  Phones split tall sections into `.part` snap screens; phones in landscape scroll normally.
+- **No container may change size when its text changes** (live notes, loaded data, accordions).
+  Fixed heights, loading rows the same size as loaded ones, FAQ sized for its longest answer.
+- Client-facing copy only — no notes that explain how the page was built.
+- Every clickable element has a hover state (mouse-only, via `(hover:hover)`).
+
+**Trap: never put `overflow:hidden` on a section.** It makes the section a scroll container,
+which captures the phone-sized snap points inside it; the page then jumped past the hero on load.
+The hero uses `contain:paint` to clip its photo wall instead.
+
+**Rollback (landing page only):** set `MRT_LANDING: "0"` in `.github/workflows/pages.yml` and
+push. The app returns to `/`, and `/app/` keeps serving because `MRT_PUBLISH_APP_SUBPATH` stays
+`"1"`. The landing page remains reachable at `/landing.html`.
+
+**Open:** no real reviews/testimonials yet (the competitor's strongest element); Braydon has not
+yet approved reusing listing photos on the page. See `docs/TODO.md`.
 
 ## 2026-08-10 — production cutover, resolved blockers
 
@@ -457,6 +531,9 @@ npm run build && npx http-server www -p 8137 -c-1
 
 ## Current deployment state
 
+> **Historical (pre-cutover, 2026-08-08).** Kept for the record; production went live 2026-08-10.
+> For the current layout see "2026-09-26 — landing page" near the top.
+
 `marketreadytours.com` still serves the **old frontend**. The refresh has **not** been promoted to
 the production domain, so the branding pass is safe to do locally without disrupting users.
 
@@ -784,7 +861,10 @@ remain the application security boundary.
 - `assets/`: existing site assets; reuse/extend carefully according to the brand PDF.
 - `manifest.json`, `offline.html`, `sw.js`: PWA surfaces; update only if visually necessary and
   keep behavior/cache semantics intact.
-- `scripts/build.mjs`: generates `www/` and injects environment-specific App Check configuration.
+- `scripts/build.mjs`: generates `www/`, injects environment-specific App Check configuration, and
+  picks the site layout (landing page at `/` + app at `/app/`, or app at `/`) — see the
+  2026-09-26 section.
+- `landing.html` + `assets/landing/`: the sales landing page served at `/` on the website.
 - `functions/index.js`: trusted backend. Out of scope for branding.
 - `database.rules.transition.json`: rollback-safe production rules. Out of scope.
 - `www/`: generated output. Never edit directly.

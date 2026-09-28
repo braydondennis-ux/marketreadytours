@@ -69,5 +69,9 @@ if (process.env.MRT_MAINTENANCE === "1") {
 } else {
   await writeFile(resolve(out, "index.html"), builtHtml);
   await writeFile(resolve(out, "landing.html"), landingFor("./"));
-  console.log("Built static web bundle in www/");
+  // Since 2026-09-26 the app has emailed links under /app/ (they are built from
+  // location.pathname). The website build keeps /app/ serving even with the landing page
+  // off, so switching MRT_LANDING back to "0" cannot break a link already in someone's inbox.
+  if (process.env.MRT_PUBLISH_APP_SUBPATH === "1") await writeAppAtSubpath();
+  console.log("Built static web bundle in www/" + (process.env.MRT_PUBLISH_APP_SUBPATH === "1" ? " (app also at /app/)" : ""));
 }
