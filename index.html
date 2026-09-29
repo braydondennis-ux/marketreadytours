@@ -66,15 +66,11 @@ window.loadGoogleMaps=function(cb){
     window._mapsCallbacks=[];
   };
   var s=document.createElement('script');
-  // Braydon's PROD key is restricted by HTTP referrer to marketreadytours.com, so it fails
-  // on the *.vercel.app demo — grey "Map preview unavailable" plus a silently dead Places
-  // autocomplete. The demo therefore uses its own key from our own GCP project.
-  //   1. Paste the demo key into MRT_DEMO_MAPS_KEY below.
-  //   2. In Google Cloud Console restrict that key to Websites: https://*.vercel.app/*
-  //      and to the Maps JavaScript API + Places API only.
-  // Leaving MRT_DEMO_MAPS_KEY empty falls back to the prod key, i.e. today's behaviour.
-  // Production is unaffected either way — it never reads the demo key.
-  var MRT_PROD_MAPS_KEY='AIzaSyBoPhoNQ5C84nS79QDV36R93APg4Pizo_E';
+  // Use the existing browser key managed in marketready-tours. Its website restrictions
+  // cover marketreadytours.com/* (including /app/) and its API restrictions allow Maps,
+  // Places and Directions. The previous key belonged to a different project and rejected
+  // /app/ with RefererNotAllowedMapError. Keep Vercel previews on their separate demo key.
+  var MRT_PROD_MAPS_KEY='AIzaSyChm7UYPWXg_nhD8JqUW3WRfyzsTC491V8';
   var MRT_DEMO_MAPS_KEY='AIzaSyBrD8tfQ17BNVbzll6H78wzxbKbU9Tj2OU';
   var MRT_MAPS_KEY=(location.hostname.endsWith('.vercel.app')&&MRT_DEMO_MAPS_KEY)?MRT_DEMO_MAPS_KEY:MRT_PROD_MAPS_KEY;
   s.src='https://maps.googleapis.com/maps/api/js?key='+MRT_MAPS_KEY+'&libraries=places&loading=async&callback=_gmapsReady';
@@ -774,7 +770,6 @@ async function sendWelcomeEmail(name, email) {
   }
 }
 /* ── API KEYS ── */
-const GOOGLE_KEY = "AIzaSyBoPhoNQ5C84nS79QDV36R93APg4Pizo_E";
 const mrtLocalYmd = function (date) {
   const d = date || new Date();
   const parts = new Intl.DateTimeFormat("en-CA", {

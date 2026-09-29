@@ -1,6 +1,6 @@
 # MarketReady Tours — Engineering Handoff
 
-_Updated 2026-09-27. Read this entire file before acting._
+_Updated 2026-09-29. Read this entire file before acting._
 
 **Current state.** The refresh is **LIVE** (cutover 2026-08-10) and edge-cached. Since
 2026-09-26 **marketreadytours.com is a sales landing page and the app lives at `/app/`** — every
@@ -20,6 +20,22 @@ Resend. 36 tours, with `mrt_tours_private` and `mrt_tours_public` in sync. Erik 
 **The app is genuinely in use.** The 2026-09-02 North Phoenix tour was built in production over
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
+
+## 2026-09-29 — address lookup repair
+
+The old production Maps key (ending `Pizo_E`) returned `RefererNotAllowedMapError` for
+`https://marketreadytours.com/app/`, reproduced in Chrome after the landing-page move.
+That key belongs to a separate Google project (`211594997574`) that Erik cannot manage.
+The lazy Maps loader now uses the existing browser key in **marketready-tours** (ending
+`C491V8`, the same public key already used for production Firebase). Its existing website
+restrictions include `marketreadytours.com/*`, and its API restrictions already include
+Maps JavaScript, Places and Directions. No key restrictions, enabled services or billing
+settings were changed. Vercel still uses the separate demo Maps key.
+
+Before deployment, a tab-local replacement on the live `/app/` page returned address
+suggestions and successfully resolved the selected address details. Manual address entry
+remains available. When checking future site-path changes, test both Google predictions
+and selection/details in a fresh browser tab; CI cannot validate live Maps restrictions.
 
 ## First thing to check (2026-09-02)
 
