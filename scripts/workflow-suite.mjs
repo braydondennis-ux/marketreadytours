@@ -310,6 +310,34 @@ for (const row of reminderRows) {
   assert.ok(row.agentEmail, "a reminder with no recipient should never have been created");
 }
 
+/* RTDB removes empty arrays. Reloading a new tour therefore omits sponsors entirely;
+   adding its first listing must still commit, including for a regular admin. */
+await signOut(auth);
+await signInWithEmailAndPassword(auth, "admin@example.com", "test1234");
+const firstListingTourId = "tour-first-listing";
+await callable("saveTour", {
+  tour: {id: firstListingTourId, name: "First Listing Regression", date: "2027-01-15", time: "9:00 AM", listings: [], sponsors: []},
+  expectedVersion: 0,
+  requestId: requestId("empty-tour"),
+});
+const reloadedEmptyTour = (await get(ref(db, `mrt_tours_private/${firstListingTourId}`))).val();
+assert.equal(Object.hasOwn(reloadedEmptyTour, "sponsors"), false, "RTDB must reproduce the omitted sponsor field");
+const firstListing = {id: "first-listing", address: "1 Regression Way", city: "Phoenix, AZ 85012"};
+const firstListingSaved = await callable("saveTour", {
+  tour: {...reloadedEmptyTour, listings: [firstListing]},
+  expectedVersion: reloadedEmptyTour.version,
+  requestId: requestId("first-listing-save"),
+});
+assert.equal(firstListingSaved.version, 2);
+for (const root of ["mrt_tours_private", "mrt_tours_public"]) {
+  const persisted = (await get(ref(db, `${root}/${firstListingTourId}`))).val();
+  assert.equal(persisted.version, 2);
+  assert.equal(persisted.listings[0].address, firstListing.address, `${root} must persist the first listing`);
+}
+await callable("deleteTour", {tourId: firstListingTourId, expectedVersion: 2, requestId: requestId("first-listing-cleanup")});
+await signOut(auth);
+await signInWithEmailAndPassword(auth, "super@example.com", "test1234");
+
 /* Deleting a tour must take its reminders out of the queue, or the worker mails every agent
    about a tour that no longer exists. */
 const deletableTour = {

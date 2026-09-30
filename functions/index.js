@@ -341,6 +341,9 @@ async function metadataIdToken(audience) {
 const SPONSOR_PAYMENT_FIELDS = ["paid", "paymentStatus", "paymentMethod", "paidAt", "paymentRef"];
 
 function sanitizeSponsorPayments(rawSponsors, previousSponsors) {
+  // RTDB removes empty arrays, so a reloaded tour with no sponsors omits this field.
+  // Never introduce undefined into the transaction when saving its first listing.
+  if (rawSponsors == null) return [];
   if (!Array.isArray(rawSponsors)) return rawSponsors;
   const priorById = new Map();
   for (const prior of Array.isArray(previousSponsors) ? previousSponsors : []) {

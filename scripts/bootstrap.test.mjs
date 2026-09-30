@@ -291,6 +291,20 @@ test("duplicating a tour does not clone payments, sponsor ids, or the access cod
   assert.match(sanitize, /for \(const field of SPONSOR_PAYMENT_FIELDS\) delete next\[field\]/);
 });
 
+test("empty sponsor collections remain writable after an RTDB round trip", async () => {
+  const source = await readFile(new URL("../functions/index.js", import.meta.url), "utf8");
+  const section = source.slice(source.indexOf("const SPONSOR_PAYMENT_FIELDS ="),
+    source.indexOf("function normalizeTourForWrite"));
+  const sanitize = new Function(section + "\nreturn sanitizeSponsorPayments;")();
+  for (const sponsors of [undefined, null, []]) {
+    assert.deepEqual(sanitize(sponsors, undefined), [], "missing/empty sponsors must be a writable collection");
+  }
+  const paid = {id: "paid-sponsor", paid: true, paymentStatus: "paid", paymentRef: "server-ref"};
+  assert.deepEqual(sanitize([{id: paid.id, paid: false, paymentRef: "client-ref"}], [paid]), [paid]);
+  assert.deepEqual(sanitize([{id: "new-sponsor", paid: true, paymentRef: "forged"}], []),
+    [{id: "new-sponsor", paid: false, paymentStatus: "unpaid"}]);
+});
+
 test("production preserves secure manual sponsor payment operations", async () => {
   const [clientSource, functionSource] = await Promise.all([
     readFile(new URL("../index.html", import.meta.url), "utf8"),
