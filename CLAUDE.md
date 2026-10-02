@@ -1,6 +1,6 @@
 # MarketReady Tours — working rules
 
-_Updated 2026-09-27. **Production is LIVE.** `marketreadytours.com` is the sales landing page; the
+_Updated 2026-10-01. **Production is LIVE.** `marketreadytours.com` is the sales landing page; the
 app is at `marketreadytours.com/app/` (since 2026-09-26)._
 
 ## Rule 1: production is live, and you are cleared to work on it
@@ -122,9 +122,34 @@ runs to see whether the failure predates your changes.
   and payment links land on the marketing page.
 - After editing the script region, always run the parse check:
   `node -e "const h=require('fs').readFileSync('index.html','utf8');const m=h.match(/<script type=\"text\/javascript\">([\s\S]*?)<\/script>/);new Function(m[1]);console.log('parse OK')"`
-- Then `npm run check` — 97 tests plus 13 static checks.
+- Then `npm run check` — 105 tests plus 13 static checks.
 
 ## Traps that have each cost a day
+
+**Maps keys must allow the app's full URL.** Address lookup broke at `/app/` with
+`RefererNotAllowedMapError`. Fixed in `8047d3f` by using the existing browser key managed in
+`marketready-tours`; the old key belongs to a different project Erik cannot manage. Keep the
+separate Vercel demo key. For hostname/path changes, verify suggestions and selection/details
+in both the public listing form and the signed-in admin Add Listing form. CI alone does not
+exercise Google's live key restrictions. Full deployment and browser evidence is in `HANDOFF.md`.
+
+**Embedded routes also require Geocoding.** The managed browser key must allow Maps JavaScript,
+Places, Directions and `geocoding-backend.googleapis.com`, and those APIs must be enabled in
+`marketready-tours`. Geocoding was missed during the September 29 key switch; enabled and
+added to the existing key restrictions October 1. Test the actual Route view with all property
+pins and the driving line, not just autocomplete or the external Google Maps link.
+
+**Add Listing saves immediately.** The admin editor calls `onUpdateTour` as soon as Add Listing
+is clicked; do not assume the separate Save Changes button is required. For an address-only
+browser test, cancel the entry form before adding. The September 29 test verified address
+confirmation and the enabled Add Listing button, but deliberately did not test final saving.
+A later log check found a separate save failure; an enabled button is not evidence of persistence.
+
+**RTDB drops empty arrays.** Reloading a new tour removes `sponsors: []` from the returned
+record. `saveTour` must normalize missing sponsors to an empty collection, never insert
+`undefined` into its transaction (`d43c919`). The emulator workflow now covers creating an
+empty tour, reloading it, then persisting the first listing as a regular admin. Keep that real
+database round trip: fixtures that always include `sponsors: []` missed the production defect.
 
 **Do not hand Erik a command prefixed with `!`.** That prefix is Claude Code's own syntax. He
 runs commands in a real terminal, where zsh reads `!` as logical-NOT: `! cd /path && git push`

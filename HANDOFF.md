@@ -1,11 +1,12 @@
 # MarketReady Tours — Engineering Handoff
 
-_Updated 2026-09-29. Read this entire file before acting._
+_Updated 2026-10-01. Read this entire file before acting._
 
 **Current state.** The refresh is **LIVE** (cutover 2026-08-10) and edge-cached. Since
 2026-09-26 **marketreadytours.com is a sales landing page and the app lives at `/app/`** — every
 old `#/` link still reaches the app; see "2026-09-26 — landing page" below. **30** Cloud Functions. Sponsor payments run on Clover; transactional email runs on
-Resend. 36 tours, with `mrt_tours_private` and `mrt_tours_public` in sync. Erik is Owner on
+Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` and
+`mrt_tours_public`, with matching IDs and versions; this was not re-audited September 29. Erik is Owner on
 `marketready-tours` and has a standing go-ahead for production work — see `CLAUDE.md`, whose old
 "never touch production" rule is retired. Open work is in `docs/TODO.md`.
 
@@ -21,6 +22,71 @@ Resend. 36 tours, with `mrt_tours_private` and `mrt_tours_public` in sync. Erik 
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
 
+## 2026-10-01 — embedded tour map centered in the ocean
+
+**Reproduced in Chrome:** the 85085 tour (`tour-1789066199267-1-4ilyi`) had four saved
+properties, but its embedded map was at latitude 0, longitude 180. All four geocoder calls
+returned “This API is not activated on your API project.” The September 29 key switch missed
+Geocoding: Maps JavaScript, Places and Directions were allowed, but Geocoding was neither
+enabled nor allowed. The external Google Maps route uses addresses directly and still worked.
+
+**Production configuration repaired:** enabled `geocoding-backend.googleapis.com` in
+`marketready-tours` and appended that one service to browser key
+`ec2d5b49-d3e8-4b8c-8d20-061084166aa0` (ending `C491V8`). Compared before/after metadata:
+all 28 prior API targets and all six allowed referrers were preserved; Geocoding is target 29.
+No billing settings or backend functions changed.
+
+**Client patch `a8f2198`:** never fit empty bounds; hide the map until a property is located;
+center single properties at street zoom; show the existing fallback on failed/stalled lookups.
+Partial lookups retain numbered pins with a warning and do not silently route past missing
+stops. Directions failure has a warning; leaving the view cancels pending UI updates.
+Seven regression tests cover these cases. `npm run check`: **105 tests and 13 checks passed**,
+with the two existing heuristic warnings.
+
+**Live computer-use verification after the Google configuration repair:** the normal `/app/`
+URL → 85085 → Route displayed all four numbered pins and the blue driving line in North
+Phoenix (map center approximately 33.75471, -112.11554). Stops: 26904 North 24th Lane,
+27418 North 22nd Lane, 2425 West Bronco Butte Trail, 1948 West Black Hill Road. The full
+Google Maps route button retained all four addresses. This was a read-only check; no property
+was created or changed. Repeated this check after deploying the client: loading state resolved
+to the same four pins and route. The normal `/app/` artifact contains the empty-bounds guard.
+[Pages](https://github.com/braydondennis-ux/marketreadytours/actions/runs/36952337108) and
+[validation CI](https://github.com/braydondennis-ux/marketreadytours/actions/runs/36952337023)
+both passed for `a8f2198`.
+
+## 2026-09-29 — first-listing save failure found after the lookup repair
+
+**The Maps repair alone did not resolve the reported inability to add a property.** On the
+subsequent log review, `saveTour` returned HTTP 500 for tour `tour-1789066199267-1-4ilyi`
+(`85085`) at **18:06:26, 18:28:58, 18:39:01 and 18:48:38 Phoenix time** September 29,
+after the Maps deployment at 16:05. Auth and App Check passed. Each failed with:
+`Data returned contains undefined in property 'mrt_tours_private.<tourId>.sponsors'`.
+The same error also occurred before the Maps repair. Logs show a Windows Edge client, but
+do not identify the person; do not claim that Lou personally made these attempts.
+
+A read-only check found both private and public records still at **version 1, zero listings**,
+last updated September 10. Failed request bodies are not available in these logs, so the
+intended property address cannot be recovered from them.
+
+**Cause and patch (`d43c919`):** RTDB removes empty arrays. After an empty tour is reloaded,
+`sponsors` is absent; `sanitizeSponsorPayments` returned `undefined`, and the normalizer
+explicitly wrote it into the transaction. Missing/null sponsors now normalize to `[]`.
+Existing server-controlled sponsor payment fields retain their previous behavior.
+
+Validation: the new unit regression failed before the patch and passed afterward; all
+**98 unit tests and 13 validation checks** passed. The full local emulator workflow also
+passed, including a regular admin creating an empty tour, reloading the actual RTDB record
+(asserting `sponsors` is absent), adding its first listing and verifying version 2 plus the
+persisted address in both private and public records. No production test listing was created.
+**Deployed:** only `saveTour`, revision **`savetour-00009-luv`**, verified ACTIVE at
+`2026-09-30T02:10:06Z` (September 29, 19:10 Phoenix). The before/after function inventory is
+identical at 30 functions. [Validation CI](https://github.com/braydondennis-ux/marketreadytours/actions/runs/36658395310)
+and [Pages](https://github.com/braydondennis-ux/marketreadytours/actions/runs/36658395277)
+also passed for `d43c919`. The first post-deployment log query returned no save attempts or
+errors yet. **October 1 follow-up:** a fresh live browser load shows four saved properties
+on this same tour, confirming it is no longer empty after the save repair. This does not
+identify which person entered them or establish a per-request success timeline.
+
 ## 2026-09-29 — address lookup repair
 
 The old production Maps key (ending `Pizo_E`) returned `RefererNotAllowedMapError` for
@@ -32,41 +98,45 @@ restrictions include `marketreadytours.com/*`, and its API restrictions already 
 Maps JavaScript, Places and Directions. No key restrictions, enabled services or billing
 settings were changed. Vercel still uses the separate demo Maps key.
 
-Before deployment, a tab-local replacement on the live `/app/` page returned address
-suggestions and successfully resolved the selected address details. Manual address entry
-remains available. When checking future site-path changes, test both Google predictions
-and selection/details in a fresh browser tab; CI cannot validate live Maps restrictions.
+**Deployed to production:** commit `8047d3f60dd1dc5c3fc5626dd4565fb4b4c45023` on `origin/main`.
+Both [Pages deployment](https://github.com/braydondennis-ux/marketreadytours/actions/runs/36643212575)
+and [validation CI](https://github.com/braydondennis-ux/marketreadytours/actions/runs/36643212389)
+passed. Local `npm run check` passed all 97 tests and 13 validation checks, with the two
+existing heuristic warnings. The regular `/app/` URL was fetched and verified to serve the
+new key. No backend deployment was needed.
 
-## First thing to check (2026-09-02)
+**Browser verification after deployment (Chrome, computer use):**
 
-**The 2026-09-02 North Phoenix tour was the first real outbound send to outside agents since
-April, and its outcome is NOT yet verified.**
+- A fresh public List Home page returned suggestions for `3101 N Central Avenue Phoenix`;
+  selection confirmed `3101 North Central Avenue` and populated `Phoenix, AZ 85012`.
+- After Erik signed in, the actual admin flow was exercised from the normal `/app/` URL:
+  **85085 → Manage → Add New Listing**. Suggestions, address confirmation, city/state/ZIP
+  autofill and entry of beds, baths, square footage and price all worked. **Add Listing**
+  became enabled. This used the deployed loader, with no temporary key override.
+- The test entry was canceled. The editor still showed **0/8 listings** afterward.
+  **Final saving, photo upload and Lou's own account were not tested.** No test property was
+  saved and no messages were sent. A reply email was drafted for Erik, not sent.
 
-Armed 2026-08-25 by saving the tour, which created **12 reminders across 6 agents**, verified at
-the time: 12 rows, no duplicates, all `pending`, scheduled 08-31 and 09-01 at 08:30 Phoenix. The
-tour then grew to **8 listings and version 56**, so reconciliation should have added rows for the
-two new listings *if* they were added before the relevant send window — a listing added after
-09-01 08:30 gets neither reminder, by design.
+**Testing trap:** `addListing` calls `onUpdateTour` immediately. Clicking **Add Listing**
+persists the property; the separate **Save Changes** button is not a staging boundary.
+Canceling the entry form before adding leaves the live tour unchanged.
 
-Nobody has confirmed the sends landed. Credentials expired before this file was written. Check:
+Manual address entry remains available. For future site-path changes, test both Google
+predictions and selection/details in a fresh browser tab; CI cannot validate live Maps
+restrictions. If the report recurs, obtain the exact property address and distinguish lookup
+failure from a final-save failure.
 
-```bash
-export PATH="/opt/homebrew/share/google-cloud-sdk/bin:$PATH"
-npx firebase database:get /mrt_reminders --project marketready-tours
-```
+## September 2 reminders — verified September 10
 
-Expect every row `sent` with a `sentAt`, and `attempts: 0`. Anything `failed`, `dead` or still
-`pending` after 09-02 08:30 Phoenix is a real problem and the logs will say why:
+The saved [September 10 health check](docs/HEALTH-CHECK-2026-09-10.md) supersedes the old
+"First thing to check" warning: all **16 reminders across 8 listings** were `sent`, with
+`sentAt` and zero failed attempts. Logs recorded eight 48-hour sends on August 31 and eight
+24-hour sends on September 1, around 08:33 Phoenix, with exactly one successful-send event
+per row and no failures. No overdue, failed, dead or processing rows remained at that audit.
 
-```bash
-gcloud logging read 'resource.labels.service_name="processreminders" AND
-  (jsonPayload.message="Reminder sent" OR jsonPayload.message="Reminder send failed")' \
-  --project=marketready-tours --limit=40 --freshness=7d \
-  --format="value(timestamp,jsonPayload.message,jsonPayload.to,jsonPayload.attempts)"
-```
-
-A row stuck in `processing` means the worker died mid-send. That cannot double-send (nothing
-resets `processing`), but it also never retries — it needs a human.
+This verifies the send path, **not recipient inbox delivery or opens**. It is a dated audit,
+not a fresh September 29 check. The same report records a reversed uptime-alert condition
+and a duplicate-tour submission race; their resolution is not recorded here. See `docs/TODO.md`.
 
 ## ROLLBACK RUNBOOK — read this before rolling back
 

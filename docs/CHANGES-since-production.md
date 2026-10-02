@@ -2,6 +2,12 @@
 
 **Generated:** 2026-07-28
 
+> **Historical comparison, not current deployment status.** The refresh went live August 10,
+> the app moved to `/app/` September 26, and the address-lookup repair shipped September 29
+> in `8047d3f`, followed by first-listing persistence (`d43c919`) and the October 1 embedded-map
+> repair (`a8f2198` plus Google Geocoding configuration). The branch divergence and unreleased-work statements below describe July 28
+> only. See [the engineering handoff](../HANDOFF.md) for current state and verification.
+
 ## What "production" is, exactly
 
 | | |

@@ -1,6 +1,6 @@
 # MarketReady Tours — open items
 
-_Updated 2026-09-27. Production is live; see `CLAUDE.md` for what you are cleared to do._
+_Updated 2026-10-01. Production is live; see `CLAUDE.md` for what you are cleared to do._
 
 Verified items note how they were confirmed, so nobody has to re-derive it.
 
@@ -32,9 +32,10 @@ rollback readability without breaking the live site. Know which file you are shi
 
 Rewritten against RTDB and now created from the tour itself rather than only from listing
 approvals. `HANDOFF.md` has the full behaviour table and the four invariants that keep an agent
-from being emailed twice. The 2026-09-02 tour was armed on 2026-08-25 with 12 reminders across 6
-agents; it later grew to 8 listings, so the final row count should be higher. **Whether those
-sends actually landed is unverified** — see "First thing to check" at the top of `HANDOFF.md`.
+from being emailed twice. The September 10 health check verified the final **16 reminders
+across 8 listings** for the September 2 tour: all sent, zero failed attempts, and one successful
+log event per reminder. This verifies the send path, not inbox delivery or opens. See
+`HEALTH-CHECK-2026-09-10.md`; this was not re-audited September 29.
 
 The three legacy senders stay **`PAUSED`** and target Firestore, which is not enabled on this
 project. Their source is not in this repo. Leave both locks in place.
@@ -87,6 +88,13 @@ in production over two weeks and reached **version 56 across ~55 saves** with no
 
 ## 🟡 6. Smaller open items
 
+- **September 10 audit findings need follow-up.** The saved health check found an inverted
+  uptime-alert comparison (`REDUCE_COUNT_FALSE < 1`) and a create-tour guard that releases
+  after 1,500 ms while the save may still be pending. No resolution is recorded for either;
+  recheck before changing them. The separate admin-delete permission mismatch was resolved
+  September 11 in `8eab1cf`. Historical duplicate tour records are not authorization to delete
+  anything now. Details: `HEALTH-CHECK-2026-09-10.md`.
+
 - **Square still posts webhooks at production.** `squareWebhook` took 35 signed-but-rejected
   POSTs in the 7 days to 2026-08-22, all HTTP 403, all from Square's own IP `34.202.99.168`
   (`Square Connect v2`), roughly every 1-4 hours. Rejection is correct — payments moved to
@@ -136,6 +144,41 @@ in production over two weeks and reached **version 56 across ~55 saves** with no
   page's copy and FAQ). Listing-agent pricing is not stated anywhere on the page.
 - **Possible next step:** a shorter multi-step listing form in place of the app's current
   one-page `#/request` form.
+
+---
+
+## ✅ 8. Property address lookup — CLOSED 2026-09-29
+
+Lou's report was reproduced as Google's `RefererNotAllowedMapError` at `/app/`. Commit
+`8047d3f` switches the loader to the existing production project browser key. Pages deployment,
+validation CI, all 97 local tests and 13 static checks passed. Chrome computer-use checks
+verified suggestions and address details in both public List Home and the signed-in admin
+Add Listing form. Listing details accepted input and Add Listing became enabled.
+
+The test entry was canceled with the tour still at 0/8 listings. **Final saving, photo upload
+and Lou's own account were not tested.** Add Listing saves immediately, so do not click it
+with a dummy property on a live tour. If the issue recurs, collect the exact address and
+whether failure occurs during lookup or saving. See the September 29 section of `../HANDOFF.md`.
+
+**Follow-up:** a later log review confirmed four failed saves after the lookup repair; the
+address-only test did not cover persistence. Missing sponsors after an RTDB round trip caused
+`saveTour` to write `undefined`. Fix `d43c919` passed 98 unit tests, 13 checks, the full local
+emulator workflow including first-listing persistence, and CI. Only `saveTour` was deployed;
+revision `savetour-00009-luv` is ACTIVE, with the inventory unchanged at 30 functions.
+**October 1 live browser check:** the same tour now has four saved properties. The identity
+of the person who added them was not established. See the first-listing section of
+`../HANDOFF.md` for the failure timeline and deployment evidence.
+
+---
+
+## ✅ 9. Embedded tour map in the ocean — CLOSED 2026-10-01
+
+All four property lookups were rejected because Geocoding was missing from the production
+project/key configuration after the September 29 switch. Enabled Geocoding and appended it
+to the key's API targets, preserving all prior restrictions. Chrome verified four numbered
+pins and the driving route on the live 85085 tour. Client patch `a8f2198` handles failed,
+partial and stalled lookups without displaying empty ocean bounds. Seven regression tests;
+105 tests and 13 checks passed. See the October 1 section of `../HANDOFF.md`.
 
 ---
 
