@@ -6751,16 +6751,33 @@ function RouteMapView(_ref18) {
   const sorted = [...(tour.listings || [])].sort((a, b) => a.order - b.order);
   const [mapReady, setMapReady] = useState(!!((_window$google2 = window.google) !== null && _window$google2 !== void 0 && _window$google2.maps));
   const [mapError, setMapError] = useState(false);
+  const [mapLocated, setMapLocated] = useState(false);
+  const [mapWarning, setMapWarning] = useState("");
+  const stopsKey = JSON.stringify(sorted.map(l => [l.id, l.address, l.city, l.order]));
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const markersRef = useRef([]);
   useEffect(() => {
     if (!sorted.length) return;
-    window.onMapsError && window.onMapsError(() => setMapError(true));
-    window.loadGoogleMaps(() => setMapReady(true));
-  }, []);
+    let active = true;
+    const timer = setTimeout(() => { if (active) setMapError(true); }, 15000);
+    window.onMapsError && window.onMapsError(() => { if (active) setMapError(true); });
+    window.loadGoogleMaps(() => {
+      clearTimeout(timer);
+      if (active) setMapReady(true);
+    });
+    return () => { active = false; clearTimeout(timer); };
+  }, [stopsKey]);
   useEffect(() => {
     if (!mapReady || !mapRef.current || !sorted.length) return;
+    let active = true;
+    let directionsRenderer;
+    setMapError(!!window._mapsAuthFailed);
+    setMapLocated(false);
+    setMapWarning("");
+    const timer = setTimeout(() => {
+      if (active) { active = false; setMapError(true); }
+    }, 15000);
     try {
       // Init map
       const map = new window.google.maps.Map(mapRef.current, {
@@ -6778,7 +6795,7 @@ function RouteMapView(_ref18) {
       const geocoder = new window.google.maps.Geocoder();
       const bounds = new window.google.maps.LatLngBounds();
       const directionsService = new window.google.maps.DirectionsService();
-      const directionsRenderer = new window.google.maps.DirectionsRenderer({
+      directionsRenderer = new window.google.maps.DirectionsRenderer({
         map,
         suppressMarkers: true,
         polylineOptions: {
@@ -6793,7 +6810,8 @@ function RouteMapView(_ref18) {
         geocoder.geocode({
           address: l.address + ", " + l.city
         }, (results, status) => {
-          if (status === "OK" && results[0]) {
+          if (!active) { resolve(null); return; }
+          if (status === "OK" && results && results[0]) {
             const pos = results[0].geometry.location;
             bounds.extend(pos);
             // Custom numbered marker
@@ -6832,8 +6850,22 @@ function RouteMapView(_ref18) {
         });
       }));
       Promise.all(promises).then(results => {
+        clearTimeout(timer);
+        if (!active) return;
         const validResults = results.filter(Boolean).sort((a, b) => a.index - b.index);
-        map.fitBounds(bounds);
+        // Empty bounds have no property location: never frame them as a valid map.
+        if (!validResults.length) { setMapError(true); return; }
+        if (validResults.length === 1) {
+          map.setCenter(validResults[0].pos);
+          map.setZoom(15);
+        } else {
+          map.fitBounds(bounds);
+        }
+        setMapLocated(true);
+        if (validResults.length !== sorted.length) {
+          setMapWarning("Some stops could not be located. Open the full route in Google Maps below.");
+          return; // Do not draw a route that silently skips a property.
+        }
 
         // Draw route if 2+ listings
         if (validResults.length >= 2) {
@@ -6850,19 +6882,27 @@ function RouteMapView(_ref18) {
             travelMode: window.google.maps.TravelMode.DRIVING,
             optimizeWaypoints: false
           }, (result, status) => {
+            if (!active) return;
             if (status === "OK") directionsRenderer.setDirections(result);
+            else setMapWarning("The stops are shown, but the driving route could not load. Open Google Maps below.");
           });
         }
+      }).catch(() => {
+        clearTimeout(timer);
+        if (active) setMapError(true);
       });
     } catch (e) {
+      clearTimeout(timer);
       setMapError(true);
     }
-  }, [mapReady]);
-
-  // Cleanup markers on unmount
-  useEffect(() => () => {
-    markersRef.current.forEach(m => m.setMap && m.setMap(null));
-  }, []);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+      markersRef.current.forEach(m => m.setMap && m.setMap(null));
+      markersRef.current = [];
+      if (directionsRenderer) directionsRenderer.setMap(null);
+    };
+  }, [mapReady, stopsKey]);
   const mapsUrl = "https://www.google.com/maps/dir/" + sorted.map(l => encodeURIComponent(l.address + " " + l.city)).join("/");
   if (!sorted.length) return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -6967,7 +7007,7 @@ function RouteMapView(_ref18) {
       position: "relative",
       minHeight: 380
     }
-  }, !mapReady && !mapError && /*#__PURE__*/React.createElement("div", {
+  }, (!mapReady || !mapLocated) && !mapError && /*#__PURE__*/React.createElement("div", {
     style: {
       position: "absolute",
       inset: 0,
@@ -7029,6 +7069,7 @@ function RouteMapView(_ref18) {
       width: "100%",
       height: "100%",
       minHeight: 380,
+      visibility: mapLocated ? "visible" : "hidden",
       display: mapReady && !mapError ? "block" : "none"
     }
   })), /*#__PURE__*/React.createElement("div", {
@@ -7037,7 +7078,10 @@ function RouteMapView(_ref18) {
       background: "#fff",
       borderTop: "1px solid #E8E2D8"
     }
-  }, /*#__PURE__*/React.createElement("a", {
+  }, mapWarning && /*#__PURE__*/React.createElement("p", {
+    role: "status",
+    style: { color: B.gray, fontSize: 13, marginBottom: 10 }
+  }, mapWarning), /*#__PURE__*/React.createElement("a", {
     href: mapsUrl,
     target: "_blank",
     rel: "noreferrer",
