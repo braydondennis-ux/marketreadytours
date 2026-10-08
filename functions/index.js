@@ -41,6 +41,7 @@ const {
 } = require("./lib/clover");
 const {ensureBranded} = require("./lib/email");
 const {sendViaResend} = require("./lib/resend");
+const {buildEvaluationEmail} = require("./lib/evaluation-email");
 
 if (!getApps().length) initializeApp();
 
@@ -501,9 +502,8 @@ exports.submitRating = onCall(
       try {
         await sendTransactionalEmail({
           to: listing.agentEmail,
-          subject: `New rating — ${listing.address} (${tour.name})`,
-          text: `A new rating was submitted for ${listing.address}. Open MarketReady Tours to view the private feedback.`,
-          html: `<p>A new rating was submitted for <strong>${escapeHtml(listing.address)}</strong>.</p><p>Open MarketReady Tours to view the private feedback.</p>`,
+          ...buildEvaluationEmail({tour: {...tour, id: tourId}, listing,
+            ratings: [{...rating, photoPaths, submittedAt}], single: true}),
         });
         notificationStatus = "sent";
       } catch (error) {
@@ -935,6 +935,30 @@ exports.sendAdminEmail = onCall(
     const {uid} = assertAdmin(request);
     await enforceRateLimit("sendAdminEmail", request, 200, 24 * 60 * 60 * 1000);
     return idempotent("sendAdminEmail", uid, request.data?.requestId, async () => {
+      // Evaluation reports use current private data and the listing's saved recipient.
+      // Keep arbitrary client HTML disabled for ordinary admin emails.
+      if (request.data?.reportType != null) {
+        if (!["listing-summary", "seller-report"].includes(request.data.reportType)) {
+          throw new HttpsError("invalid-argument", "Unknown evaluation report type.");
+        }
+        const tourId = cleanText(request.data.tourId, 128, "tourId", true);
+        const listingId = cleanText(request.data.listingId, 128, "listingId", true);
+        if (/[.#$\[\]/]/.test(tourId + listingId)) {
+          throw new HttpsError("invalid-argument", "Invalid tour or listing identifier.");
+        }
+        const tour = (await getDatabase().ref(`mrt_tours_private/${tourId}`).get()).val();
+        const listing = tour?.listings?.find(l => l.id === listingId);
+        if (!listing) throw new HttpsError("not-found", "Listing was not found on this tour.");
+        const to = normalizeEmail(listing.agentEmail);
+        if (!isValidEmail(to)) throw new HttpsError("failed-precondition", "This listing has no valid agent email.");
+        const ratings = (await getDatabase().ref(`mrt_ratings_private/${tourId}/${listingId}`).get()).val();
+        const count = Object.values(ratings || {}).filter(Boolean).length;
+        if (!count) return {ok: true, skipped: true, reason: "no_evaluations"};
+        const result = await sendTransactionalEmail({to,
+          ...buildEvaluationEmail({tour: {...tour, id: tourId}, listing, ratings}),
+        });
+        return {ok: true, mocked: result.mocked === true, evaluationCount: count};
+      }
       const to = normalizeEmail(request.data?.to);
       const subject = cleanText(request.data?.subject, 300, "subject", true);
       const text = cleanText(request.data?.text, 30000, "text", true);

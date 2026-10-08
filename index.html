@@ -7322,7 +7322,38 @@ function TourDetailPage(_ref19) {
     onUpdateTour({...tour, listings: newListings});
     showToast("✅ Agent contacts synced!", "success", 2500);
   };
+  const sendSavedEvaluationReports = async reportType => {
+    if (!canSend(reportType + "_" + tour.id, 5000)) {
+      showToast("Please wait before sending again.", "warn");
+      return;
+    }
+    const listings = [...(tour.listings || [])].sort((a, b) => a.order - b.order).filter(l => l.agentEmail);
+    if (!listings.length) { showToast("No listings with agent emails found.", "warn"); return; }
+    const setBusy = reportType === "seller-report" ? setSendingSellerReport : setSendingFollowUp;
+    setBusy(true);
+    let sent = 0, failed = 0, skipped = 0;
+    try {
+      // The server reads saved evaluations and chooses the recipient for each property.
+      // Do not dedupe by email: an agent may represent more than one home on the tour.
+      for (const listing of listings) {
+        try {
+          const result = await mrtCall("sendAdminEmail", {
+            reportType, tourId: tour.id, listingId: listing.id,
+            requestId: mrtRequestId("evaluation-report")
+          });
+          if (result?.skipped) skipped++;
+          else if (result?.ok && (!result.mocked || _USE_DEV || window._MRT_LOCAL)) sent++;
+          else failed++;
+        } catch (error) { failed++; }
+      }
+      const message = "Evaluation reports sent: " + sent +
+        (skipped ? ". " + skipped + " properties have no saved evaluations" : "") +
+        (failed ? ". " + failed + " could not be sent" : "") + ".";
+      showToast(message, failed || !sent ? "warn" : "success", 6000);
+    } finally { setBusy(false); }
+  };
   const sendSellerReport = async () => {
+    if (MRT_SECURE_BACKEND) return sendSavedEvaluationReports("seller-report");
     if (!canSend("sellerReport_"+tour.id, 5000)) { showToast("Please wait before sending again.", "warn"); return; }
     const listings = [...(tour.listings||[])].sort((a,b)=>a.order-b.order).filter(l=>l.agentEmail);
     if (listings.length === 0) { showToast("No listings with agent emails found.", "warn"); return; }
@@ -7462,6 +7493,7 @@ function TourDetailPage(_ref19) {
     showToast("✅ Tour saved", "success", 2000);
   };
   const sendPostTourFollowUp = async () => {
+    if (MRT_SECURE_BACKEND) return sendSavedEvaluationReports("listing-summary");
     if (!canSend("followUp_" + tour.id, 5000)) {
       showToast("Please wait a moment before sending again.", "warn");
       return;
@@ -7527,8 +7559,7 @@ function TourDetailPage(_ref19) {
     // Sponsors section
     const sponsors = (tour.sponsors || []).filter(isPaidSponsor);
     const sponsorsBlock = sponsors.length > 0 ? "\n<div style=\"margin:28px 0 0\">\n<div style=\"font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#5B5F6B;margin-bottom:14px;text-align:center\">Tour Sponsors</div>\n<div style=\"display:flex;flex-wrap:wrap;gap:12px;justify-content:center\">\n".concat(sponsors.map(sp => "<div style=\"background:#F9FAFB;border-radius:10px;padding:14px 18px;text-align:center;min-width:140px;border:1px solid #E5E7EB\">\n".concat(sp.logo ? "<img src=\"".concat(sp.logo, "\" alt=\"").concat(sp.name, "\" style=\"height:36px;object-fit:contain;margin-bottom:8px;display:block;margin-left:auto;margin-right:auto\"/>") : "", "\n<div style=\"font-size:13px;font-weight:700;color:#101A36\">").concat(sp.name, "</div>\n").concat(sp.title ? "<div style=\"font-size:11px;color:#5B5F6B;margin-top:2px\">".concat(sp.title, "</div>") : "", "\n").concat(sp.phone ? "<div style=\"font-size:12px;color:#2F44A0;margin-top:4px\">".concat(sp.phone, "</div>") : "", "\n").concat(sp.website ? "<div style=\"margin-top:6px\"><a href=\"".concat(sp.website, "\" style=\"font-size:12px;color:#101A36\">").concat(sp.website.replace(/^https?:\/\//, ""), "</a></div>") : "", "\n</div>")).join(""), "\n</div></div>") : "";
-    const listingBlocks = listingBlock;
-    const buildHtml = (recipientName, listingBlock) => "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head>\n<body style=\"margin:0;background:#E8E7E0;font-family:DM Sans,Arial,sans-serif\">\n<div style=\"max-width:600px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.12)\">\n<div style=\"background:#101A36;padding:22px 28px\">\n<p style=\"margin:0 0 4px;font-family:DM Sans,Arial,sans-serif;font-size:22px;font-weight:900;color:#ffffff;letter-spacing:1px\">Market<span style=\"color:#AEBFD6\">Ready</span> <span style=\"font-weight:300;font-size:18px;letter-spacing:3px\">Tours</span></p>\n<p style=\"margin:0;font-family:DM Sans,Arial,sans-serif;font-size:13px;color:rgba(255,255,255,0.7)\">".concat(tour.emoji, " ").concat(tour.name, " &nbsp;\xB7&nbsp; ").concat(tour.date, " \xB7 ").concat(tour.time, "</p>\n</div>\n<div style=\"background:#2F44A0;height:4px\"></div>\n<div style=\"padding:24px 20px\">\n<p style=\"font-size:15px;color:#111;margin:0 0 20px\">Hi ").concat(recipientName, ",</p>\n<p style=\"font-size:14px;color:#374151;margin:0 0 24px;line-height:1.7\">Thank you for participating in the <strong>").concat(tour.emoji, " ").concat(tour.name, "</strong> tour! Below is the complete feedback summary for your listing.</p>\n").concat(listingBlocks, "\n").concat(sponsorsBlock, "\n<p style=\"font-size:11px;color:#9CA3AF;margin-top:28px;border-top:1px solid #E8E7E0;padding-top:16px;line-height:1.6\">All feedback is provided by licensed real estate agents specializing in the area. Questions? Reply to <a href=\"mailto:marketreadytours@gmail.com\" style=\"color:#101A36\">marketreadytours@gmail.com</a></p>\n</div>\n<div style=\"background:#101A36;padding:16px 20px;text-align:center\">\n<a href=\"https://www.marketreadytours.com\" style=\"color:rgba(255,255,255,.7);font-size:12px;text-decoration:none\">marketreadytours.com</a>\n</div>\n</div></body></html>");
+    const buildHtml = (recipientName, listingBlock) => "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head>\n<body style=\"margin:0;background:#E8E7E0;font-family:DM Sans,Arial,sans-serif\">\n<div style=\"max-width:600px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.12)\">\n<div style=\"background:#101A36;padding:22px 28px\">\n<p style=\"margin:0 0 4px;font-family:DM Sans,Arial,sans-serif;font-size:22px;font-weight:900;color:#ffffff;letter-spacing:1px\">Market<span style=\"color:#AEBFD6\">Ready</span> <span style=\"font-weight:300;font-size:18px;letter-spacing:3px\">Tours</span></p>\n<p style=\"margin:0;font-family:DM Sans,Arial,sans-serif;font-size:13px;color:rgba(255,255,255,0.7)\">".concat(tour.emoji, " ").concat(tour.name, " &nbsp;\xB7&nbsp; ").concat(tour.date, " \xB7 ").concat(tour.time, "</p>\n</div>\n<div style=\"background:#2F44A0;height:4px\"></div>\n<div style=\"padding:24px 20px\">\n<p style=\"font-size:15px;color:#111;margin:0 0 20px\">Hi ").concat(recipientName, ",</p>\n<p style=\"font-size:14px;color:#374151;margin:0 0 24px;line-height:1.7\">Thank you for participating in the <strong>").concat(tour.emoji, " ").concat(tour.name, "</strong> tour! Below is the complete feedback summary for your listing.</p>\n").concat(listingBlock, "\n").concat(sponsorsBlock, "\n<p style=\"font-size:11px;color:#9CA3AF;margin-top:28px;border-top:1px solid #E8E7E0;padding-top:16px;line-height:1.6\">All feedback is provided by licensed real estate agents specializing in the area. Questions? Reply to <a href=\"mailto:marketreadytours@gmail.com\" style=\"color:#101A36\">marketreadytours@gmail.com</a></p>\n</div>\n<div style=\"background:#101A36;padding:16px 20px;text-align:center\">\n<a href=\"https://www.marketreadytours.com\" style=\"color:rgba(255,255,255,.7);font-size:12px;text-decoration:none\">marketreadytours.com</a>\n</div>\n</div></body></html>");
     const seen2 = new Set();
     let sent = 0;
     let failed = 0;

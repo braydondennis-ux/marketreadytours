@@ -93,6 +93,8 @@ await callable("submitRating", {
 const aggregate = (await get(ref(db, "mrt_ratings_public/tour-demo-1/listing-1"))).val();
 assert.equal(aggregate.count, 1, "one authenticated user must not inflate rating count");
 assert.equal(aggregate.averages.curbAppeal, 4);
+await callable("sendAdminEmail", {reportType: "listing-summary", tourId: "tour-demo-1",
+  listingId: "listing-1", requestId: requestId("anonymous-report")}, 403);
 
 const listingIntake = await callable("submitIntake", {
   type: "listing",
@@ -129,6 +131,24 @@ const sponsorIntake = await callable("submitIntake", {
 await signOut(auth);
 await signInWithEmailAndPassword(auth, "super@example.com", "test1234");
 await auth.currentUser.getIdToken(true);
+
+const evaluationReportRequest = {reportType: "listing-summary", tourId: "tour-demo-1",
+  listingId: "listing-1", requestId: requestId("evaluation-report"),
+  // Caller-supplied content/recipient must not replace the saved listing and evaluations.
+  to: "not-an-email", html: "<script>bad</script>", ratings: []};
+const evaluationReport = await callable("sendAdminEmail", evaluationReportRequest);
+assert.equal(evaluationReport.evaluationCount, 1);
+assert.equal(evaluationReport.mocked, true);
+assert.deepEqual(await callable("sendAdminEmail", evaluationReportRequest), evaluationReport);
+await callable("sendAdminEmail", {...evaluationReportRequest, listingId: "missing", requestId: requestId("missing-report")}, 404);
+await callable("sendAdminEmail", {...evaluationReportRequest, reportType: "unknown", requestId: requestId("invalid-report")}, 400);
+const emptyReport = await callable("sendAdminEmail", {...evaluationReportRequest,
+  listingId: "listing-2", requestId: requestId("empty-report")});
+assert.equal(emptyReport.skipped, true, "a property without evaluations must not send an empty report");
+const sellerReport = await callable("sendAdminEmail", {...evaluationReportRequest,
+  reportType: "seller-report", requestId: requestId("seller-report")});
+assert.equal(sellerReport.evaluationCount, 1);
+assert.equal(sellerReport.mocked, true);
 
 await callable("approveListingRequest", {
   listingRequestId: listingIntake.id,
