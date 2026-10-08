@@ -1,6 +1,6 @@
 # MarketReady Tours — Engineering Handoff
 
-_Updated 2026-10-01. Read this entire file before acting._
+_Updated 2026-10-08. Read this entire file before acting._
 
 **Current state.** The refresh is **LIVE** (cutover 2026-08-10) and edge-cached. Since
 2026-09-26 **marketreadytours.com is a sales landing page and the app lives at `/app/`** — every
@@ -21,6 +21,43 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 **The app is genuinely in use.** The 2026-09-02 North Phoenix tour was built in production over
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
+
+## 2026-10-08 — saved evaluations missing from delivered emails
+
+**Confirmed cause:** the live `submitRating` sender emailed only “A new rating was submitted”
+and told the agent to open the private feedback in the app. It did not include scores or
+comments. Safari/Resend inspection of an actual delivered October 8 message for 27418 North
+22nd Lane confirmed this exact body; delivery alone did not establish useful content.
+
+**The data is intact.** Read-only checks of Lou's 85085 tour (`tour-1789066199267-1-4ilyi`,
+October 8, version 26) found **32 saved evaluations across five listings**, including 14 with
+comments and no uploaded photos: 26904 North 24th Lane (8), 27418 North 22nd Lane (7),
+1948 West Black Hill Road (5), 2329 West Barwick Drive (6), 31918 North 20th Lane (6).
+Logs showed 33 successful rating submissions (one updated an existing evaluation), no
+error-level entries in the inspected logs, and no `sendAdminEmail` POSTs that day at audit time.
+
+**Repair `8979b99`:** new submissions email all ten scores, pricing feedback and comments.
+Post-Tour Follow-Up and Seller Report now ask the server to render the saved evaluations for
+each listing. The server reads the private tour, saved agent recipient and ratings; arbitrary
+client HTML, recipients and ratings remain untrusted. This also repairs the previous placeholder
+text/escaped HTML report bodies and an undefined `listingBlock` reference. Agents with multiple
+properties receive one report per property. Empty reports are skipped and failures are counted.
+Rater identities and private photo paths are omitted; photo counts direct agents to the organizer.
+
+**Verification:** `npm run check` passed **114 tests and 13 checks** (two existing heuristic
+warnings); full local emulator workflow passed, covering admin authorization, trusted saved
+recipients/data, idempotency, empty reports, bad IDs/types and both report buttons. Generated
+all five reports locally from the 32 real saved records, checked every comment was present,
+and visually inspected the rendered HTML in Safari. No live report was sent during testing.
+
+**Backend deployed:** only `submitRating` and `sendAdminEmail`, both ACTIVE at
+2026-10-08T21:07:53Z, revisions `submitrating-00007-pob` and `sendadminemail-00008-bos`.
+The before/after inventory has the same 30 function names. Client release and CI verification
+are recorded below after publication.
+
+**Outstanding delivery:** existing emails cannot change. The corrected reports must be sent
+using Post-Tour Follow-Up after refreshing the app, or explicitly authorized for us to send.
+Do not automatically backfill to agents: `CLAUDE.md` requires approval for non-Erik recipients.
 
 ## 2026-10-01 — embedded tour map centered in the ocean
 

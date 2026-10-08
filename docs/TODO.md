@@ -1,8 +1,14 @@
 # MarketReady Tours — open items
 
-_Updated 2026-10-01. Production is live; see `CLAUDE.md` for what you are cleared to do._
+_Updated 2026-10-08. Production is live; see `CLAUDE.md` for what you are cleared to do._
 
 Verified items note how they were confirmed, so nobody has to re-derive it.
+
+**October 8 follow-up:** the missing-evaluations email defect is repaired (`8979b99`); all 32
+85085 evaluations are saved. Backend deployment and verification are in `HANDOFF.md`.
+Previously delivered notification-only messages remain unchanged. Lou can refresh the app and
+send Post-Tour Follow-Up to deliver the five complete reports. An agent-run resend still needs
+Erik's explicit authorization; none was sent during this repair.
 
 ---
 

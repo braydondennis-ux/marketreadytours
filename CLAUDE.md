@@ -1,6 +1,6 @@
 # MarketReady Tours — working rules
 
-_Updated 2026-10-01. **Production is LIVE.** `marketreadytours.com` is the sales landing page; the
+_Updated 2026-10-08. **Production is LIVE.** `marketreadytours.com` is the sales landing page; the
 app is at `marketreadytours.com/app/` (since 2026-09-26)._
 
 ## Rule 1: production is live, and you are cleared to work on it
@@ -122,9 +122,16 @@ runs to see whether the failure predates your changes.
   and payment links land on the marketing page.
 - After editing the script region, always run the parse check:
   `node -e "const h=require('fs').readFileSync('index.html','utf8');const m=h.match(/<script type=\"text\/javascript\">([\s\S]*?)<\/script>/);new Function(m[1]);console.log('parse OK')"`
-- Then `npm run check` — 105 tests plus 13 static checks.
+- Then `npm run check` — 114 tests plus 13 static checks.
 
 ## Traps that have each cost a day
+
+**Evaluation emails must contain the saved feedback.** `submitRating` used to send only a
+notification; this was confirmed in a delivered email October 8. Use the shared server renderer
+in `functions/lib/evaluation-email.js`. For full reports, the client sends `reportType`, `tourId`
+and `listingId` to `sendAdminEmail`, which reads private ratings and the saved agent recipient.
+Do not restore arbitrary client HTML support to fix formatting. Test both report buttons and
+actual email content; a successful provider delivery does not prove evaluations were included.
 
 **Maps keys must allow the app's full URL.** Address lookup broke at `/app/` with
 `RefererNotAllowedMapError`. Fixed in `8047d3f` by using the existing browser key managed in
