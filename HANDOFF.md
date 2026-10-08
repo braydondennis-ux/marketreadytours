@@ -52,8 +52,11 @@ and visually inspected the rendered HTML in Safari. No live report was sent duri
 
 **Backend deployed:** only `submitRating` and `sendAdminEmail`, both ACTIVE at
 2026-10-08T21:07:53Z, revisions `submitrating-00007-pob` and `sendadminemail-00008-bos`.
-The before/after inventory has the same 30 function names. Client release and CI verification
-are recorded below after publication.
+The before/after inventory has the same 30 function names. Client release `391383d` passed
+[Pages deployment](https://github.com/braydondennis-ux/marketreadytours/actions/runs/37844866856)
+and [full validation CI](https://github.com/braydondennis-ux/marketreadytours/actions/runs/37844866699),
+including security rules and emulator workflows. The normal live `/app/` response was checked
+and contains `sendSavedEvaluationReports` and both report-button calls.
 
 **Outstanding delivery:** existing emails cannot change. The corrected reports must be sent
 using Post-Tour Follow-Up after refreshing the app, or explicitly authorized for us to send.
