@@ -6,9 +6,10 @@ Verified items note how they were confirmed, so nobody has to re-derive it.
 
 **October 8 follow-up:** the missing-evaluations email defect is repaired (`8979b99`); all 32
 85085 evaluations are saved. Backend deployment and verification are in `HANDOFF.md`.
-Previously delivered notification-only messages remain unchanged. Lou can refresh the app and
-send Post-Tour Follow-Up to deliver the five complete reports. An agent-run resend still needs
-Erik's explicit authorization; none was sent during this repair.
+Erik subsequently authorized the corrected reports: sent all five through the live Post-Tour
+Follow-Up action October 8 at 20:02 Phoenix time. Resend confirmed all five Delivered, and
+Greg's report was inspected for complete evaluation content. No resend remains pending;
+see `HANDOFF.md` for evidence. Do not repeat the batch without a new request.
 
 ---
 

@@ -58,9 +58,14 @@ and [full validation CI](https://github.com/braydondennis-ux/marketreadytours/ac
 including security rules and emulator workflows. The normal live `/app/` response was checked
 and contains `sendSavedEvaluationReports` and both report-button calls.
 
-**Outstanding delivery:** existing emails cannot change. The corrected reports must be sent
-using Post-Tour Follow-Up after refreshing the app, or explicitly authorized for us to send.
-Do not automatically backfill to agents: `CLAUDE.md` requires approval for non-Erik recipients.
+**Corrected reports sent with Erik's explicit approval:** October 8 at 20:02 Phoenix time,
+used the live Chrome app's Manage → Post-Tour Follow-Up once for the five saved listing agents.
+Resend showed all five `Listing Summary & Ratings` messages **Delivered**: Cesar Maldonado,
+Gregory Janis, Tony Tramontozzi, Frank Trifeletti and Douglas Eggleston. Opened Greg's delivered
+[report](https://resend.com/emails/01a11e9c-b0f4-7793-af59-9fe2b43e4326) and verified all seven
+evaluations, scores, averages and comments are present. Delivery is provider-confirmed, not
+proof of inbox placement or that recipients opened the reports. No further resend is pending;
+do not repeat this batch without a new request.
 
 ## 2026-10-01 — embedded tour map centered in the ocean
 
