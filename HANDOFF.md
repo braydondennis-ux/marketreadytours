@@ -22,7 +22,14 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
 
-## 2026-10-09 — mobile visitors go directly to the app
+## 2026-10-09 — marketing homepage disabled for everyone
+
+Erik urgently requested complete landing-page removal before the tour after a phone still
+received cached marketing HTML. Production Pages now uses `MRT_LANDING: "0"`: the app is at
+both `/` and `/app/`, preserving existing emailed links. This supersedes the mobile-only bypass.
+The marketing source remains available for a later deliberate restoration, not the homepage.
+
+## 2026-10-09 — mobile visitors go directly to the app (superseded)
 
 At Erik's request, `landing.html` temporarily redirects phone/tablet visitors to `/app/` before
 rendering the marketing page. Detection covers narrow viewports, mobile user agents (including
