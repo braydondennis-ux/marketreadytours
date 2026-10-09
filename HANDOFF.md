@@ -22,6 +22,21 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
 
+## 2026-10-08 late evening — October 9 tour readiness
+
+Audited Braydon's **Scottsdale - 85013 Tour**, October 9 at 9 AM: six saved properties,
+version 14. Live Chrome verified six map markers and driving route, tour-code unlock and the
+10-category evaluation form, and Google address suggestions/selection (cancelled before save).
+Resend confirmed all six 17:30 route emails Delivered, plus four 24-hour and one 48-hour reminders.
+All 30 functions are ACTIVE; today's inspected logs have no server errors or 5xx responses.
+Full validation and Pages are green for `75f36e3`. No test data or outbound emails were created.
+
+**Monitoring repair:** the September 10 inverted uptime alert was still present. Changed the
+existing failed-check count condition from `< 1` to `> 0`, preserving its five-minute duration
+and notification channels. Read-back verified the change; all 108 preceding 30-minute uptime
+samples passed. No application deployment was needed. Full evidence and limits:
+[October 9 readiness audit](docs/HEALTH-CHECK-2026-10-08.md).
+
 ## 2026-10-08 — saved evaluations missing from delivered emails
 
 **Confirmed cause:** the live `submitRating` sender emailed only “A new rating was submitted”

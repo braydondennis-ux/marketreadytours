@@ -95,12 +95,12 @@ in production over two weeks and reached **version 56 across ~55 saves** with no
 
 ## 🟡 6. Smaller open items
 
-- **September 10 audit findings need follow-up.** The saved health check found an inverted
-  uptime-alert comparison (`REDUCE_COUNT_FALSE < 1`) and a create-tour guard that releases
-  after 1,500 ms while the save may still be pending. No resolution is recorded for either;
-  recheck before changing them. The separate admin-delete permission mismatch was resolved
-  September 11 in `8eab1cf`. Historical duplicate tour records are not authorization to delete
-  anything now. Details: `HEALTH-CHECK-2026-09-10.md`.
+- **September 10 create-tour guard still needs follow-up.** It releases after 1,500 ms while
+  the save may still be pending; recheck before changing it. The inverted uptime-alert condition
+  was reverified and repaired October 8: failed-check count now `> 0` for five minutes, with the
+  existing notification channels preserved. See `HEALTH-CHECK-2026-10-08.md`. The separate
+  admin-delete permission mismatch was resolved September 11 in `8eab1cf`. Historical duplicate
+  tour records are not authorization to delete anything now. Original audit: `HEALTH-CHECK-2026-09-10.md`.
 
 - **Square still posts webhooks at production.** `squareWebhook` took 35 signed-but-rejected
   POSTs in the 7 days to 2026-08-22, all HTTP 403, all from Square's own IP `34.202.99.168`
