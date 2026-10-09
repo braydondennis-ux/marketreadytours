@@ -15,9 +15,6 @@
   function toApp(){ if (location.hash.indexOf("#/") === 0) { location.replace(APP + location.search + location.hash); return true; } }
   if (toApp()) return;
   addEventListener("hashchange", toApp);
-  // Temporarily bypass the marketing page on phones and tablets, including landscape.
-  var mobile = matchMedia("(max-width: 767px)").matches || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  if (mobile) { location.replace(APP + location.search); return; }
   // Staff who have signed in on this device go straight to the app. ?home shows this page anyway.
   try { if (localStorage.getItem("mrt_signed_in") === "1" && !/[?&]home(=|&|$)/.test(location.search)) { location.replace(APP); return; } } catch (e) {}
 })();
@@ -45,7 +42,7 @@ if (!matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObse
 
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;scroll-snap-type:y mandatory;scroll-padding-top:var(--nav)}
+html{-webkit-text-size-adjust:100%;scroll-behavior:auto;scroll-padding-top:var(--nav)}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
 body{margin:0;background:var(--canvas);color:var(--text);font:400 17px/1.55 "DM Sans",system-ui,-apple-system,sans-serif;font-optical-sizing:auto}
 img{max-width:100%;display:block}
@@ -59,8 +56,8 @@ h3{font-size:20px;letter-spacing:-.015em;line-height:1.25}
 p{margin:0}
 .lede{font-size:clamp(17px,1.6vw,21px);color:var(--muted);max-width:34em;line-height:1.5}
 
-/* ── Screens: every snap stop fills exactly one screen below the nav ── */
-.screen{min-height:var(--screen);scroll-snap-align:start;scroll-snap-stop:always;display:flex;flex-direction:column;justify-content:center;padding-block:var(--pad-y)}
+/* ── Sections: spacious layout with normal browser scrolling ── */
+.screen{min-height:var(--screen);display:flex;flex-direction:column;justify-content:center;padding-block:var(--pad-y)}
 .part{min-width:0}
 .sec-head{max-width:760px;margin-bottom:clamp(20px,4.5vh,52px)}
 .sec-head .lede{margin-top:clamp(8px,1.8vh,18px)}
@@ -81,14 +78,14 @@ p{margin:0}
 .nav .well{display:flex;align-items:center;justify-content:space-between;height:100%;gap:16px}
 /* Logo is 5.22:1. 46px tall on desktop; on phones it shrinks just enough to leave room for the button. */
 .nav-logo{display:block;flex:none}
-.nav-logo img{height:min(46px,calc((100vw - 170px) / 5.22));width:auto}
+.nav-logo img{height:min(46px,calc((100vw - 190px) / 5.22));width:auto}
 .nav-links{display:none;gap:28px;align-items:center}
 .nav-links a{color:var(--muted);text-decoration:none;font-size:15px;font-weight:500;padding:12px 0}
 .nav-links a:hover{color:var(--text)}
-.nav-cta{display:flex;gap:10px;align-items:center}
-.nav-cta .btn{min-height:42px;padding:0 16px;font-size:15px}
-.nav-login{display:none}
-@media (min-width:900px){.nav-links{display:flex}.nav-login{display:inline-flex}}
+.nav-cta{display:flex;gap:10px;align-items:center;flex-shrink:0}
+.nav-cta .btn{min-height:42px;padding:0 16px;font-size:15px;white-space:nowrap}
+.nav-listing{display:none}
+@media (min-width:900px){.nav-links{display:flex}.nav-listing{display:inline-flex}}
 
 /* Hero */
 .hero-grid{display:grid;gap:clamp(32px,5vw,72px);align-items:center}
@@ -252,18 +249,18 @@ footer img{height:28px;width:auto}
 .credit a{color:var(--text);text-decoration:none;font-weight:600;display:inline-block;padding:12px 0;margin:-12px 0}
 .credit a:hover{color:var(--text);text-decoration:underline}
 
-/* ── Phones and small tablets: sections too big for one screen split into snap parts ── */
+/* ── Phones and small tablets: sections split into readable blocks ── */
 @media (max-width:899px){
-  .screen.split{min-height:0;padding-block:0;display:block;scroll-snap-align:none}
-  .split .part{min-height:var(--screen);scroll-snap-align:start;scroll-snap-stop:always;display:flex;flex-direction:column;justify-content:center;padding-block:var(--pad-y)}
+  .screen.split{min-height:0;padding-block:0;display:block;}
+  .split .part{min-height:var(--screen);display:flex;flex-direction:column;justify-content:center;padding-block:var(--pad-y)}
   .hero-grid,.show-grid,.aud,.how-grid{gap:0}
   .hero-actions .btn{flex:1 1 auto}
   .quote+.quote{display:none}
 }
 @media (max-width:999px) and (min-width:900px){
   /* Two-column hero only kicks in at 1000px; between 900–999 the hero still splits */
-  .hero.split{min-height:0;padding-block:0;display:block;scroll-snap-align:none}
-  .hero .part{min-height:var(--screen);scroll-snap-align:start;scroll-snap-stop:always;display:flex;flex-direction:column;justify-content:center;padding-block:var(--pad-y)}
+  .hero.split{min-height:0;padding-block:0;display:block;}
+  .hero .part{min-height:var(--screen);display:flex;flex-direction:column;justify-content:center;padding-block:var(--pad-y)}
   .show-grid.well{gap:24px}
 }
 @media (min-width:900px){.aud .part{display:contents}}
@@ -320,8 +317,7 @@ footer img{height:28px;width:auto}
 }
 
 /* ── Hero on ink, over a slow wall of homes from past tours ── */
-/* contain:paint clips the wall without making the hero a scroll container; overflow:hidden would
-   capture the phone-sized snap points inside the hero and the page would jump past it on load. */
+/* Clip the decorative photo wall without creating another scroll container. */
 .hero{position:relative;background:var(--ink);contain:paint;isolation:isolate}
 .wall{position:absolute;inset:0;z-index:-2;display:grid;grid-template-columns:repeat(6,1fr);gap:10px;padding:0 10px;pointer-events:none}
 .wall-col{display:flex;flex-direction:column;gap:10px;will-change:transform;animation:drift var(--dur,90s) linear infinite}
@@ -412,8 +408,7 @@ footer img{height:28px;width:auto}
 
 /* ── Phones in landscape: too short for one-screen sections, so scroll normally ── */
 @media (max-height:500px) and (orientation:landscape){
-  html{scroll-snap-type:none}
-  .screen,.split .part,.screen.split{min-height:0;scroll-snap-align:none;padding-block:44px}
+  .screen,.split .part,.screen.split{min-height:0;padding-block:44px}
   .screen.split{padding-block:0}
   .final{padding-bottom:0}
   .how .step p{display:block!important}
@@ -457,8 +452,8 @@ footer img{height:28px;width:auto}
       <a href="#sponsors">Sponsors</a>
     </nav>
     <div class="nav-cta">
-      <a class="btn btn-ghost nav-login" data-app="#/">Open the app</a>
-      <a class="btn btn-primary" data-app="#/request">List a home</a>
+      <a class="btn btn-primary" data-app="#/">Go to app <svg aria-hidden="true"><use href="#i-arrow"/></svg></a>
+      <a class="btn btn-ghost nav-listing" data-app="#/request">List a home</a>
     </div>
   </div>
 </header>
@@ -473,15 +468,15 @@ footer img{height:28px;width:auto}
         <h1 id="hero-h">Find out what agents really think of your listing.</h1>
         <p class="lede">Put your home on a MarketReady tour. Local agents walk through it, score it in 10 areas, and tell you if the price is right. You get every answer in one report.</p>
         <div class="hero-actions">
-          <a class="btn btn-light" data-app="#/request">Put my listing on a tour <svg aria-hidden="true"><use href="#i-arrow"/></svg></a>
-          <a class="btn btn-ghost" href="#report">See a sample report</a>
+          <a class="btn btn-light" data-app="#/">Go to app <svg aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          <a class="btn btn-ghost" data-app="#/request">List your home</a>
         </div>
         <div class="proof">
           <span><b data-stat="tours">37</b> tours run</span>
           <span><b data-stat="homes">107</b> homes toured</span>
           <span>Across the Phoenix Valley</span>
         </div>
-        <a class="next" id="next" href="#tours"><span class="pulse" aria-hidden="true"></span><span id="next-copy">Checking the next tour date…</span><svg aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        <a class="next" id="next" data-app="#/"><span class="pulse" aria-hidden="true"></span><span id="next-copy">Checking the next tour date…</span><svg aria-hidden="true"><use href="#i-arrow"/></svg></a>
       </div>
 
       <div class="part">
@@ -807,15 +802,11 @@ footer img{height:28px;width:auto}
         ' <span class="seats' + (left <= 2 ? " low" : "") + '">' + (left ? left + " of " + max + " spots open" : "Full") + '</span></div></div>' +
         '<div class="tour-cta">' + (left ? '<a class="btn btn-primary" href="' + APP + '#/request">Add my listing</a>' : '<a class="btn btn-ghost" href="' + APP + '#/tour-signup">Join as an agent</a>') + '</div></div>';
     }).join("");
-    var n = up[0], nd = new Date(n.date + "T12:00:00"), nmax = +n.maxListings || 8, nleft = Math.max(0, nmax - count(n.listings));
-    if (!nleft) {
-      document.getElementById("next").classList.add("quiet");
-      document.getElementById("next-copy").innerHTML = "Next tour: <b>" + esc(label(n)) + "</b> is full. See other dates.";
-    } else {
-      document.getElementById("next-copy").innerHTML = "Next tour: <b>" + esc(label(n)) + "</b>, " +
-        nd.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}) + ". " +
-        (nleft === nmax ? "All " + nmax + " spots open." : "Only " + nleft + " of " + nmax + " spots left.");
-    }
+    var n = up[0], nd = new Date(n.date + "T12:00:00");
+    // A tour invitation opens the tour directly, never a scrolling marketing section.
+    document.getElementById("next").href = APP + (n.id ? "#/tour/" + encodeURIComponent(n.id) : "#/");
+    document.getElementById("next-copy").innerHTML = "Next tour: <b>" + esc(label(n)) + "</b>, " +
+      nd.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}) + ". Open tour.";
   }).catch(noTours);
 
 
@@ -901,7 +892,7 @@ footer img{height:28px;width:auto}
     });
   }).catch(function(){});
 
-  // ── Entrances: one per screen, fired once when it snaps into view.
+  // ── Entrances: one per screen, fired once when it enters view.
   var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (!reduce && "IntersectionObserver" in window) {
     var io = new IntersectionObserver(function(es){

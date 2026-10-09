@@ -4,6 +4,13 @@ _Updated 2026-10-09. Production is live; see `CLAUDE.md` for what you are cleare
 
 Verified items note how they were confirmed, so nobody has to re-derive it.
 
+**Landing page return, October 10:** prepared locally but not deployed. Normal scrolling,
+prominent **Go to app** buttons on mobile/desktop, and **Next tour** opening the specific tour.
+Keep `MRT_LANDING: "0"` today. Before restoring, verify the entire homepage-to-tour journey on
+an actual phone and confirm the ordinary public URL after clearing Cloudflare cache. The previous
+audit missed that homepage entry path; its mobile checks covered the app and share page only.
+No automatic restoration is scheduled. See the latest section in `HANDOFF.md`.
+
 **October 9 audit complete:** seven-stop version 18 tour verified. Admin summary permission,
 favorites reload, full PDF reports, private-note saves and organizer route copies repaired.
 Client `fdb5911` CI/Pages green. Refreshed share page deployed as Cloudflare worker version

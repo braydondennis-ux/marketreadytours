@@ -22,6 +22,26 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
 
+## 2026-10-09 — landing return prepared locally, not published
+
+Erik plans to restore the landing page October 10, with no scroll snapping and prominent app
+access. Local `landing.html` now removes all scroll-snap rules and smooth anchor scrolling;
+shows **Go to app** in the sticky header on every screen size and as the main hero button next
+to **List your home**; and sends **Next tour** directly to that tour's app route. The temporary
+mobile redirect is removed from the draft so it will not hide the repaired page when restored.
+Production remains `MRT_LANDING: "0"`; do not restore it early or assume any timer is scheduled.
+
+Local validation: 119 tests/13 checks passed, both landing scripts parse, and website-mode build
+passes. Chrome verified desktop Go to app; 393 x 852 iPhone emulation shows both app buttons,
+and an actual coordinate tap on Next tour navigated to the correct seven-stop app tour.
+This is not physical iPhone/Safari verification. Review that actual-device journey before
+restoring the homepage. Draft changes are committed locally, not pushed/deployed today.
+
+The October 9 removal shipped as `27cee07` (CI and Pages green). Manual Cloudflare Purge Everything
+completed and ordinary root/www responses were verified to contain the app. Automatic purge
+still skips because GitHub Cloudflare secrets are absent; a deploy alone does not refresh the
+public cache. Confirm ordinary root URLs after the eventual restore and purge manually if needed.
+
 ## 2026-10-09 — marketing homepage disabled for everyone
 
 Erik urgently requested complete landing-page removal before the tour after a phone still
