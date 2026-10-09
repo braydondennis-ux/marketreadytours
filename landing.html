@@ -15,6 +15,9 @@
   function toApp(){ if (location.hash.indexOf("#/") === 0) { location.replace(APP + location.search + location.hash); return true; } }
   if (toApp()) return;
   addEventListener("hashchange", toApp);
+  // Temporarily bypass the marketing page on phones and tablets, including landscape.
+  var mobile = matchMedia("(max-width: 767px)").matches || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (mobile) { location.replace(APP + location.search); return; }
   // Staff who have signed in on this device go straight to the app. ?home shows this page anyway.
   try { if (localStorage.getItem("mrt_signed_in") === "1" && !/[?&]home(=|&|$)/.test(location.search)) { location.replace(APP); return; } } catch (e) {}
 })();

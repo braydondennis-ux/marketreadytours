@@ -22,6 +22,15 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
 
+## 2026-10-09 — mobile visitors go directly to the app
+
+At Erik's request, `landing.html` temporarily redirects phone/tablet visitors to `/app/` before
+rendering the marketing page. Detection covers narrow viewports, mobile user agents (including
+landscape phones), and iPad's desktop-style user agent. Desktop keeps the landing page. Existing
+`#/` app links still take priority and preserve their query/hash; mobile root requests retain
+query parameters. `?home` bypasses the desktop staff redirect only, not the mobile bypass.
+To restore mobile marketing, remove the clearly marked mobile block in the first head script.
+
 ## 2026-10-09 — browser audit after reconnect
 
 Computer use recovered. Live map and share link pass for all seven stops. Local browser tests
