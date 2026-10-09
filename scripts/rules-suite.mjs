@@ -97,6 +97,14 @@ test("raw ratings are private and cannot be directly forged", async () => {
   await assertFails(set(ref(guestADb, "mrt_ratings_private/t1/l1/guest-a/price"), 999));
 });
 
+test("admins can subscribe to the rating collection used by the summary; attendees cannot", async () => {
+  const snapshot = await assertSucceeds(get(ref(adminDb, "mrt_ratings_private")));
+  assert.equal(snapshot.val().t1.l1["guest-a"].price, 4);
+  await assertFails(get(ref(anonymousDb, "mrt_ratings_private")));
+  await assertFails(get(ref(guestADb, "mrt_ratings_private")));
+  await assertFails(get(ref(guestBDb, "mrt_ratings_private")));
+});
+
 test("favorites are private and owned by the anonymous uid", async () => {
   await assertSucceeds(set(ref(guestADb, "mrt_favorites/guest-a/t1/l1"), true));
   assert.equal(

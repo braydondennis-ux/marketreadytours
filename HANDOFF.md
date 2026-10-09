@@ -1,6 +1,6 @@
 # MarketReady Tours — Engineering Handoff
 
-_Updated 2026-10-08. Read this entire file before acting._
+_Updated 2026-10-09. Read this entire file before acting._
 
 **Current state.** The refresh is **LIVE** (cutover 2026-08-10) and edge-cached. Since
 2026-09-26 **marketreadytours.com is a sales landing page and the app lives at `/app/`** — every
@@ -21,6 +21,28 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 **The app is genuinely in use.** The 2026-09-02 North Phoenix tour was built in production over
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
+
+## 2026-10-09 — expanded backend preflight; admin summaries repaired
+
+The live October 9 tour is now **version 18/seven stops**, including 7001 North 14th Street.
+Erik authorized comprehensive testing with no agent mail or visible test artifacts. Tested a
+sanitized local copy against the actual deployed rules: all 14 targeted backend scenarios,
+the full existing workflow, six rules tests, and 114 unit tests/13 checks passed.
+
+**New production repair:** `mrt_ratings_private` lacked the admin collection-read permission
+required by the app's summary subscription. A regression failed before and passed after adding
+`.read` for existing admin/super roles. Published only that delta in the exact live rules and
+verified read-back; no writes or attendee access expanded, no other rules changed. Both repo
+rule files contain the repair. Never deploy the stricter file wholesale to production.
+
+The local preflight now explicitly loads rules into `mrt-local-audit`; the CLI default namespace
+is different and otherwise leaves the tested namespace permissive. Existing rules-suite setup
+already loads its rules correctly. Real-tour preflight runner: `scripts/tour-preflight.mjs`.
+
+Sent one TEST ONLY evaluation email to Erik, provider accepted, no inbox confirmation yet.
+All production tour/rating/reminder collections matched before/after snapshots. Browser testing
+is **pending computer-use reconnection**, per Erik's instruction to finish backend first.
+Full results and remaining browser checks: [expanded preflight](docs/HEALTH-CHECK-2026-10-09.md).
 
 ## 2026-10-08 late evening — October 9 tour readiness
 

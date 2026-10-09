@@ -28,6 +28,7 @@
       ".write": false
     },
     "mrt_ratings_private": {
+      ".read": "auth != null && (auth.token.mrtRole === 'admin' || auth.token.mrtRole === 'super')",
       "$tourId": {
         "$listingId": {
           "$uid": {
