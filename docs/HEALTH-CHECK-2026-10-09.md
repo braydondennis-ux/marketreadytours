@@ -96,3 +96,48 @@ under live rules. No actual payment was charged and no external campaign was lau
 
 Backend success plus the permission repair is stronger evidence than last night's read-only
 check, but does not constitute a guarantee that every browser workflow is perfect.
+
+## Browser phase after computer-use reconnect
+
+Computer use recovered after Erik restarted Codex. Chrome verified the live share link opens
+`/app/#/tour/...`, and the live Route map displays all seven numbered properties and their driving
+line in Phoenix, including the new 7001 North 14th Street stop. No production evaluation or
+outbound agent message was triggered.
+
+On a sanitized local seven-stop copy, using the actual live database rules and mocked mail:
+incorrect code and incomplete ratings rejected; correct code unlocked; ten-category evaluation
+with comment, suggested price and uploaded photo saved; re-rating replaced the same attendee
+(count stayed one); Skip returned without creating a rating; rankings reflected updated scores.
+Admin summary displayed saved notes and scores. Additional labeled fixtures populated all seven
+homes for report coverage. Both report types successfully processed seven properties. Phone-sized
+(393 x 852 Chrome iPhone emulation) summary was usable. This is viewport emulation, not physical
+Safari/iOS validation. The local unbuilt server's missing manifest icon is not a production error.
+
+Browser testing found and repaired four more client defects:
+- Favorite persisted in Firebase but vanished after reload: anonymous auth restored after the
+  sync effect chose paths. Track auth UID in React state and resubscribe when it changes.
+  Verified favorite restored after reload and removal persisted.
+- Download PDF omitted scores/comments for collapsed homes. Expand all homes during native
+  beforeprint, restore collapse state afterprint, and use print-specific layout. Chrome PDF
+  preview verified seven pages, all ten scores and the expected comment for every property.
+- Private notes autosaved each keystroke, causing version conflicts and partial saves. Notes now
+  remain drafts until Save Changes, which awaits success and stays open on failure. Reopening
+  the editor loads the latest saved notes. Browser and database verified the full saved note.
+- Send Route treated `createdBy` (Firebase UID on this real tour) as an email. Resolve the
+  organizer's existing admin profile, retaining legacy email-valued creators. Local route send
+  now reports two recipients with no failures, with both deliveries mocked.
+
+Three new regressions cover print lifecycle/content, failed editor-save behavior, and organizer
+UID/email resolution. `npm run check` passes 117 tests and the static checks.
+
+The real TEST ONLY email was found in Erik's Gmail **Inbox** at 07:37, not Spam. Opened and
+verified both evaluations, ten score categories, averages, comments, pricing feedback and working
+app URL. No second real test message was sent.
+
+Local address autocomplete did not return suggestions, so no claim is made that the entire
+Google selection-to-add flow was exercised locally. Live production address lookup/selection
+was verified in the previous evening's browser audit, and add/remove persistence passed backend
+preflight. Real payments, external campaigns and physical mobile-device behavior remain outside
+this isolated test. No universal guarantee is implied.
+
+Erik also requested modernization of the old `/t/:tourId` share page after this audit.

@@ -205,3 +205,5 @@ partial and stalled lookups without displaying empty ocean bounds. Seven regress
   labelled "Work in progress" pending real destinations.
 - **Braydon-dependent:** does anyone read `payments@marketreadytours.com`? Mailgun account
   access. Repository admin (see above).
+
+- October 9 browser audit completed after reconnect; see HEALTH-CHECK-2026-10-09.md for fixes and limits. Refresh old /t/:tourId share page next, per Erik.

@@ -315,6 +315,19 @@ body.mrt-rating-active .mrt-syncpill[data-idle="true"]{display:none!important}
 .mrt-star-pop{transform-origin:center;animation:mrt-pop .5s var(--mrt-ease-pop) both;}
 @keyframes mrt-pop{0%{transform:scale(.4);opacity:0;}55%{transform:scale(1.25);}100%{transform:scale(1);opacity:1;}}
 @media (prefers-reduced-motion:reduce){.mrt-press,.mrt-live-dot,.mrt-star-pop,.mrt-fade-stagger{animation:none!important;transition:none!important;}}
+
+@media print {
+  body:has(.mrt-summary-report), body:has(.mrt-summary-report) .mrt-shell { background:#fff !important; max-width:none !important; min-height:0 !important; }
+  body:has(.mrt-summary-report) .mrt-topnav, body:has(.mrt-summary-report) .mrt-tabbar,
+  body:has(.mrt-summary-report) .mrt-syncpill, body:has(.mrt-summary-report) #scroll-ind,
+  .mrt-summary-report button { display:none !important; }
+  .mrt-summary-report { min-height:0 !important; padding-bottom:0 !important; }
+  .mrt-summary-report .mrt-appbar { position:static !important; background:#fff !important; box-shadow:none !important; }
+  .mrt-summary-report .mrt-appbar div { color:#101A36 !important; }
+  .mrt-summary-report .mrt-summary-col { padding:12px 0 !important; max-width:none !important; }
+  .mrt-summary-property { box-shadow:none !important; overflow:visible !important; break-inside:avoid; }
+  .mrt-summary-property + .mrt-summary-property { break-before:page; }
+}
 </style>
 </head>
 <body>
@@ -3013,8 +3026,20 @@ function SummaryDashboard(_ref9) {
     return ((_tour$ratings3 = tour.ratings) === null || _tour$ratings3 === void 0 ? void 0 : _tour$ratings3[l.id]) && Object.values(tour.ratings[l.id]).some(v => v > 0);
   });
   const [expanded, setExpanded] = useState({});
+  const [printing, setPrinting] = useState(false);
+  useEffect(() => {
+    const beforePrint = () => ReactDOM.flushSync(() => setPrinting(true));
+    const afterPrint = () => setPrinting(false);
+    window.addEventListener("beforeprint", beforePrint);
+    window.addEventListener("afterprint", afterPrint);
+    return () => {
+      window.removeEventListener("beforeprint", beforePrint);
+      window.removeEventListener("afterprint", afterPrint);
+    };
+  }, []);
   const hue = tourHue(tour);
   return /*#__PURE__*/React.createElement("div", {
+    className: "mrt-summary-report",
     style: {
       background: B.cream,
       minHeight: "100vh",
@@ -3131,7 +3156,7 @@ function SummaryDashboard(_ref9) {
     const ratedVals = catVals.filter(c => c.v > 0);
     const lowestKey = ratedVals.length ? ratedVals.reduce((min, c) => c.v < min.v ? c : min, ratedVals[0]).key : null;
 
-    const isOpen = listingIdx === 0 || !!expanded[listing.id];
+    const isOpen = printing || listingIdx === 0 || !!expanded[listing.id];
 
     if (!isOpen) {
       // Additional homes beyond the first collapse to a calm hairline row.
@@ -3212,7 +3237,7 @@ function SummaryDashboard(_ref9) {
 
     return /*#__PURE__*/React.createElement("div", {
       key: listing.id,
-      className: "mrt-card mrt-card--soft",
+      className: "mrt-card mrt-card--soft mrt-summary-property",
       style: {
         overflow: "hidden",
         borderLeft: "4px solid " + hue
@@ -7102,6 +7127,18 @@ function RouteMapView(_ref18) {
     }
   }, "\uD83D\uDDFA\uFE0F Open Full Route in Google Maps")));
 }
+async function tourOrganizerEmail(tour, currentUser) {
+  const creator = tour.createdBy || "";
+  if (isValidEmail(creator)) return creator.trim();
+  if (creator && currentUser?.uid === creator && isValidEmail(currentUser.email)) return currentUser.email;
+  if (creator && _fb && !/[.#$\[\]\/]/.test(creator)) {
+    try {
+      const profile = (await mrtWithTimeout(_fb.ref("admins/" + creator).once("value"), 5000, "Tour organizer")).val();
+      if (profile?.active !== false && isValidEmail(profile?.email)) return profile.email;
+    } catch (error) { console.warn("Tour organizer email unavailable", error); }
+  }
+  return creator ? "" : SUPER_ADMIN_EMAIL;
+}
 function TourDetailPage(_ref19) {
   let {
     tour,
@@ -7133,6 +7170,7 @@ function TourDetailPage(_ref19) {
   const [adminListings, setAdminListings] = useState([...(tour.listings || [])].sort((a, b) => a.order - b.order));
   const [showAddForm, setShowAddForm] = useState(false);
   const [adminNotes, setAdminNotes] = useState(tour.notes || {});
+  const [savingAdmin, setSavingAdmin] = useState(false);
   const [editingStop, setEditingStop] = useState(null); // id of listing being edited
   const [editFields, setEditFields] = useState({});
   useEffect(() => {
@@ -7197,10 +7235,6 @@ function TourDetailPage(_ref19) {
       [listingId]: note
     };
     setAdminNotes(notes);
-    onUpdateTour({
-      ...tour,
-      notes
-    });
   };
   const moveStop = (idx, dir) => {
     const arr = [...adminListings];
@@ -7444,7 +7478,7 @@ function TourDetailPage(_ref19) {
       }
     });
     // Tour admin / organizer
-    const adminEmail = (tour.createdBy) || SUPER_ADMIN_EMAIL;
+    const adminEmail = await tourOrganizerEmail(tour, currentUser);
     const adminName = (tour.createdByName) || "MarketReady Tours";
     if (adminEmail && !seen.has(adminEmail)) {
       seen.add(adminEmail);
@@ -7484,13 +7518,18 @@ function TourDetailPage(_ref19) {
     const routeType = failed > 0 ? "warn" : "success";
     showToast("\u2709\uFE0F Route sent to " + sent + " recipient" + (sent !== 1 ? "s" : "") + (breakdown ? " (" + breakdown + ")" : "") + (failed > 0 ? " — " + failed + " failed" : ""), routeType, 6000);
   };
-  const saveAdmin = () => {
-    onUpdateTour({
-      ...tour,
-      listings: adminListings
-    });
-    setShowAdmin(false);
-    showToast("✅ Tour saved", "success", 2000);
+  const saveAdmin = async () => {
+    if (savingAdmin) return;
+    setSavingAdmin(true);
+    try {
+      await onUpdateTour({ ...tour, listings: adminListings, notes: adminNotes });
+      setShowAdmin(false);
+      showToast("✅ Tour saved", "success", 2000);
+    } catch (error) {
+      showToast(error.message || "Tour could not be saved. Please try again.", "error", 6000);
+    } finally {
+      setSavingAdmin(false);
+    }
   };
   const sendPostTourFollowUp = async () => {
     if (MRT_SECURE_BACKEND) return sendSavedEvaluationReports("listing-summary");
@@ -8547,7 +8586,7 @@ function TourDetailPage(_ref19) {
     /*#__PURE__*/React.createElement("input",{type:"checkbox",checked:!!editFields.priceReduced,onChange:e=>setEditFields(ef=>({...ef,priceReduced:e.target.checked})),style:{width:18,height:18,accentColor:"#F97316",cursor:"pointer"}}),
     /*#__PURE__*/React.createElement("span",{style:{display:"inline-flex",alignItems:"center",gap:5,fontSize:13,fontWeight:700,color:editFields.priceReduced?"#C2410C":B.gray}},LI("ArrowDown",13),"Price Reduced")
   )), /*#__PURE__*/React.createElement("textarea", {
-    placeholder: "Private admin note...",
+    placeholder: "Private admin note (use Save Changes)...",
     rows: 2,
     maxLength: 500,
     value: adminNotes[l.id] || "",
@@ -8602,6 +8641,7 @@ function TourDetailPage(_ref19) {
     }
   }, "+"), " Add New Listing (", adminListings.length, "/8)")), /*#__PURE__*/React.createElement("button", {
     onClick: saveAdmin,
+    disabled: savingAdmin,
     className: "btn-hover",
     style: {
       width: "100%",
@@ -8615,7 +8655,7 @@ function TourDetailPage(_ref19) {
       cursor: "pointer",
       marginTop: 24
     }
-  }, "Save Changes"), adminListings.length >= 3 && /*#__PURE__*/React.createElement("button", {
+  }, savingAdmin ? "Saving..." : "Save Changes"), adminListings.length >= 3 && /*#__PURE__*/React.createElement("button", {
     onClick: optimizeRoute,
     disabled: optimizing,
     className: "btn-hover",
@@ -9085,6 +9125,7 @@ function TourDetailPage(_ref19) {
   }, "Add Partners")), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setAdminListings([...(tour.listings || [])].sort((a, b) => a.order - b.order));
+      setAdminNotes(tour.notes || {});
       setShowAdmin(true);
     },
     style: {
@@ -15128,6 +15169,7 @@ function App() {
     lsSet("gat_subadmins", subAdmins);
   }, [subAdmins]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [authUid, setAuthUid] = useState(null);
   // #/login opens the sign-in screen directly (the landing page's "Admin sign-in" link and the admin
   // invite email link here). The hash is reset to the dashboard so closing login lands there.
   const [showLogin, setShowLogin] = useState(() => {
@@ -15156,6 +15198,9 @@ function App() {
       try { on ? localStorage.setItem("mrt_signed_in", "1") : localStorage.removeItem("mrt_signed_in"); } catch (e) {}
     };
     const unsub = _fbAuth.onAuthStateChanged(async user => {
+      if (!authEffectActive) return;
+      setAuthUid(user ? user.uid : null);
+      setSharedFavorites({});
       if (user && !user.isAnonymous) {
         try {
           const adminData = await getAdminRole(user.email);
@@ -15272,7 +15317,6 @@ function App() {
     fbReady.current = false;
     setFbLoaded(false);
     setFbLoadError(false);
-    const authUid = _fbAuth && _fbAuth.currentUser && _fbAuth.currentUser.uid;
     const toList = val => Array.isArray(val) ? val : Object.entries(val || {}).map(([k,v]) => v && typeof v === "object" ? {...v, id: v.id || k} : v);
     const paths = MRT_SECURE_BACKEND ? {
       [isAnyAdmin ? "mrt_tours_private" : "mrt_tours_public"]: val => setTours(toList(val)),
@@ -15419,7 +15463,7 @@ function App() {
         fbPollInterval.current = null;
       } catch (e) {}
     };
-  }, [isAnyAdmin, fbLoadAttempt]);
+  }, [isAnyAdmin, authUid, fbLoadAttempt]);
 
   // Debounced write to Firebase — waits 800ms after last change before writing
   const fbWrite = (path, data) => {

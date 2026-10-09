@@ -22,6 +22,16 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
 
+## 2026-10-09 — browser audit after reconnect
+
+Computer use recovered. Live map and share link pass for all seven stops. Local browser tests
+found and fixed favorites missing after reload, PDFs omitting collapsed property feedback,
+per-keystroke private-note save conflicts, and route organizer copies treating UID as email.
+117 unit tests/static checks pass; full details in the October 9 audit. PDF preview has seven
+complete pages; both report actions processed seven fixtures; test email verified in Erik's Inbox
+with full feedback. No production test ratings or agent notifications. Physical iOS and live
+payment/campaign actions were not exercised. Share-page modernization requested next.
+
 ## 2026-10-09 — expanded backend preflight; admin summaries repaired
 
 The live October 9 tour is now **version 18/seven stops**, including 7001 North 14th Street.
