@@ -4,11 +4,13 @@ _Updated 2026-10-09. Production is live; see `CLAUDE.md` for what you are cleare
 
 Verified items note how they were confirmed, so nobody has to re-derive it.
 
-**October 9 browser follow-up pending:** expanded backend preflight is green and the admin
-rating-summary collection permission is repaired in production. Current tour is version 18
-with seven stops. Computer use failed to connect; Erik will restore it after backend completion.
-Resume the remaining UI and Erik-only test-email checks in `HEALTH-CHECK-2026-10-09.md`.
-
+**October 9 audit complete:** seven-stop version 18 tour verified. Admin summary permission,
+favorites reload, full PDF reports, private-note saves and organizer route copies repaired.
+Client `fdb5911` CI/Pages green. Refreshed share page deployed as Cloudflare worker version
+`3875a9ad`; current public details/photo, mobile layout and app link verified. Erik-only test
+email verified in Inbox with complete evaluations. No production test data or agent email.
+Physical iOS, live payment and external campaign actions were not exercised. Detailed evidence
+and limits: `HEALTH-CHECK-2026-10-09.md`.
 
 **October 8 follow-up:** the missing-evaluations email defect is repaired (`8979b99`); all 32
 85085 evaluations are saved. Backend deployment and verification are in `HANDOFF.md`.

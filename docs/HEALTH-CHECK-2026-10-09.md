@@ -75,19 +75,16 @@ The separate rules suite already does this explicitly.
   to **Erik only**, subject `[TEST ONLY] October 9 tour evaluation email check`.
   Resend accepted it at 07:37 Phoenix, ID `01a12119-20ff-75ec-aa97-5f21c127e39c`.
   It contains two explicitly synthetic evaluations. No live evaluation was submitted.
-  Inbox delivery/rendering still needs verification; acceptance alone is not delivery proof.
+  Later browser phase confirmed Inbox delivery and full feedback rendering (see below).
 - After tests, the entire production private-tour, public-tour, private-rating and reminder
   collections were identical to their before-test snapshots. Target remains version 18/seven stops.
   No agent email was sent by this test session.
 
 ## Remaining checks and limits
 
-Computer use failed repeatedly with `Sky Computer Use native pipe startup failed`, including
-a connection reset. Erik asked to finish backend testing first, then restore computer use.
-**The expanded browser audit remains pending**, particularly the newly added seventh map stop,
-actual rendered summary/comments, mobile layout, favorites, skip/re-rate navigation, photo UI,
-share links, PDF/print output, and test-email inbox rendering. Resume on an isolated local copy;
-never submit fake feedback or send test reports to real listing agents.
+Computer use initially failed with `Sky Computer Use native pipe startup failed`. Erik restarted
+Codex, restoring access. The expanded browser phase below completes those formerly pending checks.
+All write workflows used an isolated local copy with mocked outbound mail.
 
 The live transition rules retain legacy shared favorite reads/writes; the stricter target rules
 have per-user ownership. This existing compatibility behavior was not tightened in a tour-day
@@ -140,4 +137,29 @@ was verified in the previous evening's browser audit, and add/remove persistence
 preflight. Real payments, external campaigns and physical mobile-device behavior remain outside
 this isolated test. No universal guarantee is implied.
 
-Erik also requested modernization of the old `/t/:tourId` share page after this audit.
+## Share-page modernization and final verification
+
+After completing tour tests, updated the Cloudflare share worker, which still read obsolete
+`mrt_tour_previews` and rendered a generic stock-photo card. The replacement reads only
+`mrt_tours_public`, shows the actual title/date/time/seven-home count/first property photo,
+uses responsive navy/cream styling and links directly to `/app/#/tour/:id`. Existing `/img/:id`
+proxy and social metadata remain, with versioned image URLs and safe escaped HTML.
+
+Deployed through the signed-in Cloudflare dashboard: `marketreadytourshare`, active version
+`3875a9ad`, approximately 08:17 Phoenix. Live HTML matches the local renderer byte-for-byte.
+Production image endpoint returned the real 625 West Ocotillo Road photo. Chrome desktop and
+393 x 852 mobile emulation are readable; View this tour opened the correct seven-stop app tour.
+The share page console had zero messages. Source, rollback source and deployment notes are now
+versioned in `cloudflare/`. Two additional regression tests cover public data, escaping, direct
+links, image proxy and upstream failure. Latest `npm run check`: 119 tests/13 checks passed,
+with the same two existing heuristic warnings.
+
+Final read-only production checks at approximately 08:20 Phoenix: all 30 functions ACTIVE;
+zero ERROR-or-higher/HTTP-5xx entries since midnight Phoenix. All four full collections
+(private tours, public tours, private ratings, reminders) still exactly match their pre-test
+snapshots. Target remains version 18/seven stops. No agent was emailed by testing and no fake
+production evaluation or tour was created. The single authorized real test email went to Erik.
+
+Evidence: `/tmp/mrt-oct9-share-check.log`, `/tmp/mrt-oct9-share-deployed.html`,
+`/tmp/mrt-oct9-final-errors.json`, `/tmp/mrt-oct9-final-functions.json`, and private snapshot
+`/tmp/mrt-oct9-final-production-snapshot.json` (local only, not committed).

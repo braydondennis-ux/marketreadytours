@@ -30,7 +30,15 @@ per-keystroke private-note save conflicts, and route organizer copies treating U
 117 unit tests/static checks pass; full details in the October 9 audit. PDF preview has seven
 complete pages; both report actions processed seven fixtures; test email verified in Erik's Inbox
 with full feedback. No production test ratings or agent notifications. Physical iOS and live
-payment/campaign actions were not exercised. Share-page modernization requested next.
+payment/campaign actions were not exercised. Client fixes shipped in `fdb5911`; CI and Pages green.
+
+The share page is now modernized and live on Cloudflare worker `marketreadytourshare`, active
+version `3875a9ad` (October 9, ~08:17 Phoenix). Source is `cloudflare/tour-share.mjs`; previous
+worker source is retained as `cloudflare/tour-share-v7-backup.mjs`. It reads the current public
+tour projection, replacing obsolete `mrt_tour_previews`, and displays the real first property
+photo, tour title/date/time/count, and direct `/app/` link. Image proxy and social metadata remain.
+Live HTML exactly matches the reviewed renderer; desktop/393px mobile view and CTA passed.
+See `cloudflare/README.md` for deployment/rollback. Latest local validation: 119 tests and 13 checks.
 
 ## 2026-10-09 — expanded backend preflight; admin summaries repaired
 
@@ -49,9 +57,9 @@ The local preflight now explicitly loads rules into `mrt-local-audit`; the CLI d
 is different and otherwise leaves the tested namespace permissive. Existing rules-suite setup
 already loads its rules correctly. Real-tour preflight runner: `scripts/tour-preflight.mjs`.
 
-Sent one TEST ONLY evaluation email to Erik, provider accepted, no inbox confirmation yet.
+Sent one TEST ONLY evaluation email to Erik. Later browser phase verified full content in Inbox.
 All production tour/rating/reminder collections matched before/after snapshots. Browser testing
-is **pending computer-use reconnection**, per Erik's instruction to finish backend first.
+was completed after reconnection; see the browser phase above.
 Full results and remaining browser checks: [expanded preflight](docs/HEALTH-CHECK-2026-10-09.md).
 
 ## 2026-10-08 late evening — October 9 tour readiness
