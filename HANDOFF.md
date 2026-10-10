@@ -32,7 +32,10 @@ leaf; anonymous Firebase sessions work without an admin login. Listeners reset o
 changes, release on unmount and ignore stale callbacks. Public aggregate badges remain shared.
 No rules, backend or email behavior change. Three regressions cover fresh incognito, own saved
 rating, account changes/read failures/cleanup. 132 tests and 13 static checks pass. Release
-verification pending below; no test notifications or production ratings.
+`afddb12` is live: Pages `38080609262` and full validation `38080609288` passed. Cache purged;
+plain `/app/` contains the fix. Live iPhone Safari verified stop 1 keeps its public 3.7 score
+while its button reads Rate Home for the attendee with no own submission. No test notifications
+or production ratings.
 
 ## 2026-10-10 — iPhone-first mobile audit
 

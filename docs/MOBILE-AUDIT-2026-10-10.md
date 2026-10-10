@@ -111,3 +111,6 @@ Step 4 exposed a missed labeling defect: Re-Rate reflected any public rating rat
 attendee's own submission. Corrected using per-UID submittedAt subscriptions, with stale-listener
 cleanup and no broadened reads. Three regression tests added; total now 132 passing tests.
 Fresh incognito is a distinct anonymous Firebase attendee, not an admin sign-in requirement.
+
+Release `afddb12`: Pages `38080609262` and full CI `38080609288` passed. Live Safari verified
+Rate Home alongside the existing public 3.7 score after cache refresh. No production submission.
