@@ -163,3 +163,55 @@ production evaluation or tour was created. The single authorized real test email
 Evidence: `/tmp/mrt-oct9-share-check.log`, `/tmp/mrt-oct9-share-deployed.html`,
 `/tmp/mrt-oct9-final-errors.json`, `/tmp/mrt-oct9-final-functions.json`, and private snapshot
 `/tmp/mrt-oct9-final-production-snapshot.json` (local only, not committed).
+
+## Afternoon evaluation email audit
+
+At approximately 16:06 Phoenix, investigated Braydon's report that one unidentified agent saw
+only one email, while he expected seven individual reviews plus one follow-up per person.
+Read-only database, Cloud Logging and signed-in Resend dashboard checks; no emails resent and
+no production data changed. Tour remains `tour-1791219970929-1-ivt0w`, version 18.
+
+Resend's four newest email-list pages show **43 individual rating messages and seven listing
+summaries, all Delivered**. The seven summaries were sent at 12:51 Phoenix. Counts below exclude
+unrelated mail and Erik's earlier authorized test:
+
+| Listing agent | Saved evaluations | Individual emails delivered | Summary delivered | Total emails |
+| --- | ---: | ---: | ---: | ---: |
+| Lisa Payne, Ocotillo | 5 | 6 | 1 | 7 |
+| Vickie Robles, Tuckey | 6 | 6 | 1 | 7 |
+| Valerie Burkhart, 17th Avenue | 6 | 6 | 1 | 7 |
+| Shelley Hubbard, Loma | 6 | 7 | 1 | 8 |
+| Anthony Almazan, Northern | 6 | 6 | 1 | 7 |
+| Cynthia Brown, 14th Street | 6 | 7 | 1 | 8 |
+| Lisa Dixon, 16th Place | 5 | 5 | 1 | 6 |
+
+The database contains 40 current evaluations and 43 successful submission/send receipts.
+Re-rating replaces that attendee's saved evaluation but sends another individual notification,
+which accounts for the extra three messages. Seven homes does not imply seven ratings per home.
+Each submission emails only that property's listing agent; the follow-up sends one consolidated
+report to each property's agent, not all seven properties to every attendee.
+
+Opened actual Resend summary previews for Lisa Payne and Cynthia Brown: five and six complete
+evaluations respectively, score tables, suggestions, price feedback and correct app tour links.
+Provider IDs: `01a12238-2983-738d-a9fe-19b12a25127c` (Payne),
+`01a12238-2f84-7c09-9394-302285349a2e` (Brown). Both Sent and Delivered at 12:51.
+Delivery means the recipient mail server accepted the message, not proof of inbox placement or
+reading. Spam or conversation grouping were initially unconfirmed possibilities. Erik subsequently
+identified Lisa Payne (`lisapayne@cox.net`) as the affected agent. Filtered Resend by that exact
+recipient and reconfirmed six individual reviews and one summary as Delivered. Opened delivery
+event details for the 09:15 individual message (`01a12172-6114-744f-a864-13a9fab16e8d`) and
+12:51 summary: both show recipient SMTP response `250 ok dirdel`. The summary still contains
+all five current saved evaluations. No resend is authorized by this audit.
+
+Recipient confirmation: Erik provided a screenshot timestamped approximately 16:20 in which
+Lisa says she found the missing messages in spam. This establishes spam placement for Lisa,
+not the filtering cause or placement for other agents. The messages were found; no resend
+was performed. Recommend marking the messages Not Spam. Deliverability remediation is still
+pending, and no sender/DNS/notification behavior was changed during this investigation.
+
+Cloud logs since 09:00 contain no reported submitRating/sendAdminEmail errors; two 4xx entries
+were an unauthenticated legacy sendEmail request and verifyTourCode 403. Latest production CI
+is green for `27cee07`. Production remains landing-disabled; the prepared landing changes are
+still local. Private database/log evidence is in `/tmp/mrt-oct9-post-tour-email-audit.json` and
+`/tmp/mrt-oct9-post-tour-errors.json`. Production Resend key is send-only, so delivery evidence
+was read through the existing authenticated dashboard, without expanding key permissions.

@@ -1,7 +1,8 @@
 # MarketReady Tours — working rules
 
-_Updated 2026-10-08. **Production is LIVE.** `marketreadytours.com` is the sales landing page; the
-app is at `marketreadytours.com/app/` (since 2026-09-26)._
+_Updated 2026-10-10. **Production is LIVE.** The landing page is restored for mobile and
+desktop at `marketreadytours.com/`; the app lives at `marketreadytours.com/app/`.
+Mailgun/branded-sender changes are deferred in a patch. See `HANDOFF.md` before deploying._
 
 ## Rule 1: production is live, and you are cleared to work on it
 

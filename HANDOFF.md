@@ -1,10 +1,10 @@
 # MarketReady Tours — Engineering Handoff
 
-_Updated 2026-10-09. Read this entire file before acting._
+_Updated 2026-10-10. Read this entire file before acting._
 
 **Current state.** The refresh is **LIVE** (cutover 2026-08-10) and edge-cached. Since
-2026-09-26 **marketreadytours.com is a sales landing page and the app lives at `/app/`** — every
-old `#/` link still reaches the app; see "2026-09-26 — landing page" below. **30** Cloud Functions. Sponsor payments run on Clover; transactional email runs on
+2026-10-10 **the landing-page configuration is restored at `/` for mobile and desktop; the app
+lives at `/app/`**. See the October 10 release entry below for verification. **30** Cloud Functions. Sponsor payments run on Clover; transactional email runs on
 Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` and
 `mrt_tours_public`, with matching IDs and versions; this was not re-audited September 29. Erik is Owner on
 `marketready-tours` and has a standing go-ahead for production work — see `CLAUDE.md`, whose old
@@ -22,7 +22,49 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
 
-## 2026-10-09 — landing return prepared locally, not published
+## 2026-10-10 — landing restoration and Mailgun deferral
+
+Erik explicitly requested restoring mobile and desktop marketing with easy app entry and a
+Next tour button that opens the actual tour. `MRT_LANDING` is back to `1`; `/app/` is retained.
+No scroll snapping or smooth anchor interception. Header/hero Go to app buttons remain visible
+on phones. All app links have real hrefs before JavaScript; next-tour empty/error fallback also
+opens the app. Four regressions cover correct upcoming-tour selection, failure fallback, app
+links/normal scrolling and preservation of query/hash on old emailed links.
+
+Pre-release checks: 123 tests/13 static checks passed, website-mode build passed. Chrome iPhone
+16 emulation at 393 x 852 verified the visible header/hero buttons and actual coordinate taps:
+Next tour opened live `app/#/tour/tour-1791395647503-1-pnn6e` (Sonoran Showcase, October 29),
+and header Go to app opened live `app/#/`. Preview uses public data and production app links;
+no production content modified, no messages sent. This is not physical iPhone/Safari validation.
+Production CI/Pages and root/www cache verification must finish before calling the release done.
+
+Erik deferred Mailgun work to a future to-do. Incoming root-domain MX remains Mailgun and
+Braydon owns that account. He must add and verify exact-recipient forwarding from
+`tours@marketreadytours.com` to `marketreadytours@gmail.com` before sender activation.
+The prepared change is parked in `docs/patches/branded-email-identity.pending.patch`; active
+function source is restored to the currently deployed identity. Patch applicability verified.
+When resumed, apply it, rerun checks, deploy affected existing functions by name, preserve
+30-function inventory and inspect an Erik-only email. No function or mail configuration deploy
+is part of this landing release.
+
+## 2026-10-09 — afternoon email delivery audit
+
+Braydon reported an unidentified agent seeing only one email and expected eight per agent.
+Read-only audit verified 43 individual ratings emails plus seven 12:51 follow-up summaries,
+**all Delivered in Resend**. Forty current saved evaluations: 5/6/6/6/6/6/5 by stop; updates
+account for three extra individual messages. Actual totals including summary: Payne 7, Robles 7,
+Burkhart 7, Hubbard 8, Almazan 7, Brown 8, Dixon 6. Opened delivered summaries for Payne/Brown
+and verified full evaluation content. Inbox versus spam/conversation grouping is not established.
+Erik identified the affected agent as Lisa Payne (`lisapayne@cox.net`). A recipient-filtered
+Resend check reconfirmed all six individual messages plus her summary as Delivered. Opened
+the latest individual message (09:15) and summary (12:51) delivery events: both recipient-server
+responses were `250 ok dirdel`. Her summary contains all five current saved evaluations.
+Erik then provided Lisa's 16:20 screenshot confirming she found the missing emails in spam.
+Spam placement is now recipient-confirmed for Lisa; the reason for filtering is still unknown.
+No resend or production mutation. Deliverability improvements remain separate follow-up work.
+Full evidence and limitations: `docs/HEALTH-CHECK-2026-10-09.md`, afternoon section.
+
+## 2026-10-09 — landing return prepared locally (superseded by October 10 release)
 
 Erik plans to restore the landing page October 10, with no scroll snapping and prominent app
 access. Local `landing.html` now removes all scroll-snap rules and smooth anchor scrolling;

@@ -1,15 +1,39 @@
 # MarketReady Tours — open items
 
-_Updated 2026-10-09. Production is live; see `CLAUDE.md` for what you are cleared to do._
+_Updated 2026-10-10. Production is live; see `CLAUDE.md` for what you are cleared to do._
 
 Verified items note how they were confirmed, so nobody has to re-derive it.
 
-**Landing page return, October 10:** prepared locally but not deployed. Normal scrolling,
-prominent **Go to app** buttons on mobile/desktop, and **Next tour** opening the specific tour.
-Keep `MRT_LANDING: "0"` today. Before restoring, verify the entire homepage-to-tour journey on
-an actual phone and confirm the ordinary public URL after clearing Cloudflare cache. The previous
-audit missed that homepage entry path; its mobile checks covered the app and share page only.
-No automatic restoration is scheduled. See the latest section in `HANDOFF.md`.
+**October 9 email deliverability, OPEN:** Lisa Payne confirmed missing messages were in spam.
+All seven messages to her show Delivered; do not equate delivery with inbox placement.
+Resend domain UI confirms SPF/MX and DKIM Verified; DNS has DMARC `p=quarantine` with relaxed
+alignment. Lisa's actual summary Insights flags `noreply@marketreadytours.com` and the footer
+`mailto:marketreadytours@gmail.com` as two Needs Attention items. DMARC, plain text and body size
+are under Doing Great. These are recommendations, not a confirmed filtering cause.
+Sending code supports Reply-To but the transactional call does not supply it. Next: verify a
+working monitored address on marketreadytours.com before aligning From/Reply-To/footer, obtain
+Lisa's original spam-message headers to check received authentication results, and prepare a
+Resend deliverability support case using the known provider IDs. No support message sent.
+Do not infer current tracking status from the new tracking-subdomain form: its checkboxes are
+creation defaults. Insights lists tracking checks under Doing Great but expanded copy mentions
+shared tracking, so actual settings/received message need verification before changing anything.
+No production DNS, sender, tracking or notification-frequency changes have been made. Keep per-rating
+notifications until the product behavior is explicitly agreed; fewer emails is not a proven fix.
+
+**Mailgun / branded sender, deferred at Erik's request October 10:** Braydon must add and
+verify `tours@marketreadytours.com` forwarding to `marketreadytours@gmail.com` in Mailgun.
+Preserve existing inbound routes and MX records. The prepared sender/Reply-To/footer change
+is saved in `patches/branded-email-identity.pending.patch`, not active function source.
+Apply it only after receipt is verified, rerun checks, deploy the existing affected functions
+by name, and verify an Erik-only message. No email configuration was changed or deployed.
+
+**Landing page return, October 10:** restoration authorized. `MRT_LANDING: "1"` restores
+marketing on mobile and desktop, app stays at `/app/`. Normal scrolling, prominent **Go to app**
+buttons, and **Next tour** opens the specific app tour. Real hrefs work before JavaScript loads;
+empty/failed tour feed falls back to the app. 123 tests/13 static checks passed. Chrome iPhone
+16 emulation (393 x 852) verified visible CTAs and actual taps to the Sonoran Showcase tour
+and app home. This is not physical iPhone/Safari testing. Verify live root/www and cache after
+Pages deploy. See `HANDOFF.md` for release evidence.
 
 **October 9 audit complete:** seven-stop version 18 tour verified. Admin summary permission,
 favorites reload, full PDF reports, private-note saves and organizer route copies repaired.

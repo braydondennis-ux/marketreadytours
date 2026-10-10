@@ -1,0 +1,127 @@
+diff --git a/functions/lib/email.js b/functions/lib/email.js
+index 1e62e58..0879393 100644
+--- a/functions/lib/email.js
++++ b/functions/lib/email.js
+@@ -17,6 +17,7 @@
+  */
+ 
+ const {escapeHtml} = require("./domain");
++const {SUPPORT_EMAIL} = require("./email-identity");
+ 
+ const INK = "#101A36";
+ const COBALT = "#2F44A0";
+@@ -27,7 +28,6 @@ const MUTED = "#5B5F6B";
+ const HAIR = "#E4E2DB";
+ const FONT = "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif";
+ 
+-const SUPPORT_EMAIL = "marketreadytours@gmail.com";
+ const SITE_URL = "https://marketreadytours.com";
+ 
+ /* Turn plain paragraphs into the branded shell.
+diff --git a/functions/lib/resend.js b/functions/lib/resend.js
+index 4f77810..857cd48 100644
+--- a/functions/lib/resend.js
++++ b/functions/lib/resend.js
+@@ -10,18 +10,19 @@
+  *   minutes apart); and consumer Gmail has low daily sending limits and throttles accounts it
+  *   believes are sending bulk mail.
+  *
+- *   Resend sends as noreply@marketreadytours.com with SPF and DKIM published on the domain
++ *   Resend sends from the branded address in email-identity.js with SPF and DKIM on the domain
+  *   (resend._domainkey + send.marketreadytours.com SPF, both DNS-only in Cloudflare), so the
+  *   message is aligned and passes the domain's existing DMARC p=quarantine policy.
+  *
+  * DELIVERY IS NOT CONFIRMED BY A 200. Resend accepts the message and delivers asynchronously;
+- * bounces and spam placement appear in the Resend dashboard, not in this response. That is
++ * bounces and reported complaints appear in the Resend dashboard, not in this response.
++ * Delivered does not establish inbox versus spam placement. That is
+  * still a large improvement on the previous sender, which reported success with no visibility
+  * whatsoever.
+  */
+ 
+ const RESEND_ENDPOINT = "https://api.resend.com/emails";
+-const DEFAULT_FROM = "MarketReady Tours <noreply@marketreadytours.com>";
++const {DEFAULT_FROM, SUPPORT_EMAIL} = require("./email-identity");
+ 
+ /* Returns {ok, id} on success. Throws with Resend's own message on failure — its 4xx bodies
+    name the cause precisely (unverified domain, bad key, invalid recipient), which is what you
+@@ -33,7 +34,7 @@ async function sendViaResend({
+   text,
+   html,
+   from = DEFAULT_FROM,
+-  replyTo = null,
++  replyTo = SUPPORT_EMAIL,
+   fetchImpl = fetch,
+   timeoutMs = 15000,
+   idempotencyKey = null,
+diff --git a/functions/test/resend.test.js b/functions/test/resend.test.js
+index 871fcbb..681f7b1 100644
+--- a/functions/test/resend.test.js
++++ b/functions/test/resend.test.js
+@@ -4,6 +4,7 @@ const test = require("node:test");
+ const assert = require("node:assert/strict");
+ 
+ const {sendViaResend, DEFAULT_FROM} = require("../lib/resend");
++const {renderBrandedEmail} = require("../lib/email");
+ 
+ function okFetch(capture) {
+   return async (url, options) => {
+@@ -14,8 +15,8 @@ function okFetch(capture) {
+   };
+ }
+ 
+-test("sends from the domain-aligned noreply address, not a gmail account", () => {
+-  assert.match(DEFAULT_FROM, /noreply@marketreadytours\.com/);
++test("sends from the branded tours address, not a gmail account", () => {
++  assert.equal(DEFAULT_FROM, "MarketReady Tours <tours@marketreadytours.com>");
+   assert.doesNotMatch(DEFAULT_FROM, /gmail\.com/);
+ });
+ 
+@@ -38,6 +39,7 @@ test("posts to Resend with bearer auth and both message parts", async () => {
+   assert.equal(cap.body.text, "plain body");
+   assert.equal(cap.body.html, "<p>html body</p>");
+   assert.equal(cap.body.from, DEFAULT_FROM);
++  assert.equal(cap.body.reply_to, "tours@marketreadytours.com");
+   assert.equal(res.ok, true);
+   assert.equal(res.id, "re_123");
+ });
+@@ -65,11 +67,24 @@ test("refuses to send without an api key, recipient or subject", async () => {
+ 
+ test("omits optional fields rather than sending nulls Resend would reject", async () => {
+   const cap = {};
+-  await sendViaResend({apiKey: "k", to: "a@b.com", subject: "s", text: "t", fetchImpl: okFetch(cap)});
++  await sendViaResend({apiKey: "k", to: "a@b.com", subject: "s", text: "t", replyTo: null, fetchImpl: okFetch(cap)});
+   assert.equal("html" in cap.body, false);
+   assert.equal("reply_to" in cap.body, false);
+ });
+ 
++test("actual request aligns sender, reply destination and rendered support link", async () => {
++  const cap = {};
++  await sendViaResend({
++    apiKey: "k", to: "erik@marketreadysystems.ai", subject: "Tour report",
++    text: "Your report", html: renderBrandedEmail({bodyHtml: "<p>Your report</p>"}),
++    fetchImpl: okFetch(cap),
++  });
++  assert.equal(cap.body.reply_to, "tours@marketreadytours.com");
++  assert.ok(cap.body.from.includes(`<${cap.body.reply_to}>`));
++  assert.ok(cap.body.html.includes(`href="mailto:${cap.body.reply_to}"`));
++  assert.doesNotMatch(cap.body.html, /mailto:marketreadytours@gmail\.com/);
++});
++
+ /* Duplicate-send protection. A reminder that Resend accepts but whose response we never see —
+    a 15s fetch timeout is enough — throws, and processDueReminders then retries it up to five
+    times. Without a stable idempotency key that is five copies of the same email to a real
+diff --git a/functions/lib/email-identity.js b/functions/lib/email-identity.js
+new file mode 100644
+index 0000000..7c81630
+--- /dev/null
++++ b/functions/lib/email-identity.js
+@@ -0,0 +1,8 @@
++"use strict";
++
++// Keep the visible sender, Reply-To and branded footer on the same monitored address.
++// Verify inbound forwarding before deploying a change to this address.
++const SUPPORT_EMAIL = "tours@marketreadytours.com";
++const DEFAULT_FROM = `MarketReady Tours <${SUPPORT_EMAIL}>`;
++
++module.exports = {SUPPORT_EMAIL, DEFAULT_FROM};

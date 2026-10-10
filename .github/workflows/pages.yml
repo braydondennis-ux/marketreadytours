@@ -42,7 +42,7 @@ jobs:
       MRT_MAINTENANCE: "0"
       # "1" = the landing page is the front door at / and the app lives at /app/ (the landing
       # page forwards every #/ app link there). "0" = app at / as before. Flip to roll back.
-      MRT_LANDING: "0"
+      MRT_LANDING: "1"
       # Always publish the app at /app/ too. Links the app has emailed since 2026-09-26 point
       # there, so it must keep serving even if MRT_LANDING is switched back to "0".
       MRT_PUBLISH_APP_SUBPATH: "1"
