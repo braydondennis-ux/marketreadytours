@@ -22,6 +22,18 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
 
+## 2026-10-10 — iPhone-first mobile audit
+
+See `docs/MOBILE-AUDIT-2026-10-10.md` for the coverage matrix and limits. Compact iOS Safari
+reproduced keyboard-covered Unlock, cramped stars and lost refresh drafts. Client fixes add
+visual-viewport dialogs, 16px phone inputs, stacked rating rows, per-tab text drafts, expired
+access recovery, retry IDs, pending photo decoding, and truthful offline/saved messaging.
+Safari evaluation reached the local DB and organizer summary. Chrome phone upload plus
+Offline/reconnect/retry retained all scores, note and private photo. No agent emails or
+production test records. 129 tests, 13 static checks and 14 isolated preflight scenarios pass.
+Live Safari Next tour opened Sonoran Showcase directly. Physical-device limits remain in the
+report. Release verification will be appended after deployment. Mailgun remains deferred.
+
 ## 2026-10-10 — landing restoration and Mailgun deferral
 
 Erik explicitly requested restoring mobile and desktop marketing with easy app entry and a

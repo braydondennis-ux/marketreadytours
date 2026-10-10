@@ -4,6 +4,12 @@ _Updated 2026-10-10. Production is live; see `CLAUDE.md` for what you are cleare
 
 Verified items note how they were confirmed, so nobody has to re-derive it.
 
+**Mobile audit, October 10:** See `MOBILE-AUDIT-2026-10-10.md`. iPhone Safari simulator
+and 320/430px browser audit found and fixed keyboard/rating/draft/retry issues; 129 tests and
+14 isolated tour workflow scenarios passed. Complete physical iPhone camera/HEIC, weak-cellular,
+background/resume, installed Home Screen, accessibility and full intake/sponsor flow checks.
+Do not equate simulator success with every device guaranteed. Test notifications only to Erik.
+
 **October 9 email deliverability, OPEN:** Lisa Payne confirmed missing messages were in spam.
 All seven messages to her show Delivered; do not equate delivery with inbox placement.
 Resend domain UI confirms SPF/MX and DKIM Verified; DNS has DMARC `p=quarantine` with relaxed

@@ -316,6 +316,24 @@ body.mrt-rating-active .mrt-syncpill[data-idle="true"]{display:none!important}
 @keyframes mrt-pop{0%{transform:scale(.4);opacity:0;}55%{transform:scale(1.25);}100%{transform:scale(1);opacity:1;}}
 @media (prefers-reduced-motion:reduce){.mrt-press,.mrt-live-dot,.mrt-star-pop,.mrt-fade-stagger{animation:none!important;transition:none!important;}}
 
+/* Phone forms must stay readable without Safari focus zoom. */
+@media (max-width:1023px){
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),textarea,select{font-size:16px!important;}
+  .mrt-rating-actions{padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))!important;}
+}
+@media (max-width:430px){
+  .mrt-rating-row{flex-direction:column;align-items:flex-start!important;gap:6px;}
+  .mrt-rating-row [role="group"]{align-self:flex-end;}
+}
+.mrt-keyboard-dialog{top:var(--mrt-visual-top,0px)!important;bottom:auto!important;height:var(--mrt-visual-height,100dvh);overflow-y:auto;overscroll-behavior:contain;align-items:flex-start!important;}
+.mrt-keyboard-card{flex-shrink:0;margin:auto 0;}
+.mrt-keyboard-dialog.is-keyboard .mrt-keyboard-card{padding:16px!important;}
+.mrt-keyboard-dialog.is-keyboard .mrt-dialog-decoration{display:none!important;}
+.mrt-keyboard-dialog.is-keyboard{padding:8px 20px!important;}
+.mrt-keyboard-dialog.is-keyboard h2{font-size:20px!important;margin-bottom:12px!important;}
+.mrt-keyboard-dialog.is-keyboard p{margin-bottom:12px!important;}
+body.mrt-rating-active #mrt-a2hs{display:none!important;}
+
 @media print {
   body:has(.mrt-summary-report), body:has(.mrt-summary-report) .mrt-shell { background:#fff !important; max-width:none !important; min-height:0 !important; }
   body:has(.mrt-summary-report) .mrt-topnav, body:has(.mrt-summary-report) .mrt-tabbar,
@@ -883,7 +901,7 @@ function OfflineBanner() {
   useEffect(() => {
     const goOn = () => {
       setOffline(false);
-      showToast("Back online — syncing changes...", "success", 3000);
+      showToast("Back online. You can submit your changes now.", "success", 3000);
     };
     const goOff = () => setOffline(true);
     window.addEventListener("online", goOn);
@@ -895,8 +913,9 @@ function OfflineBanner() {
   }, []);
   if (!offline) return null;
   return React.createElement("div", {
+    role: "status",
     style: {
-      position: "fixed",
+      position: "relative",
       top: 0,
       left: "50%",
       transform: "translateX(-50%)",
@@ -915,7 +934,7 @@ function OfflineBanner() {
       gap: 8,
       boxShadow: "0 2px 8px rgba(0,0,0,.3)"
     }
-  }, "📡 You're offline — changes will sync when reconnected");
+  }, "📡 You're offline. Reconnect before submitting changes.");
 }
 /* ── RATE LIMITER — prevents double-tap email sends ── */
 const _lastSent = {};
@@ -1375,12 +1394,31 @@ function QRModal(_ref4) {
   }, "Close")));
 }
 /* ── LOGIN ── */
+function useMobileViewport() {
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    let fullHeight = window.innerHeight;
+    const update = () => {
+      fullHeight = Math.max(fullHeight, window.innerHeight, viewport?.height || 0);
+      document.documentElement.style.setProperty("--mrt-visual-height", (viewport?.height || window.innerHeight) + "px");
+      document.documentElement.style.setProperty("--mrt-visual-top", (viewport?.offsetTop || 0) + "px");
+      setKeyboardOpen(!!viewport && viewport.height < fullHeight * 0.8);
+    };
+    const rotate = () => { fullHeight = window.innerHeight; update(); };
+    update(); viewport?.addEventListener("resize", update); viewport?.addEventListener("scroll", update);
+    window.addEventListener("orientationchange", rotate);
+    return () => { viewport?.removeEventListener("resize", update); viewport?.removeEventListener("scroll", update); window.removeEventListener("orientationchange", rotate); };
+  }, []);
+  return keyboardOpen;
+}
 function LoginPage(_ref5) {
   let {
     onLogin,
     onClose,
     subAdmins
   } = _ref5;
+  const keyboardOpen = useMobileViewport();
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -1461,6 +1499,7 @@ function LoginPage(_ref5) {
     }
   };
   if (forgotMode) return /*#__PURE__*/React.createElement("div", {
+    className: "mrt-keyboard-dialog" + (keyboardOpen ? " is-keyboard" : ""),
     style: {
       position: "fixed",
       inset: 0,
@@ -1472,7 +1511,7 @@ function LoginPage(_ref5) {
       padding: 20
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "mrt-col mrt-card mrt-card--soft",
+    className: "mrt-col mrt-card mrt-card--soft mrt-keyboard-card",
     role: "dialog",
     "aria-modal": "true",
     "aria-labelledby": "mrt-reset-title",
@@ -1483,11 +1522,12 @@ function LoginPage(_ref5) {
       textAlign: "center"
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "mrt-eyebrow",
+    className: "mrt-eyebrow mrt-dialog-decoration",
     style: {
       marginBottom: 16
     }
   }, "Password Reset"), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-dialog-decoration",
     style: {
       marginBottom: 10,
       color: "var(--mrt-navy)",
@@ -1627,6 +1667,7 @@ function LoginPage(_ref5) {
     }
   }, "Back to Sign In"))));
   return /*#__PURE__*/React.createElement("div", {
+    className: "mrt-keyboard-dialog" + (keyboardOpen ? " is-keyboard" : ""),
     style: {
       position: "fixed",
       inset: 0,
@@ -1638,7 +1679,7 @@ function LoginPage(_ref5) {
       padding: 20
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "mrt-col mrt-card mrt-card--soft",
+    className: "mrt-col mrt-card mrt-card--soft mrt-keyboard-card",
     role: "dialog",
     "aria-modal": "true",
     "aria-labelledby": "mrt-login-title",
@@ -1649,11 +1690,12 @@ function LoginPage(_ref5) {
       textAlign: "center"
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "mrt-eyebrow",
+    className: "mrt-eyebrow mrt-dialog-decoration",
     style: {
       marginBottom: 16
     }
   }, "Admins Only"), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-dialog-decoration",
     style: {
       marginBottom: 10,
       color: "var(--mrt-navy)",
@@ -1915,6 +1957,20 @@ function NeighborhoodPanel(_ref6) {
   }, "\u2197")))));
 }
 /* ── RATING PAGE ── */
+// Text drafts stay in this tab only, separated by tour, property and attendee.
+function mrtReadRatingDraft(key) {
+  try {
+    const draft = JSON.parse(sessionStorage.getItem(key) || "null");
+    return draft && Date.now() - draft.savedAt < 86400000 ? draft : {};
+  } catch (e) { return {}; }
+}
+function mrtWriteRatingDraft(key, draft) {
+  try { sessionStorage.setItem(key, JSON.stringify({...draft, savedAt: Date.now()})); } catch (e) {}
+}
+function mrtRatingAttempt(previous, payload) {
+  const signature = JSON.stringify(payload);
+  return previous && previous.signature === signature ? previous : {signature, requestId: mrtRequestId("rating")};
+}
 function RatingPage(_ref7) {
   let {
     listing,
@@ -1922,17 +1978,25 @@ function RatingPage(_ref7) {
     onBack,
     onRatingSubmit
   } = _ref7;
-  const [ratings, setRatings] = useState({});
-  const [suggestions, setSuggestions] = useState("");
-  const [sugPrice, setSugPrice] = useState("");
-  const [pricedRight, setPricedRight] = useState(false);
+  const draftKey = "mrt_rating_draft_" + tour.id + "/" + listing.id + "/" + (_fbAuth?.currentUser?.uid || "guest");
+  const [draft] = useState(() => mrtReadRatingDraft(draftKey));
+  const [ratings, setRatings] = useState(draft.ratings || {});
+  const [suggestions, setSuggestions] = useState(draft.suggestions || "");
+  const [sugPrice, setSugPrice] = useState(draft.sugPrice || "");
+  const [pricedRight, setPricedRight] = useState(!!draft.pricedRight);
   const [photos, setPhotos] = useState([]);
   const [showGallery, setShowGallery] = useState(false);
   const [galleryPhotos, setGalleryPhotos] = useState(listing.photos || []);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  const [raterName, setRaterName] = useState("");
+  const [raterName, setRaterName] = useState(draft.raterName || "");
+  const attemptRef = useRef(null);
+  const submittingRef = useRef(false);
+  const keyboardOpen = useMobileViewport();
+  useEffect(() => {
+    if (!done) mrtWriteRatingDraft(draftKey, {ratings, suggestions, sugPrice, pricedRight, raterName, hadPhotos: photos.length > 0 || draft.hadPhotos});
+  }, [draftKey, ratings, suggestions, sugPrice, pricedRight, raterName, photos.length, done]);
   const [detailsOpen, setDetailsOpen] = useState(false); // UI-only: collapses Buyer/Seller Est., neighborhood info, name, suggested price, photo upload
   const fileRef = useRef(null);
   useEffect(() => {
@@ -1969,6 +2033,10 @@ function RatingPage(_ref7) {
     }
   };
   if (!codeUnlocked && (MRT_SECURE_BACKEND || tour.code)) return /*#__PURE__*/React.createElement("div", {
+    className: "mrt-keyboard-dialog" + (keyboardOpen ? " is-keyboard" : ""),
+    role: "dialog",
+    "aria-modal": "true",
+    "aria-label": "Unlock tour ratings",
     style: {
       position: "fixed",
       inset: 0,
@@ -1980,7 +2048,7 @@ function RatingPage(_ref7) {
       padding: 20
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "mrt-card mrt-card--soft",
+    className: "mrt-card mrt-card--soft mrt-keyboard-card",
     style: {
       width: "100%",
       maxWidth: 440,
@@ -1988,7 +2056,7 @@ function RatingPage(_ref7) {
       textAlign: "center"
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "mrt-eyebrow",
+    className: "mrt-eyebrow mrt-dialog-decoration",
     style: {
       marginBottom: 16,
       display: "flex",
@@ -1997,6 +2065,7 @@ function RatingPage(_ref7) {
       gap: 6
     }
   }, React.createElement(TourDot, { tour: tour, size: 7 }), tour.name, " \xB7 Private Tour"), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-dialog-decoration",
     style: {
       marginBottom: 10,
       color: B.navy,
@@ -2112,6 +2181,14 @@ function RatingPage(_ref7) {
       const tempId = "photo-" + Date.now() + "-" + Math.random();
       const img = new Image();
       const objectUrl = URL.createObjectURL(file);
+      // Include decoding time in the pending state, so a quick tap cannot omit a photo.
+      setPhotos(prev => [...prev, {url: objectUrl, name: file.name, tempId, uploading: true}]);
+      const failPhoto = () => {
+        URL.revokeObjectURL(objectUrl);
+        setPhotos(prev => prev.map(p => p.tempId === tempId ? {...p, uploading: false, uploadError: true} : p));
+        setSubmitError("A photo could not be read or uploaded. Remove it and try a JPEG or PNG photo.");
+      };
+      img.onerror = failPhoto;
       img.onload = () => {
         URL.revokeObjectURL(objectUrl);
         const MAX = 800;
@@ -2122,15 +2199,11 @@ function RatingPage(_ref7) {
         canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
         const previewUrl = canvas.toDataURL("image/jpeg", 0.75);
         // Add with uploading flag so submit is blocked
-        setPhotos(prev => [...prev, {
-          url: previewUrl,
-          name: file.name,
-          tempId,
-          uploading: true
-        }]);
+        setPhotos(prev => prev.map(p => p.tempId === tempId ? {...p, url: previewUrl} : p));
         if (_fbStorage && MRT_SECURE_BACKEND) {
           canvas.toBlob(async blob => {
             try {
+              if (!blob) throw new Error("Photo conversion failed");
               const user = await mrtEnsureAuth();
               const storageId = tempId.replace(/[^a-zA-Z0-9_-]/g, "_");
               const path = "mrt_upload_temp/".concat(user.uid, "/").concat(storageId);
@@ -2180,9 +2253,11 @@ function RatingPage(_ref7) {
       };
       img.src = objectUrl;
     });
+    e.target.value = ""; // Allow choosing the same file again after a failed upload.
   };
   const starLabel = n => n === 0 ? "Not rated" : "★".repeat(n) + "☆".repeat(5 - n) + " (".concat(n, "/5)");
   const handleSubmit = async () => {
+    if (submittingRef.current || photos.some(p => p.uploading)) return;
     if (RATING_CATS.some(cat => !Number.isInteger(ratings[cat.key]) || ratings[cat.key] < 1 || ratings[cat.key] > 5)) {
       setSubmitError("Please rate all 10 categories before submitting.");
       return;
@@ -2198,6 +2273,7 @@ function RatingPage(_ref7) {
     const safeSugPrice = sanitize(sugPrice);
     // Sorted route position handles both one-based app data and zero-based legacy data.
     const stopNumber = getTourStopNumber(tour, listing);
+    submittingRef.current = true;
     setSubmitting(true);
     setSubmitError("");
     try {
@@ -2230,7 +2306,10 @@ function RatingPage(_ref7) {
       // Build email HTML
       const ratingRows = RATING_CATS.map(cat => "<tr><td style=\"padding:6px 12px;color:#5B5F6B;font-size:13px\">".concat(cat.label, "</td><td style=\"padding:6px 12px;text-align:right;font-size:14px\">").concat("★".repeat(ratings[cat.key] || 0)).concat("☆".repeat(5 - (ratings[cat.key] || 0)), " ").concat(ratings[cat.key] || 0, "/5</td></tr>")).join("");
       const emailHtml = "<div style=\"font-family:DM Sans,Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff\">\n<div style=\"background:#101A36;padding:22px 28px\"><p style=\"margin:0;font-family:DM Sans,Arial,sans-serif;font-size:24px;font-weight:900;color:#ffffff;letter-spacing:1px\">Market<span style=\"color:#AEBFD6\">Ready</span> <span style=\"font-weight:300;font-size:20px;letter-spacing:3px\">Tours</span></p></div>\n<div style=\"background:#2F44A0;height:4px\"></div>\n<div style=\"padding:28px\">\n<h2 style=\"color:#101A36;margin:0 0 4px\">New Rating Submitted</h2>\n<p style=\"color:#5B5F6B;margin:0 0 20px;font-size:14px\">".concat(tour.emoji, " ").concat(tour.name, " \xB7 Stop #").concat(stopNumber, "</p>\n<div style=\"background:#F9FAFB;border-radius:10px;padding:16px 20px;margin-bottom:20px\">\n<div style=\"font-size:15px;font-weight:700;color:#111\">").concat(listing.address, "</div>\n<div style=\"font-size:13px;color:#5B5F6B\">").concat(listing.city, " \xB7 Listed by ").concat(listing.agent, " \xB7 $").concat(Number(listing.price).toLocaleString(), "</div>\n</div>\n<table style=\"width:100%;border-collapse:collapse;margin-bottom:20px\">").concat(ratingRows, "</table>\n").concat(safeSuggestions ? "<div style=\"margin-bottom:12px\"><strong style=\"font-size:12px;color:#5B5F6B;text-transform:uppercase;letter-spacing:.5px\">Suggestions</strong><p style=\"margin:4px 0 0;font-size:14px;color:#111\">".concat(safeSuggestions, "</p></div>") : "", "\n<div style=\"margin-bottom:12px\"><strong style=\"font-size:12px;color:#5B5F6B;text-transform:uppercase;letter-spacing:.5px\">Suggested Price</strong><p style=\"margin:4px 0 0;font-size:14px;font-weight:700;color:#101A36\">").concat(pricedRight ? "✅ Priced Correctly" : safeSugPrice || "Not provided", "</p></div>\n").concat(photos.filter(p => p.url && p.url.startsWith("https://")).length > 0 ? "<div style=\"margin-top:16px\"><strong style=\"font-size:12px;color:#5B5F6B;text-transform:uppercase;letter-spacing:.5px\">&#128247; Photos (".concat(photos.filter(p => p.url && p.url.startsWith("https://")).length, ")</strong><div style=\"margin-top:8px\">").concat(photos.filter(p => p.url && p.url.startsWith("https://")).map((p, i) => "<a href=\"".concat(p.url, "\" target=\"_blank\" style=\"display:inline-block;margin:4px 6px 4px 0;background:#101A36;color:#ffffff;text-decoration:none;padding:6px 14px;border-radius:6px;font-size:13px;font-family:DM Sans,Arial,sans-serif\">&#128247; View Photo ").concat(i + 1, "</a>")).join(""), "</div></div>") : "", "\n<p style=\"font-size:11px;color:#9CA3AF;margin-top:24px;border-top:1px solid #E8E7E0;padding-top:12px\">All feedback is provided by licensed real estate agents specializing in the area.</p>\n</div></div>");
+      const attemptPayload = {ratings, suggestions: safeSuggestions, sugPrice: pricedRight ? "Priced Correctly" : safeSugPrice, pricedRight, raterName, tempPhotoIds: photos.map(p => p.storageId).filter(Boolean)};
+      attemptRef.current = mrtRatingAttempt(attemptRef.current, attemptPayload);
       await onRatingSubmit(listing.id, ratings, {
+        requestId: attemptRef.current.requestId,
         suggestions: safeSuggestions,
         sugPrice: pricedRight ? "Priced Correctly" : safeSugPrice,
         pricedRight,
@@ -2240,11 +2319,21 @@ function RatingPage(_ref7) {
         tempPhotoIds: photos.map(p => p.storageId).filter(Boolean),
         grantId: sessionStorage.getItem(sessionKey)
       });
+      try { sessionStorage.removeItem(draftKey); } catch (e) {}
       setDone(true);
       setTimeout(onBack, 2800);
     } catch (e) {
       canSend.clear("rating_" + listing.id);
-      setSubmitError(e.message || "Network error — please check your connection.");
+      submittingRef.current = false;
+      if (e.code === "permission-denied") {
+        sessionStorage.removeItem(sessionKey);
+        setCodeUnlocked(false);
+        setCodeInput("");
+        setCodeError("Please enter the tour code again. Your feedback is still here.");
+      }
+      setSubmitError(!e.message || /failed to fetch|network|load failed|timed out/i.test(e.message)
+        ? "Could not confirm your rating was saved. Your feedback is still here. Check your connection and tap Submit again."
+        : e.message);
       setSubmitting(false);
     }
   };
@@ -2287,7 +2376,7 @@ function RatingPage(_ref7) {
       lineHeight: 1.6,
       margin: 0
     }
-  }, "Feedback emailed to", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("strong", {
+  }, "Feedback saved for", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("strong", {
     style: {
       color: B.ink
     }
@@ -2464,6 +2553,7 @@ function RatingPage(_ref7) {
     const rated = (ratings[cat.key] || 0) > 0;
     return /*#__PURE__*/React.createElement("div", {
       key: cat.key,
+      className: "mrt-rating-row",
       style: {
         display: "flex",
         justifyContent: "space-between",
@@ -2499,7 +2589,7 @@ function RatingPage(_ref7) {
       marginBottom: 8
     },
     htmlFor: "mrt-rating-note"
-  }, "Note for the listing agent \xB7 Optional"), /*#__PURE__*/React.createElement("textarea", {
+  }, "Note for the listing agent \xB7 Optional"), draft.hadPhotos && /*#__PURE__*/React.createElement("p", {role: "status", style: {fontSize: 13, color: B.gray}}, "Your text draft was restored. Please reattach any photos before submitting."), /*#__PURE__*/React.createElement("textarea", {
     id: "mrt-rating-note",
     name: "ratingNote",
     maxLength: 500,
@@ -2747,6 +2837,7 @@ function RatingPage(_ref7) {
       fontSize: 13
     }
   }, LI("AlertTriangle", 13, {color:"var(--mrt-red)",marginRight:6}), submitError)), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-rating-actions",
     style: {
       position: "sticky",
       bottom: 0,
@@ -7206,7 +7297,7 @@ function TourDetailPage(_ref19) {
           raterName: extra && extra.raterName || ""
         },
         tempPhotoIds: extra && extra.tempPhotoIds || [],
-        requestId: mrtRequestId("rating")
+        requestId: extra && extra.requestId || mrtRequestId("rating")
       }, 30000);
       const aggregate = result && result.aggregate && result.aggregate.averages;
       onUpdateTour({
@@ -14551,7 +14642,7 @@ function ContactPage(_ref36) {
       flexShrink: 0
     }
   }, LI("Mail", 16)), /*#__PURE__*/React.createElement("span", {
-    style: { fontWeight: 600, fontSize: 14 }
+    style: { fontWeight: 600, fontSize: 14, minWidth: 0, overflowWrap: "anywhere" }
   }, "marketreadytours@gmail.com")), /*#__PURE__*/React.createElement("a", {
     href: "https://www.marketreadytours.com",
     target: "_blank",
@@ -14570,7 +14661,7 @@ function ContactPage(_ref36) {
       flexShrink: 0
     }
   }, LI("Home", 16)), /*#__PURE__*/React.createElement("span", {
-    style: { fontWeight: 600, fontSize: 14 }
+    style: { fontWeight: 600, fontSize: 14, minWidth: 0, overflowWrap: "anywhere" }
   }, "marketreadytours.com")))), sent ? /*#__PURE__*/React.createElement("div", {
     className: "mrt-card mrt-card--soft",
     style: { padding: "40px 24px", textAlign: "center" }
