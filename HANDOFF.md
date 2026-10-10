@@ -22,6 +22,18 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
 
+## 2026-10-10 — physical-phone follow-up: incorrect Re-Rate label
+
+Erik confirmed live phone checks 1-3 passed (landing Next tour, Go to app, property/map flow).
+He found Re-Rate in incognito. The listing card used public aggregate existence for both score
+badges and the personal action label. This was missed in the simulator audit. Action text/color
+now uses only the authenticated attendee's exact `mrt_ratings_private/<tour>/<listing>/<uid>/submittedAt`
+leaf; anonymous Firebase sessions work without an admin login. Listeners reset on auth/tour/list
+changes, release on unmount and ignore stale callbacks. Public aggregate badges remain shared.
+No rules, backend or email behavior change. Three regressions cover fresh incognito, own saved
+rating, account changes/read failures/cleanup. 132 tests and 13 static checks pass. Release
+verification pending below; no test notifications or production ratings.
+
 ## 2026-10-10 — iPhone-first mobile audit
 
 See `docs/MOBILE-AUDIT-2026-10-10.md` for the coverage matrix and limits. Compact iOS Safari

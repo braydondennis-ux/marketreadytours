@@ -103,3 +103,11 @@ the modal heading; a small follow-up lowers that notice below dialogs. No real s
 Follow-up `b8195fe` deployed, Pages `38079432905` and validation `38079432846` green.
 Cloudflare purged again and plain public HTML confirms final lower notice stacking.
 Live Safari calendar date selection opened the correct October 29 tour.
+
+## Physical-phone feedback after initial audit
+
+Erik confirmed steps 1-3 on his phone: landing Next tour, Go to app and property/map checks.
+Step 4 exposed a missed labeling defect: Re-Rate reflected any public rating rather than this
+attendee's own submission. Corrected using per-UID submittedAt subscriptions, with stale-listener
+cleanup and no broadened reads. Three regression tests added; total now 132 passing tests.
+Fresh incognito is a distinct anonymous Firebase attendee, not an admin sign-in requirement.

@@ -7230,6 +7230,36 @@ async function tourOrganizerEmail(tour, currentUser) {
   }
   return creator ? "" : SUPER_ADMIN_EMAIL;
 }
+// Public scores describe the group; the action label belongs to this attendee only.
+function mrtWatchOwnRatings(db, auth, tourId, listingIds, onChange) {
+  let stopped = false, generation = 0, listeners = [];
+  const clear = () => {
+    generation++;
+    listeners.forEach(([ref, handler]) => ref.off("value", handler));
+    listeners = [];
+  };
+  const unsubscribe = auth.onAuthStateChanged(user => {
+    clear();
+    if (stopped) return;
+    const current = generation;
+    const rated = {};
+    const publish = () => {
+      if (!stopped && current === generation) onChange({tourId, uid: user?.uid || "", rated: {...rated}});
+    };
+    publish();
+    if (!user) return;
+    listingIds.forEach(listingId => {
+      const ref = db.ref("mrt_ratings_private/" + tourId + "/" + listingId + "/" + user.uid + "/submittedAt");
+      const handler = snap => { rated[listingId] = snap.exists(); publish(); };
+      listeners.push([ref, handler]);
+      ref.on("value", handler, () => { rated[listingId] = false; publish(); });
+    });
+  });
+  return () => { stopped = true; clear(); unsubscribe(); };
+}
+function mrtHasOwnRating(state, tourId, listingId, uid) {
+  return !!uid && state.tourId === tourId && state.uid === uid && state.rated[listingId] === true;
+}
 function TourDetailPage(_ref19) {
   let {
     tour,
@@ -7240,6 +7270,12 @@ function TourDetailPage(_ref19) {
     isSuperAdmin,
     currentUser
   } = _ref19;
+  const [ownRatingState, setOwnRatingState] = useState({});
+  const ratingListingIds = JSON.stringify((tour.listings || []).map(listing => listing.id).sort());
+  useEffect(() => {
+    if (!_fb || !_fbAuth || !MRT_SECURE_BACKEND) return;
+    return mrtWatchOwnRatings(_fb, _fbAuth, tour.id, JSON.parse(ratingListingIds), setOwnRatingState);
+  }, [tour.id, ratingListingIds]);
   const [subpage, setSubpage] = useState("list");
   const [selected, setSelected] = useState(null);
   const [showInvite, setShowInvite] = useState(false);
@@ -9761,6 +9797,7 @@ function TourDetailPage(_ref19) {
     var _tour$favorites, _tour$ratings5, _tour$ratings6, _tour$notes;
     const isFav = ((_tour$favorites = tour.favorites) === null || _tour$favorites === void 0 ? void 0 : _tour$favorites[listing.id]) || false;
     const isRated = ((_tour$ratings5 = tour.ratings) === null || _tour$ratings5 === void 0 ? void 0 : _tour$ratings5[listing.id]) && Object.values(tour.ratings[listing.id]).some(v => v > 0);
+    const hasOwnRating = mrtHasOwnRating(ownRatingState, tour.id, listing.id, _fbAuth?.currentUser?.uid);
     const avg = avgRating((_tour$ratings6 = tour.ratings) === null || _tour$ratings6 === void 0 ? void 0 : _tour$ratings6[listing.id]);
     const note = ((_tour$notes = tour.notes) === null || _tour$notes === void 0 ? void 0 : _tour$notes[listing.id]) || "";
     return /*#__PURE__*/React.createElement("div", {
@@ -10042,7 +10079,7 @@ function TourDetailPage(_ref19) {
       },
       style: {
         flex: 1,
-        background: isRated ? "#1F7A4D" : B.navy,
+        background: hasOwnRating ? "#1F7A4D" : B.navy,
         color: "#fff",
         border: "none",
         borderRadius: 10,
@@ -10052,7 +10089,7 @@ function TourDetailPage(_ref19) {
         fontSize: 13,
         boxShadow: "0 3px 10px rgba(47,68,160,.25)"
       }
-    }, isRated ? /*#__PURE__*/React.createElement(React.Fragment, null, LI("RotateCcw", 14), " Re-Rate") : /*#__PURE__*/React.createElement(React.Fragment, null, LI("Star", 14), " Rate Home")))));
+    }, hasOwnRating ? /*#__PURE__*/React.createElement(React.Fragment, null, LI("RotateCcw", 14), " Re-Rate") : /*#__PURE__*/React.createElement(React.Fragment, null, LI("Star", 14), " Rate Home")))));
   }))));
 }
 /* ── SPONSORS PAGE ── */
