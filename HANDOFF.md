@@ -32,7 +32,11 @@ Safari evaluation reached the local DB and organizer summary. Chrome phone uploa
 Offline/reconnect/retry retained all scores, note and private photo. No agent emails or
 production test records. 129 tests, 13 static checks and 14 isolated preflight scenarios pass.
 Live Safari Next tour opened Sonoran Showcase directly. Physical-device limits remain in the
-report. Release verification will be appended after deployment. Mailgun remains deferred.
+report. Release `1812ecc` deployed: Pages `38079143171` and full CI `38079143138` green,
+including rules and complete emulator workflows. Cloudflare purged; plain `/app/` contained
+new draft/retry/offline code. Live Safari showed new Unlock layout, correct Phoenix route,
+and working landscape/portrait layout. Follow-up lowers offline notice below dialog headings.
+Mailgun remains deferred.
 
 ## 2026-10-10 — landing restoration and Mailgun deferral
 

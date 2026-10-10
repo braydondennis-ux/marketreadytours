@@ -57,6 +57,7 @@ not a physical-device guarantee.
 | Contact | 320px local form submitted and showed Message Sent; outbound mocked |
 | Sponsor / tour signup / list home | Phone forms opened, fields and primary actions reachable; signup required-field validation exercised; no live requests submitted |
 | Login/reset keyboard | Compact Safari showed primary buttons above software keyboard; no reset email sent |
+| Map/orientation | Live iPhone Safari route rendered Phoenix stops; landscape layout and return to portrait worked |
 | Landing Next tour | Live compact Safari tap opened Sonoran Showcase October 29 directly in app, without scrolling down the landing page |
 
 ## Automated checks
@@ -91,4 +92,12 @@ not a physical-device guarantee.
 
 ## Release
 
-Client release and post-deploy verification pending at time of initial report entry.
+Release `1812ecc` deployed. Pages run `38079143171` and full validation run `38079143138`
+both succeeded, including rules and complete emulator workflows (rating, intake, approval,
+manual/mock payment, campaigns, opt-out, refund and reminders). Cloudflare cache purge
+confirmed; plain `/app/` returned new draft/retry/offline code and the production App Check key.
+Live iPhone Safari reloaded the new client and showed the keyboard-safe Unlock action.
+Read-only map check rendered the seven numbered Phoenix stops and route. Landscape tour
+layout and return to portrait worked. Final live check also exposed the offline notice above
+the modal heading; a small follow-up lowers that notice below dialogs. No real submissions.
+Follow-up release verification is recorded in HANDOFF.md.
