@@ -36,7 +36,15 @@ Pre-release checks: 123 tests/13 static checks passed, website-mode build passed
 Next tour opened live `app/#/tour/tour-1791395647503-1-pnn6e` (Sonoran Showcase, October 29),
 and header Go to app opened live `app/#/`. Preview uses public data and production app links;
 no production content modified, no messages sent. This is not physical iPhone/Safari validation.
-Production CI/Pages and root/www cache verification must finish before calling the release done.
+Release `e83443f` is live. Pages run `38075316489` and full validation run `38075316469`
+both succeeded, including security rules and emulator workflow tests. Cloudflare Purge Everything
+was confirmed in the signed-in dashboard. Plain root and www (iPhone user agent) return the
+new landing HTML; `/app/` returns the real app with the production App Check key.
+Live Chrome phone emulation verified actual taps on Next tour, hero Go to app, and sticky
+header Go to app after normal page scrolling. Desktop screenshot/layout and actual Next tour
+click also passed. Both Next tour clicks opened Sonoran Showcase directly. The signed-in test
+browser used `?home` to bypass the existing staff auto-redirect; ordinary root/www HTML were
+separately verified over HTTP. No physical iPhone was available, so do not claim device testing.
 
 Erik deferred Mailgun work to a future to-do. Incoming root-domain MX remains Mailgun and
 Braydon owns that account. He must add and verify exact-recipient forwarding from

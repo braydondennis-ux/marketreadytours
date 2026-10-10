@@ -27,13 +27,14 @@ is saved in `patches/branded-email-identity.pending.patch`, not active function 
 Apply it only after receipt is verified, rerun checks, deploy the existing affected functions
 by name, and verify an Erik-only message. No email configuration was changed or deployed.
 
-**Landing page return, October 10:** restoration authorized. `MRT_LANDING: "1"` restores
+**Landing page return, October 10, DONE:** release `e83443f` deployed; CI and Pages green. `MRT_LANDING: "1"` restores
 marketing on mobile and desktop, app stays at `/app/`. Normal scrolling, prominent **Go to app**
 buttons, and **Next tour** opens the specific app tour. Real hrefs work before JavaScript loads;
 empty/failed tour feed falls back to the app. 123 tests/13 static checks passed. Chrome iPhone
 16 emulation (393 x 852) verified visible CTAs and actual taps to the Sonoran Showcase tour
-and app home. This is not physical iPhone/Safari testing. Verify live root/www and cache after
-Pages deploy. See `HANDOFF.md` for release evidence.
+and app home. This is not physical iPhone/Safari testing. Live root/www and `/app/` verified after Cloudflare cache purge. Desktop and mobile-emulated
+Next tour clicks open Sonoran Showcase; both mobile app buttons and normal scrolling verified.
+See `HANDOFF.md` for release evidence.
 
 **October 9 audit complete:** seven-stop version 18 tour verified. Admin summary permission,
 favorites reload, full PDF reports, private-note saves and organizer route copies repaired.
