@@ -100,4 +100,6 @@ Live iPhone Safari reloaded the new client and showed the keyboard-safe Unlock a
 Read-only map check rendered the seven numbered Phoenix stops and route. Landscape tour
 layout and return to portrait worked. Final live check also exposed the offline notice above
 the modal heading; a small follow-up lowers that notice below dialogs. No real submissions.
-Follow-up release verification is recorded in HANDOFF.md.
+Follow-up `b8195fe` deployed, Pages `38079432905` and validation `38079432846` green.
+Cloudflare purged again and plain public HTML confirms final lower notice stacking.
+Live Safari calendar date selection opened the correct October 29 tour.

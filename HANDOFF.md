@@ -36,6 +36,9 @@ report. Release `1812ecc` deployed: Pages `38079143171` and full CI `38079143138
 including rules and complete emulator workflows. Cloudflare purged; plain `/app/` contained
 new draft/retry/offline code. Live Safari showed new Unlock layout, correct Phoenix route,
 and working landscape/portrait layout. Follow-up lowers offline notice below dialog headings.
+Final follow-up `b8195fe` is live: Pages `38079432905` and validation `38079432846` green.
+Cloudflare purge confirmed again; plain app HTML verifies offline notice z-index 1 and draft
+recovery. Live Safari calendar date selection also opened the correct Sonoran Showcase tour.
 Mailgun remains deferred.
 
 ## 2026-10-10 — landing restoration and Mailgun deferral
