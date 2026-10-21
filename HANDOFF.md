@@ -50,7 +50,16 @@ passes. Chrome against isolated emulators submitted both intents, verified Listi
 Attendance, opened the prefilled recovery form as a regular admin, typed an address without
 Google selection, and saved it. Read-back verified exactly one saved listing in both private and
 public tour projections. Email was mocked; no production test records or agent notifications.
-Production deployment and final live verification are pending at this entry's creation.
+Release `653c868` is live. Pages `39678640392` and full validation `39678640591`
+passed, including security rules and emulator workflows. The ordinary `/app/` response contains
+the repair; the edge cache expired naturally, so no Cloudflare sign-in or purge was needed.
+Live Chrome at 390px opened Nicole's existing hash-query invite format, correctly selected
+Sonoran Showcase (October 29) after data loaded, and showed listing intent/property fields.
+Local browser submissions were verified in the correct collections and recovery persisted once
+in both tour projections. Phone-width layout was inspected; no physical iPhone was tested.
+Nicole must refresh the app, open Requests → Attendance → Add a listing and enter each actual
+property; existing requests were intentionally preserved. One agent has two attendance requests,
+so organizers should avoid entering the same property from both records.
 
 ## 2026-10-10 — physical-phone follow-up: incorrect Re-Rate label
 
