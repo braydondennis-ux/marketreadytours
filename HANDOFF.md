@@ -1,6 +1,6 @@
 # MarketReady Tours — Engineering Handoff
 
-_Updated 2026-10-10. Read this entire file before acting._
+_Updated 2026-10-21. Read this entire file before acting._
 
 **Current state.** The refresh is **LIVE** (cutover 2026-08-10) and edge-cached. Since
 2026-10-10 **the landing-page configuration is restored at `/` for mobile and desktop; the app
@@ -21,6 +21,36 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 **The app is genuinely in use.** The 2026-09-02 North Phoenix tour was built in production over
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
+
+## 2026-10-21 — Nicole signup and manual-listing repair
+
+Nicole reported agents landing in Attendance and being unable to manually add their listings.
+Read-only production snapshot confirmed six pending attendance submissions for Sonoran Showcase
+(October 29), representing five distinct names (one repeated submission), and two saved listings.
+No requests were moved, deleted or auto-approved. The screenshot was on Contact: its Pending 6
+badge incorrectly counted attendance requests, even though it showed one contact message.
+
+Confirmed client defects: Add Listing was disabled unless Google Places supplied a selection,
+despite supporting typed addresses; emailed `#/request/<id>?cb=...` links included query parameters
+in the tour ID; initial tour preselection could be lost while public data loaded; generic Tour
+Sign Up offered only attendance. The editor also closed and announced success before saveTour
+resolved, hiding save errors.
+
+Repair: manual addresses enable Add Listing; save is awaited with retained fields/errors and a
+repeat-click guard; route parsing separates hash parameters and supports old invites; tour
+preselection recovers after data loads; signup explicitly distinguishes Include my listing from
+Attend without a listing and names missing fields. Attendance has an Add a listing form that
+prefills contact details, lets the organizer select a tour and supply the property, and saves
+through the existing version-checked saveTour callable. A stable ID prevents adding the same
+attendance request twice to the same tour. Original attendance records remain available.
+Contact no longer displays unrelated attendance status/count controls.
+
+Validation before release: 140 tests and 13 static checks pass; full local emulator workflow
+passes. Chrome against isolated emulators submitted both intents, verified Listing reviews versus
+Attendance, opened the prefilled recovery form as a regular admin, typed an address without
+Google selection, and saved it. Read-back verified exactly one saved listing in both private and
+public tour projections. Email was mocked; no production test records or agent notifications.
+Production deployment and final live verification are pending at this entry's creation.
 
 ## 2026-10-10 — physical-phone follow-up: incorrect Re-Rate label
 

@@ -5020,9 +5020,10 @@ function AddListingForm(_ref12) {
   let {
     tourColor,
     onAdd,
-    onCancel
+    onCancel,
+    initialFields = {}
   } = _ref12;
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialFields.address || "");
   const [suggestions, setSugg] = useState([]);
   const [selected, setSelected] = useState(null);
   const [fields, setFields] = useState({
@@ -5036,8 +5037,13 @@ function AddListingForm(_ref12) {
     agent: "",
     agentEmail: "",
     agentPhone: "",
-    photos: []
+    photos: [],
+    ...initialFields
   });
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const listingIdRef = useRef(null);
+  if (!listingIdRef.current) listingIdRef.current = initialFields.id || uid("listing");
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const [sessionToken, setToken] = useState(null);
@@ -5146,49 +5152,68 @@ function AddListingForm(_ref12) {
     });
   };
   const handleAdd = async () => {
+    if (savingRef.current) return;
     if (!fields.address || fields.address.trim().length < 5) {
       setStatus("⚠️ Please enter a complete property address.");
       return;
     }
-    // Upload photos to Firebase Storage first
-    let finalPhotos = fields.photos || [];
-    if (finalPhotos.length > 0 && _fbStorage) {
-      setUploading(true);
-      const listingId = uid("listing-photos");
-      const uploaded = [];
-      for (let i = 0; i < finalPhotos.length; i++) {
-        setUploadProgress("Uploading photo ".concat(i + 1, " of ").concat(finalPhotos.length, "..."));
-        if (finalPhotos[i].startsWith("https://")) {
-          uploaded.push(finalPhotos[i]);
-        } else {
-          try {
-            const res = await fetchWithTimeout(finalPhotos[i], {}, 15000);
-            const blob = await res.blob();
-            const file = new File([blob], "photo.jpg", {
-              type: "image/jpeg"
-            });
-            const url = await compressAndUpload(file, listingId);
-            if (url) uploaded.push(url);
-          } catch (e) {
-            console.warn("Photo conversion failed, skipping:", e);
-            // Still include as base64 if upload fails - better than losing the photo
+    if (fields.agentEmail && !isValidEmail(fields.agentEmail.trim())) {
+      setStatus("Please enter a valid agent email address, or leave it blank.");
+      return;
+    }
+    savingRef.current = true;
+    setSaving(true);
+    setStatus("");
+    try {
+      // Upload photos to Firebase Storage first
+      let finalPhotos = fields.photos || [];
+      if (finalPhotos.length > 0 && _fbStorage) {
+        setUploading(true);
+        const listingId = uid("listing-photos");
+        const uploaded = [];
+        for (let i = 0; i < finalPhotos.length; i++) {
+          setUploadProgress("Uploading photo ".concat(i + 1, " of ").concat(finalPhotos.length, "..."));
+          if (finalPhotos[i].startsWith("https://")) {
             uploaded.push(finalPhotos[i]);
+          } else {
+            try {
+              const res = await fetchWithTimeout(finalPhotos[i], {}, 15000);
+              const blob = await res.blob();
+              const file = new File([blob], "photo.jpg", {
+                type: "image/jpeg"
+              });
+              const url = await compressAndUpload(file, listingId);
+              if (url) uploaded.push(url);
+            } catch (e) {
+              console.warn("Photo conversion failed, skipping:", e);
+              // Still include as base64 if upload fails - better than losing the photo
+              uploaded.push(finalPhotos[i]);
+            }
           }
         }
+        finalPhotos = uploaded.filter(Boolean);
+        setUploading(false);
+        setUploadProgress("");
       }
-      finalPhotos = uploaded.filter(Boolean);
+      await onAdd({
+        ...fields,
+        id: listingIdRef.current,
+        address: fields.address.trim(),
+        agentEmail: (fields.agentEmail || "").trim().toLowerCase(),
+        beds: Number(fields.beds) || 0,
+        baths: Number(fields.baths) || 0,
+        sqft: Number(String(fields.sqft).replace(/[^0-9]/g, "")) || 0,
+        dom: Number(fields.dom) || 0,
+        price: Number(String(fields.price).replace(/[^0-9]/g, "")) || 0,
+        photos: finalPhotos.length ? finalPhotos : ["https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop"]
+      });
+    } catch (error) {
+      setStatus("Could not save the listing: " + (error.message || "Please try again. Your details are still here."));
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
       setUploading(false);
-      setUploadProgress("");
     }
-    onAdd({
-      ...fields,
-      beds: Number(fields.beds) || 0,
-      baths: Number(fields.baths) || 0,
-      sqft: Number(String(fields.sqft).replace(/[^0-9]/g, "")) || 0,
-      dom: Number(fields.dom) || 0,
-      price: Number(String(fields.price).replace(/[^0-9]/g, "")) || 0,
-      photos: finalPhotos.length ? finalPhotos : ["https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop"]
-    });
   };
   const clearSelection = () => {
     setSelected(null);
@@ -5390,7 +5415,8 @@ function AddListingForm(_ref12) {
         color: "var(--mrt-muted)"
       }
     }, (_s$structured_formatt2 = s.structured_formatting) === null || _s$structured_formatt2 === void 0 ? void 0 : _s$structured_formatt2.secondary_text)));
-  }))), status && /*#__PURE__*/React.createElement("div", {
+  }))), /*#__PURE__*/React.createElement("p", {style: {fontSize: 12, color: "var(--mrt-muted)", margin: "8px 0"}}, "Choose an address suggestion or enter the complete address manually."), status && /*#__PURE__*/React.createElement("div", {
+    role: "status",
     style: {
       background: status.startsWith("✅") ? "var(--mrt-success-bg)" : status.startsWith("❌") ? "#FEF2F2" : "var(--mrt-gold-chip-bg)",
       border: "1px solid ".concat(status.startsWith("✅") ? "var(--mrt-success-border)" : status.startsWith("❌") ? "#FECACA" : "var(--mrt-gold-light)"),
@@ -5647,20 +5673,21 @@ function AddListingForm(_ref12) {
     }
   }, /*#__PURE__*/React.createElement("button", {
     onClick: onCancel,
+    disabled: saving,
     className: "mrt-btn mrt-btn--ghost",
     style: {
       flex: 1
     }
   }, "Cancel"), /*#__PURE__*/React.createElement("button", {
     onClick: handleAdd,
-    disabled: !selected || loading || uploading,
+    disabled: !fields.address || fields.address.trim().length < 5 || loading || uploading || saving,
     className: "mrt-btn mrt-btn--navy",
     style: {
       flex: 2,
-      opacity: !selected || loading || uploading ? .6 : 1,
-      cursor: !selected || loading || uploading ? "default" : "pointer"
+      opacity: !fields.address || fields.address.trim().length < 5 || loading || uploading || saving ? .6 : 1,
+      cursor: loading || uploading || saving ? "wait" : "pointer"
     }
-  }, uploading ? React.createElement("span",{style:{display:"flex",alignItems:"center",gap:6}},LI("Loader2",14),"Uploading...") : loading ? "Loading..." : React.createElement("span",{style:{display:"flex",alignItems:"center",gap:6}},LI("Plus",14),"Add Listing"))));
+  }, uploading ? React.createElement("span",{style:{display:"flex",alignItems:"center",gap:6}},LI("Loader2",14),"Uploading...") : saving ? "Saving..." : loading ? "Loading..." : React.createElement("span",{style:{display:"flex",alignItems:"center",gap:6}},LI("Plus",14),"Add Listing"))));
 }
 /* ── TOUR DETAIL PAGE ── */
 /* ── INSTANTLY.AI API HELPERS ── */
@@ -7375,19 +7402,20 @@ function TourDetailPage(_ref19) {
       listings: sorted
     }); // auto-save order change
   };
-  const addListing = listingData => {
-    if (adminListings.length >= 8) return;
+  const addListing = async listingData => {
+    if (adminListings.some(listing => listing.id === listingData.id)) return;
+    if (adminListings.length >= (Number(tour.maxListings) || 8)) throw new Error("This tour is full. Remove a listing before adding another.");
     const item = {
       ...listingData,
-      id: uid("listing"),
+      id: listingData.id || uid("listing"),
       order: adminListings.length + 1
     };
     const updated = [...adminListings, item];
-    setAdminListings(updated);
-    onUpdateTour({
+    const saved = await onUpdateTour({
       ...tour,
       listings: updated
     }); // auto-save immediately
+    setAdminListings(saved && saved.listings || updated);
     setShowAddForm(false);
     showToast("✅ Listing added and saved", "success", 2500);
   };
@@ -11093,7 +11121,7 @@ function ToursDashboard(_ref26) {
   // The hash is the source of truth for the open tour, so browser Back/Forward works
   React.useEffect(() => {
     const onHash = () => {
-      const h = window.location.hash.slice(2) || "";
+      const h = mrtReadRoute(window.location).path;
       setActiveTourId(h.startsWith("tour/") ? h.slice(5) : null);
     };
     window.addEventListener("hashchange", onHash);
@@ -13003,6 +13031,14 @@ function MrtIconField(_ref) {
     style: Object.assign({ paddingLeft: 38 }, inputStyle)
   })));
 }
+function mrtReadRoute(location) {
+  const hash = (location.hash || "").replace(/^#\/?/, "");
+  const question = hash.indexOf("?");
+  const path = question < 0 ? hash : hash.slice(0, question);
+  const params = new URLSearchParams(location.search || "");
+  if (question >= 0) new URLSearchParams(hash.slice(question + 1)).forEach((value, key) => params.set(key, value));
+  return {path, params};
+}
 function RequestListingPage(_ref31) {
   let {
     tours,
@@ -13011,15 +13047,17 @@ function RequestListingPage(_ref31) {
     tourSignUp,
     preselectedTourId
   } = _ref31;
-  // Parse URL params for pre-fill from campaign email links
-  const urlParams = new URLSearchParams(window.location.search);
+  const [signupIntent, setSignupIntent] = useState(tourSignUp ? "" : "listing");
+  const isAttendance = signupIntent === "attend";
+  // Support existing invite links with parameters before or after the hash.
+  const urlParams = mrtReadRoute(window.location).params;
   const paramEmail = urlParams.get("email") || "";
   const paramPhone = urlParams.get("phone") || "";
-  const paramAddress = decodeURIComponent(urlParams.get("address") || "");
+  const paramAddress = (urlParams.get("address") || "");
   // Sub-admin invite link encodes the admin's email as ?cb= so requests route to them
-  const hashCreatedBy = decodeURIComponent(urlParams.get("cb") || "");
+  const hashCreatedBy = (urlParams.get("cb") || "");
   const upcomingTours = tours.filter(tour => tour.date && tour.date >= TODAY);
-  const initialTourId = upcomingTours.some(tour => tour.id === preselectedTourId) ? preselectedTourId : "";
+  const initialTourId = upcomingTours.some(tour => tour.id === preselectedTourId) ? preselectedTourId : upcomingTours.length === 1 ? upcomingTours[0].id : "";
   const [fields, setFields] = useState({
     agentName: "",
     agentEmail: paramEmail,
@@ -13035,6 +13073,12 @@ function RequestListingPage(_ref31) {
     price: "",
     notes: ""
   });
+  useEffect(() => {
+    const available = tours.filter(tour => tour.date && tour.date >= TODAY);
+    const preferred = available.find(tour => tour.id === preselectedTourId);
+    const suggested = preferred || (available.length === 1 ? available[0] : null);
+    if (suggested) setFields(current => current.tourId ? current : {...current, tourId: suggested.id});
+  }, [preselectedTourId, tours]);
   const [addrConfirmed, setAddrConfirmed] = useState(!!paramAddress);
   const [query, setQuery] = useState(paramAddress || "");
   const [sugg, setSugg] = useState([]);
@@ -13149,11 +13193,20 @@ function RequestListingPage(_ref31) {
     }
   };
   const handleSubmit = async () => {
-    if (!fields.agentName || !fields.agentEmail || !fields.tourId || !tourSignUp && !fields.address) {
-      setError("Please fill in all required fields.");
+    if (!signupIntent) {
+      setError("Choose Include my listing or Attend without a listing above.");
       return;
     }
-    if (!isValidEmail(fields.agentEmail)) {
+    const missing = [];
+    if (!fields.agentName.trim()) missing.push("Full Name");
+    if (!fields.agentEmail.trim()) missing.push("Email Address");
+    if (!upcomingTours.some(tour => tour.id === fields.tourId)) missing.push("Select a Tour");
+    if (!isAttendance && !fields.address.trim()) missing.push("Property Address");
+    if (missing.length) {
+      setError("Please complete: " + missing.join(", ") + ".");
+      return;
+    }
+    if (!isValidEmail(fields.agentEmail.trim())) {
       setError("Please enter a valid email address.");
       return;
     }
@@ -13188,12 +13241,12 @@ function RequestListingPage(_ref31) {
       photos: MRT_SECURE_BACKEND ? [] : photos.length ? photos : ["https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop"],
       tempPhotoIds: MRT_SECURE_BACKEND ? tempPhotoIds : [],
       order: 0,
-      type: tourSignUp ? "tour-signup" : "listing-request",
+      type: isAttendance ? "tour-signup" : "listing-request",
       createdBy: hashCreatedBy || (tour ? tour.createdBy || "" : "")
     };
     try {
       if (MRT_SECURE_BACKEND) {
-        const securePayload = tourSignUp ? {
+        const securePayload = isAttendance ? {
           name: requestData.agentName,
           email: requestData.agentEmail,
           phone: requestData.agentPhone,
@@ -13205,7 +13258,7 @@ function RequestListingPage(_ref31) {
           type: "tour-signup"
         } : requestData;
         const result = await mrtCall("submitIntake", {
-          type: tourSignUp ? "tour" : "listing",
+          type: isAttendance ? "tour" : "listing",
           payload: securePayload,
           requestId: mrtRequestId("listing-request")
         });
@@ -13227,7 +13280,7 @@ function RequestListingPage(_ref31) {
         body: JSON.stringify({
           email: "marketreadytours@gmail.com",
           _replyto: fields.agentEmail,
-          _subject: tourSignUp ? "New Tour Sign Up: ".concat(safeName) : "New Listing Request: ".concat(fields.address),
+          _subject: isAttendance ? "New Tour Sign Up: ".concat(safeName) : "New Listing Request: ".concat(fields.address),
           message: "New listing request submitted!\n\nAgent: ".concat(safeName, "\nEmail: ").concat(fields.agentEmail, "\nPhone: ").concat(sanitize(fields.agentPhone) || "Not provided", "\nBrokerage: ").concat(safeBrokerage || "Not provided", "\n\nProperty: ").concat(fields.address, ", ").concat(fields.city, "\nTour: ").concat(requestData.tourName, "\nBeds: ").concat(fields.beds, " | Baths: ").concat(fields.baths, " | Sqft: ").concat(fields.sqft, "\nPrice: $").concat(Number(String(fields.price).replace(/[^0-9]/g, "")).toLocaleString(), "\nDOM: ").concat(fields.dom, "\nNotes: ").concat(safeNotes || "None", "\n\nLog in to approve or deny this request.")
         })
       }, 10000);
@@ -13235,13 +13288,13 @@ function RequestListingPage(_ref31) {
       const notifyTour = tours.find(t => t.id === fields.tourId);
       const subAdminEmail = hashCreatedBy || (notifyTour ? notifyTour.createdBy : "");
       if (subAdminEmail && subAdminEmail !== "marketreadytours@gmail.com") {
-        const notifyMsg = tourSignUp ? "New tour sign-up for ".concat(requestData.tourName, "!\n\nName: ").concat(fields.agentName, "\nEmail: ").concat(fields.agentEmail, "\nPhone: ").concat(fields.agentPhone || "Not provided", "\nBrokerage: ").concat(fields.brokerageName || "Not provided", "\n\nLog in to MarketReady Tours to review this request.") : "New listing request for ".concat(requestData.tourName, "!\n\nAgent: ").concat(fields.agentName, "\nEmail: ").concat(fields.agentEmail, "\nPhone: ").concat(fields.agentPhone || "Not provided", "\nProperty: ").concat(fields.address, ", ").concat(fields.city, "\nBeds: ").concat(fields.beds, " | Baths: ").concat(fields.baths, " | Sqft: ").concat(fields.sqft, "\nPrice: $").concat(Number(String(fields.price).replace(/[^0-9]/g, "")).toLocaleString(), "\n\nLog in to MarketReady Tours to approve or deny this request.");
-        sendCFEmail(subAdminEmail, tourSignUp ? "New Tour Sign Up — ".concat(requestData.tourName) : "New Listing Request — ".concat(fields.address), notifyMsg).catch(() => {});
+        const notifyMsg = isAttendance ? "New tour sign-up for ".concat(requestData.tourName, "!\n\nName: ").concat(fields.agentName, "\nEmail: ").concat(fields.agentEmail, "\nPhone: ").concat(fields.agentPhone || "Not provided", "\nBrokerage: ").concat(fields.brokerageName || "Not provided", "\n\nLog in to MarketReady Tours to review this request.") : "New listing request for ".concat(requestData.tourName, "!\n\nAgent: ").concat(fields.agentName, "\nEmail: ").concat(fields.agentEmail, "\nPhone: ").concat(fields.agentPhone || "Not provided", "\nProperty: ").concat(fields.address, ", ").concat(fields.city, "\nBeds: ").concat(fields.beds, " | Baths: ").concat(fields.baths, " | Sqft: ").concat(fields.sqft, "\nPrice: $").concat(Number(String(fields.price).replace(/[^0-9]/g, "")).toLocaleString(), "\n\nLog in to MarketReady Tours to approve or deny this request.");
+        sendCFEmail(subAdminEmail, isAttendance ? "New Tour Sign Up — ".concat(requestData.tourName) : "New Listing Request — ".concat(fields.address), notifyMsg).catch(() => {});
       }
-      const confirmationMessage = tourSignUp
+      const confirmationMessage = isAttendance
         ? "Hi ".concat(fields.agentName, ",\n\nThank you for signing up to attend the ").concat(requestData.tourName, " tour.\n\nWe've received your sign up and will be in touch shortly to confirm your spot.\n\nIf you have any questions, reply to marketreadytours@gmail.com.\n\n— MarketReady Tours\nmarketreadytours.com")
         : "Hi ".concat(fields.agentName, ",\n\nThank you for submitting your listing at ").concat(fields.address, "!\n\nWe've received your request for the ").concat(requestData.tourName, " tour and will review it shortly. You'll receive an email letting you know whether your listing has been approved or denied.\n\nIf you have any questions, reply to marketreadytours@gmail.com.\n\n— MarketReady Tours\nmarketreadytours.com");
-      await sendCFEmail(fields.agentEmail, tourSignUp ? "Tour Sign Up Confirmation — MarketReady Tours" : "We received your listing request — MarketReady Tours", confirmationMessage);
+      await sendCFEmail(fields.agentEmail, isAttendance ? "Tour Sign Up Confirmation — MarketReady Tours" : "We received your listing request — MarketReady Tours", confirmationMessage);
       // Write directly to Firebase REST API (works without auth for public submissions)
       try {
         const reqKey = requestData.id.replace(/[.#$[\]]/g, "_");
@@ -13252,7 +13305,7 @@ function RequestListingPage(_ref31) {
         });
       } catch(e) { /* fallback to onSubmit state update */ }
       onSubmit(requestData);
-      sendSMS(tourSignUp ? "New Tour Sign Up: ".concat(fields.agentName, " for ").concat(requestData.tourName) : "New Listing: ".concat(fields.address, " by ").concat(fields.agentName, " for ").concat(requestData.tourName));
+      sendSMS(isAttendance ? "New Tour Sign Up: ".concat(fields.agentName, " for ").concat(requestData.tourName) : "New Listing: ".concat(fields.address, " by ").concat(fields.agentName, " for ").concat(requestData.tourName));
       setDone(true);
     } catch (e) {
       setError("Submission failed. Please try again.");
@@ -13299,14 +13352,14 @@ function RequestListingPage(_ref31) {
       fontSize: 24,
       margin: "0 0 12px"
     }
-  }, tourSignUp ? "Sign Up Submitted!" : "Request Submitted!"), /*#__PURE__*/React.createElement("p", {
+  }, isAttendance ? "Sign Up Submitted!" : "Request Submitted!"), /*#__PURE__*/React.createElement("p", {
     style: {
       color: "var(--mrt-muted)",
       fontSize: 15,
       lineHeight: 1.6,
       marginBottom: 20
     }
-  }, "Thanks ", fields.agentName, "! ", tourSignUp ? "We've received your tour sign up and will be in touch shortly to confirm your spot." : "We've received your listing request and will be in touch shortly with an approval or denial."), /*#__PURE__*/React.createElement("p", {
+  }, "Thanks ", fields.agentName, "! ", isAttendance ? "We've received your tour sign up and will be in touch shortly to confirm your spot." : "We've received your listing request and will be in touch shortly with an approval or denial."), /*#__PURE__*/React.createElement("p", {
     style: {
       color: "var(--mrt-muted)",
       fontSize: 13,
@@ -13327,9 +13380,9 @@ function RequestListingPage(_ref31) {
     }
   }, /*#__PURE__*/React.createElement(PublicMasthead, {
     onBack: onBack,
-    eyebrow: tourSignUp ? "Tour Sign Up" : "List A Home",
-    headline: tourSignUp ? "Reserve Your Spot on a Tour" : "Feature Your Listing on a Tour",
-    sub: tourSignUp ? "Join fellow agents previewing upcoming inventory. Attendance is reserved for licensed agents and registered sponsors." : "Submit your listing for an upcoming MarketReady tour. Spots are limited to 8 homes per tour."
+    eyebrow: "Tour Sign Up",
+    headline: !signupIntent ? "How would you like to join?" : isAttendance ? "Attend a Tour" : "Feature Your Listing on a Tour",
+    sub: !signupIntent ? "Choose whether to include a property or attend without a listing." : isAttendance ? "Join fellow agents previewing upcoming inventory. Attendance is reserved for licensed agents and registered sponsors." : "Submit your listing for an upcoming MarketReady tour. Spots are limited to 8 homes per tour."
   }), /*#__PURE__*/React.createElement("div", {
     className: "mrt-col",
     style: {
@@ -13338,6 +13391,20 @@ function RequestListingPage(_ref31) {
       padding: "20px 20px 0"
     }
   }, /*#__PURE__*/React.createElement("div", {
+    className: "mrt-card mrt-card--soft",
+    style: {padding: 20, marginBottom: 14}
+  }, /*#__PURE__*/React.createElement("div", {className: "mrt-eyebrow", style: {marginBottom: 12}}, "I want to..."),
+  /*#__PURE__*/React.createElement("div", {style: {display: "flex", flexWrap: "wrap", gap: 10}},
+    [["listing", "Include my listing"], ["attend", "Attend without a listing"]].map(([value, label]) =>
+      /*#__PURE__*/React.createElement("button", {
+        key: value, type: "button", "aria-pressed": signupIntent === value,
+        className: "mrt-btn " + (signupIntent === value ? "mrt-btn--navy" : "mrt-btn--ghost"),
+        style: {flex: "1 1 220px", minHeight: 44},
+        onClick: () => {setSignupIntent(value); setError("");}
+      }, label))),
+    /*#__PURE__*/React.createElement("p", {style: {fontSize: 13, color: "var(--mrt-muted)", marginBottom: 0}},
+      "Include my listing sends a property for the organizer to review. Attend without a listing reserves attendance only.")),
+  /*#__PURE__*/React.createElement("div", {
     className: "mrt-card",
     style: {
       padding: "14px 16px",
@@ -13348,9 +13415,9 @@ function RequestListingPage(_ref31) {
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: { color: "var(--mrt-gold-deep)", flexShrink: 0, marginTop: 1 }
-  }, LI(tourSignUp ? "Calendar" : "KeyRound", 16)), /*#__PURE__*/React.createElement("span", {
+  }, LI(isAttendance ? "Calendar" : "KeyRound", 16)), /*#__PURE__*/React.createElement("span", {
     style: { fontSize: 13, color: "var(--mrt-muted)", lineHeight: 1.6 }
-  }, tourSignUp ? /*#__PURE__*/React.createElement(React.Fragment, null, "Sign up to attend one of our upcoming home tours! ", /*#__PURE__*/React.createElement("strong", {
+  }, isAttendance ? /*#__PURE__*/React.createElement(React.Fragment, null, "Sign up to attend one of our upcoming home tours! ", /*#__PURE__*/React.createElement("strong", {
     style: { color: "var(--mrt-ink)" }
   }, "Attendance is reserved for licensed real estate agents — all other attendees must be registered as a paid sponsor."), " Our team will confirm your spot within 24–48 hours.") : /*#__PURE__*/React.createElement(React.Fragment, null, "Submit your listing to be featured on an upcoming home tour. Spots are limited to 8 homes per tour and filled on a first-come, first-served basis — submit ASAP to secure your slot! Our team will review and respond within 24–48 hours."))), /*#__PURE__*/React.createElement("div", {
     className: "mrt-card mrt-card--soft",
@@ -13396,6 +13463,7 @@ function RequestListingPage(_ref31) {
   }, upcomingTours.map(t => /*#__PURE__*/React.createElement("button", {
     key: t.id,
     type: "button",
+    "aria-pressed": fields.tourId === t.id,
     onClick: () => setFields(f => ({
       ...f,
       tourId: t.id
@@ -13417,7 +13485,7 @@ function RequestListingPage(_ref31) {
     style: { fontWeight: 700, fontSize: 13 }
   }, t.name), /*#__PURE__*/React.createElement("span", {
     style: { fontSize: 11, fontWeight: 500, opacity: fields.tourId === t.id ? .85 : .65 }
-  }, t.date, " · ", t.time))))), !tourSignUp && /*#__PURE__*/React.createElement("div", {
+  }, t.date, " · ", t.time))))), signupIntent === "listing" && /*#__PURE__*/React.createElement("div", {
     className: "mrt-card mrt-card--soft",
     style: {
       padding: 20,
@@ -13571,7 +13639,7 @@ function RequestListingPage(_ref31) {
     })),
     rows: 3,
     style: { resize: "vertical" }
-  })), !tourSignUp && /*#__PURE__*/React.createElement("div", {
+  })), signupIntent === "listing" && /*#__PURE__*/React.createElement("div", {
     className: "mrt-card mrt-card--soft",
     style: {
       padding: 20,
@@ -13684,7 +13752,7 @@ function RequestListingPage(_ref31) {
       borderRadius: 4,
       padding: "2px 6px"
     }
-  }, "COVER"))))), tourSignUp && /*#__PURE__*/React.createElement("div", {
+  }, "COVER"))))), isAttendance && /*#__PURE__*/React.createElement("div", {
     className: "mrt-card mrt-card--soft",
     style: {
       padding: 20,
@@ -13705,6 +13773,7 @@ function RequestListingPage(_ref31) {
     rows: 3,
     style: { resize: "vertical" }
   })), error && /*#__PURE__*/React.createElement("div", {
+    role: "alert",
     style: {
       display: "flex",
       alignItems: "center",
@@ -13722,7 +13791,7 @@ function RequestListingPage(_ref31) {
       opacity: submitting ? .6 : 1,
       cursor: submitting ? "default" : "pointer"
     }
-  }, submitting ? "Submitting…" : /*#__PURE__*/React.createElement(React.Fragment, null, LI("Send", 16), tourSignUp ? "Sign Up for Tour" : "Submit Listing Request"))));
+  }, submitting ? "Submitting…" : /*#__PURE__*/React.createElement(React.Fragment, null, LI("Send", 16), isAttendance ? "Sign Up for Tour" : "Submit Listing Request"))));
 }
 /* ── LISTING REQUESTS ADMIN PAGE ── */
 /* Generate Google Calendar URL for a tour */
@@ -13744,6 +13813,38 @@ function makeGoogleCalUrl(tourName, tourDate, tourTime, tourEmoji, address) {
   const location = encodeURIComponent(address || "");
   return "https://calendar.google.com/calendar/render?action=TEMPLATE&text=".concat(title, "&dates=").concat(fmt(dt), "/").concat(fmt(end), "&details=").concat(details, "&location=").concat(location);
 }
+function AttendanceListingForm({request, tours, onSaveTour, onDone, onCancel}) {
+  const [tourId, setTourId] = useState(request.tourId || "");
+  const available = tours.filter(tour => tour.date && tour.date >= TODAY);
+  const target = available.find(tour => tour.id === tourId);
+  const listingId = "listing-attendance-" + request.id;
+  const existing = target && (target.listings || []).find(listing => listing.id === listingId);
+  return React.createElement("div", {style: {marginTop: 16}},
+    React.createElement("label", {htmlFor: "attendance-tour-" + request.id}, "Tour for this property"),
+    React.createElement("select", {
+      id: "attendance-tour-" + request.id, className: "mrt-field", value: tourId,
+      style: {margin: "8px 0 12px", fontSize: 16}, onChange: event => setTourId(event.target.value)
+    }, React.createElement("option", {value: ""}, "Select a tour"), available.map(tour =>
+      React.createElement("option", {key: tour.id, value: tour.id}, tour.name + " · " + tour.date))),
+    existing ? React.createElement("p", {role: "status"}, "A listing has already been added from this request: " + existing.address)
+      : target && React.createElement(AddListingForm, {
+        key: request.id + "/" + tourId,
+        tourColor: target.color || "#2F44A0",
+        initialFields: {
+          id: listingId, agent: request.name || "", agentEmail: request.email || "",
+          agentPhone: request.phone || "", address: request.address || "", city: request.city || ""
+        },
+        onCancel,
+        onAdd: async listing => {
+          const listings = target.listings || [];
+          if (listings.some(item => item.id === listingId)) {onDone(); return;}
+          if (listings.length >= (Number(target.maxListings) || 8)) throw new Error("This tour is full. Select another tour or remove a listing first.");
+          await onSaveTour({...target, listings: [...listings, {...listing, id: listingId, order: listings.length + 1}]});
+          onDone();
+          showToast("Listing added and saved. The attendance request is still available.", "success", 4000);
+        }
+      }));
+}
 function ListingRequestsAdmin(_ref34) {
   let {
     requests,
@@ -13759,6 +13860,7 @@ function ListingRequestsAdmin(_ref34) {
   } = _ref34;
   const [filter, setFilter] = useState("pending");
   const [section, setSection] = useState("listing"); // "listing" or "tour"
+  const [addingRequest, setAddingRequest] = useState(null);
   const [reviewing, setReviewing] = useState(null);
   const [denialReason, setDenialReason] = useState("");
   const [processing, setProcessing] = useState(false);
@@ -14078,7 +14180,7 @@ function ListingRequestsAdmin(_ref34) {
     className: "mrt-seg__btn" + (section === "contact" ? " mrt-seg__btn--active" : "")
   }, LI("Mail", 14), "Contact", (contactRequests || []).length > 0 && /*#__PURE__*/React.createElement("span", {
     className: "mrt-seg__count"
-  }, (contactRequests || []).length)))), /*#__PURE__*/React.createElement("div", {
+  }, (contactRequests || []).length)))), section !== "contact" && /*#__PURE__*/React.createElement("div", {
     style: {
       background: "#fff",
       borderBottom: "1px solid var(--mrt-hair)",
@@ -14299,7 +14401,12 @@ function ListingRequestsAdmin(_ref34) {
       display: "flex",
       gap: 8
     }
-  }, req.status === "pending" && /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setAddingRequest(addingRequest === req.id ? null : req.id),
+    className: "mrt-btn mrt-btn--navy mrt-btn--sm mrt-press",
+    style: {flex: 1, minHeight: 44},
+    "aria-expanded": addingRequest === req.id
+  }, LI("Home", 13), "Add a listing"), req.status === "pending" && /*#__PURE__*/React.createElement("button", {
     onClick: () => markTourRequestContacted(req),
     className: "mrt-btn mrt-btn--ghost mrt-btn--sm mrt-press",
     style: {
@@ -14313,7 +14420,10 @@ function ListingRequestsAdmin(_ref34) {
       color: "var(--mrt-red)",
       borderColor: "rgba(155,28,28,.35)"
     }
-  }, LI("Trash2", 13), "Delete"))))))) : /*#__PURE__*/React.createElement("div", {
+  }, LI("Trash2", 13), "Delete")), addingRequest === req.id && /*#__PURE__*/React.createElement(AttendanceListingForm, {
+    request: req, tours, onSaveTour,
+    onDone: () => setAddingRequest(null), onCancel: () => setAddingRequest(null)
+  })))))) : /*#__PURE__*/React.createElement("div", {
     className: "mrt-admin-col",
     style: {
       padding: "16px",
@@ -15173,7 +15283,7 @@ function App() {
   const [page, setPage] = useState(() => {
     // Mirror the onHash resolver below so a direct load / refresh of any deep link routes the same
     // as navigating to it in-app (previously only a few routes resolved on first load → fell to dashboard).
-    const h = window.location.hash.slice(2) || "";
+    const h = mrtReadRoute(window.location).path;
     if (h === "sponsors" || h === "sponsor-signup") return "sponsor-signup";
     if (h === "team") return "team";
     if (h === "requests" || h === "requests-admin") return "requests-admin";
@@ -15190,16 +15300,16 @@ function App() {
     return "dashboard";
   });
   const [activeTourId, setActiveTourId] = useState(() => {
-    const h = window.location.hash.slice(2) || "";
+    const h = mrtReadRoute(window.location).path;
     return h.startsWith("tour/") ? h.slice(5) : null;
   });
   const [preselectedTourId, setPreselectedTourId] = useState(() => {
-    const h = window.location.hash.slice(2) || "";
+    const h = mrtReadRoute(window.location).path;
     return h.startsWith("request/") ? h.slice(8) : null;
   });
   React.useEffect(() => {
     const onHash = () => {
-      const h = window.location.hash.slice(2) || "";
+      const h = mrtReadRoute(window.location).path;
       if (h === "sponsors" || h === "sponsor-signup") {
         setPage("sponsor-signup");
         setActiveTourId(null);
@@ -15965,7 +16075,7 @@ function App() {
       setPage("dashboard");
       window.location.hash = "/";
     },
-    onSubmit: req => setTourRequests(prev => [...prev, req])
+    onSubmit: req => req.type === "tour-signup" ? setTourRequests(prev => [...prev, req]) : setListingRequests(prev => [...prev, req])
   }), page === "request" && /*#__PURE__*/React.createElement(RequestListingPage, {
     tours: mergedTours,
     preselectedTourId: preselectedTourId,
@@ -15973,7 +16083,7 @@ function App() {
       setPage("dashboard");
       window.location.hash = "/";
     },
-    onSubmit: req => setListingRequests(prev => [...prev, req])
+    onSubmit: req => req.type === "tour-signup" ? setTourRequests(prev => [...prev, req]) : setListingRequests(prev => [...prev, req])
   }), page === "sponsor-signup" && /*#__PURE__*/React.createElement(SponsorSignupPage, {
     tours: mergedTours,
     onBack: () => {
