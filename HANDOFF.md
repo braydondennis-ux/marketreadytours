@@ -40,7 +40,10 @@ the draft; failed saves keep it. Storage failure warns visibly. No automatic rep
 security relaxation or backend deployment. See docs/BACKEND-RECOVERY.md for the runbook,
 limits and reproducible monitoring setup. Local validation: 145 tests and 13 static checks
 passed, including failed-save/refresh/retry, expiry, isolation, storage failure and cancellation.
-Release CI and live browser draft verification pending.
+Release b09b323 passed full CI 39886726280 and Pages 39886726144. Plain /app/
+contains the new helper. Live Chrome restored an unsaved test address after refresh; Cancel
+cleared it and reopening showed an empty form. No listing was submitted or agent emailed.
+The browser check was desktop Chrome, not a physical iPhone.
 
 ## 2026-10-22 — Norterra listing saves restored; startup cause unconfirmed
 
