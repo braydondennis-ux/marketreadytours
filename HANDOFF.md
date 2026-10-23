@@ -22,6 +22,26 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
 
+## 2026-10-22 — backend monitoring and listing draft safeguards
+
+Added direct Cloud Monitoring probes for saveTour, submitIntake and submitRating every
+60 seconds from Oregon, Virginia and Europe. They require a 401/UNAUTHENTICATED response
+to an empty unauthenticated POST, so no real data or mail is generated. Policy
+11025209441887969144 alerts the existing Erik-only channel after two checker locations
+fail for two minutes, plus normal metric/notification latency. Existing alerts are preserved.
+Configuration read-back is verified; scheduled probes have returned passing results for
+all three endpoints. Alert-email delivery has not been deliberately triggered.
+This detects startup/endpoint failure, not full authenticated database persistence.
+
+Admin Add Listing and Attendance recovery now keep per-tab text drafts scoped to organizer
+and tour/request for 24 hours, restoring the stable listing ID across refresh. Local photos
+require reattachment; uploaded HTTPS photos are retained. Confirmed success or Cancel clears
+the draft; failed saves keep it. Storage failure warns visibly. No automatic replay, fallback,
+security relaxation or backend deployment. See docs/BACKEND-RECOVERY.md for the runbook,
+limits and reproducible monitoring setup. Local validation: 145 tests and 13 static checks
+passed, including failed-save/refresh/retry, expiry, isolation, storage failure and cancellation.
+Release CI and live browser draft verification pending.
+
 ## 2026-10-22 — Norterra listing saves restored; startup cause unconfirmed
 
 Lou reported Failed to fetch while adding homes to Norterra 85085

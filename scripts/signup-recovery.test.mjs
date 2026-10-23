@@ -12,9 +12,14 @@ function harness(source,name,props,extra={}) {
  const slots=[];let cursor=0,effects=[],id=0;
  const useState=initial=>{const i=cursor++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;return[slots[i],value=>slots[i]=typeof value==='function'?value(slots[i]):value];};
  const useRef=initial=>{const i=cursor++;return slots[i]||(slots[i]={current:initial});};
- const scope={React:{createElement:(type,props,...children)=>({type,props:props||{},children}),Fragment:'fragment'},useState,useRef,useEffect:fn=>effects.push(fn),uid:()=>`test-${++id}`,window:{location:{search:'',hash:''}},URLSearchParams,TODAY:'2026-10-21',isValidEmail:s=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s),LI:()=>null,B:{},PublicMasthead:'masthead',MrtIconField:'field',TourDot:'dot',_fbStorage:null,MRT_SECURE_BACKEND:true,sanitize:s=>s,mrtRequestId:()=>`request-${++id}`,mrtReadRoute:route,showToast:()=>{},...extra};
+ const scope={...draftHelpers(),_fbAuth:{currentUser:{uid:'admin'}},React:{createElement:(type,props,...children)=>({type,props:props||{},children}),Fragment:'fragment'},useState,useRef,useEffect:fn=>effects.push(fn),uid:()=>`test-${++id}`,window:{location:{search:'',hash:''}},URLSearchParams,TODAY:'2026-10-21',isValidEmail:s=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s),LI:()=>null,B:{},PublicMasthead:'masthead',MrtIconField:'field',TourDot:'dot',_fbStorage:null,MRT_SECURE_BACKEND:true,sanitize:s=>s,mrtRequestId:()=>`request-${++id}`,mrtReadRoute:route,showToast:()=>{},...extra};
  const component=new Function('scope','with(scope){'+source+';return '+name+';}')(scope);
  return {scope,render:()=>{cursor=0;effects=[];return component(props);},effects:()=>{for(const f of effects)f();},props};
+}
+const draftSource=between('function mrtListingDraftKey(', 'function AddListingForm(');
+function draftHelpers(storage = new Map()) {
+ const sessionStorage={getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value),removeItem:key=>storage.delete(key)};
+ return new Function('sessionStorage',draftSource+'return {mrtListingDraftKey,mrtReadListingDraft,mrtWriteListingDraft,mrtClearListingDraft};')(sessionStorage);
 }
 const addSource=between('function AddListingForm(', '/* ── TOUR DETAIL PAGE');
 const requestSource=between('function RequestListingPage(', '/* ── LISTING REQUESTS ADMIN PAGE');
@@ -69,4 +74,40 @@ test('attendance recovery prefills contact details, waits for save, and prevents
  const h=harness(between('function AttendanceListingForm(', 'function ListingRequestsAdmin('),'AttendanceListingForm',{request,tours:[tour],onSaveTour:p=>{calls.push(p);return new Promise(r=>resolve=r)},onDone:()=>calls.push('done')},{AddListingForm:'add'});
  const form=nodes(h.render()).find(n=>n.type==='add');assert.equal(form.props.initialFields.agentEmail,request.email);const pending=form.props.onAdd({address:'123 Main Street'});assert.equal(calls.length,1);assert.equal(calls[0].version,4);resolve();await pending;assert.equal(calls[1],'done');
  tour.listings=calls[0].listings;assert.match(text(h.render()),/already been added/);assert.equal(nodes(h.render()).some(n=>n.type==='add'),false);
+});
+
+test('listing draft restores text and stable ID after a failed save and refresh, then clears only on success',async()=>{
+ const storage=new Map(),helpers=draftHelpers(storage),calls=[];let fail=true;
+ const props={draftScope:'tour/one',onCancel:()=>{},onAdd:async p=>{calls.push(p);if(fail)throw TypeError('Failed to fetch')}};
+ const h=harness(addSource,'AddListingForm',props,helpers);
+ getField(h.render(),'Start typing an address...').props.onChange({target:{value:'123 Main Street'}});
+ h.render();h.effects();await getButton(h.render(),'Add Listing').props.onClick();
+ assert.match(text(h.render()),/couldn't confirm the save/);assert.equal(storage.size,1);
+ const reload=harness(addSource,'AddListingForm',props,helpers);
+ assert.equal(getField(reload.render(),'Start typing an address...').props.value,'123 Main Street');
+ assert.match(text(reload.render()),/unsaved listing was restored/);
+ fail=false;await getButton(reload.render(),'Add Listing').props.onClick();
+ assert.equal(calls[0].id,calls[1].id);assert.equal(storage.size,0);
+ reload.render();reload.effects();assert.equal(storage.size,0,'successful save must not recreate draft');
+});
+test('listing drafts expire, separate users/tours, and exclude local photo payloads',()=>{
+ const storage=new Map(),h=draftHelpers(storage);
+ const key=h.mrtListingDraftKey('tour/one','admin');
+ h.mrtWriteListingDraft(key,'stable-id',{address:'123 Main Street',photos:['data:image/jpeg;base64,PRIVATE','https://example.com/photo.jpg']});
+ assert.equal(h.mrtReadListingDraft(key).needsPhotos,true);
+ assert.deepEqual(h.mrtReadListingDraft(key).fields.photos,['https://example.com/photo.jpg']);
+ assert.ok(!storage.get(key).includes('PRIVATE'));
+ assert.equal(h.mrtReadListingDraft(h.mrtListingDraftKey('tour/two','admin')),null);
+ assert.equal(h.mrtReadListingDraft(h.mrtListingDraftKey('tour/one','another-admin')),null);
+ const expired=JSON.parse(storage.get(key));expired.savedAt=Date.now()-86400001;storage.set(key,JSON.stringify(expired));
+ assert.equal(h.mrtReadListingDraft(key),null);assert.equal(storage.size,0);
+ storage.set(key,'{broken');assert.equal(h.mrtReadListingDraft(key),null);
+});
+test('listing form warns if draft storage fails and Cancel discards the saved draft',()=>{
+ const h=harness(addSource,'AddListingForm',{draftScope:'tour/one',onCancel:()=>{}},{mrtWriteListingDraft:()=>false});
+ h.render();h.effects();assert.match(text(h.render()),/couldn't keep a refresh-safe draft/);
+ const storage=new Map(),helpers=draftHelpers(storage);let cancelled=false;
+ const saved=harness(addSource,'AddListingForm',{draftScope:'tour/one',initialFields:{address:'123 Main Street'},onCancel:()=>{cancelled=true}},helpers);
+ saved.render();saved.effects();assert.equal(storage.size,1);
+ getButton(saved.render(),'Cancel').props.onClick();assert.equal(storage.size,0);assert.equal(cancelled,true);
 });

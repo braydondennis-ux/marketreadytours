@@ -5015,15 +5015,51 @@ function TourSponsorsModal(_ref10) {
   }, "Cancel")))))));
 }
 /* ── ADD LISTING FORM with Google Places Autocomplete ── */
+// Per-tab drafts survive refresh without mixing organizers, tours or attendance requests.
+// Photos that have not been uploaded must be reattached after a refresh.
+function mrtListingDraftKey(scope, userId) {
+  return scope && userId ? "mrt_listing_draft/" + encodeURIComponent(userId) + "/" + encodeURIComponent(scope) : "";
+}
+function mrtReadListingDraft(key) {
+  if (!key) return null;
+  try {
+    const draft = JSON.parse(sessionStorage.getItem(key) || "null");
+    if (!draft || typeof draft.id !== "string" || !draft.fields || typeof draft.fields !== "object" || Array.isArray(draft.fields) || !Array.isArray(draft.fields.photos) ||
+        !Number.isFinite(draft.savedAt) || Date.now() - draft.savedAt > 86400000 || draft.savedAt > Date.now()) {
+      sessionStorage.removeItem(key);
+      return null;
+    }
+    return draft;
+  } catch (error) { return null; }
+}
+function mrtWriteListingDraft(key, id, fields, needsPhotos = false) {
+  if (!key) return false;
+  try {
+    const text = {};
+    for (const field of ["address", "city", "beds", "baths", "sqft", "dom", "price", "agent", "agentEmail", "agentPhone"]) {
+      text[field] = String(fields[field] || "");
+    }
+    const photos = (fields.photos || []).filter(photo => typeof photo === "string" && photo.startsWith("https://"));
+    sessionStorage.setItem(key, JSON.stringify({id, fields: {...text, photos},
+      needsPhotos: needsPhotos || photos.length !== (fields.photos || []).length, savedAt: Date.now()}));
+    return true;
+  } catch (error) { return false; }
+}
+function mrtClearListingDraft(key) {
+  try { if (key) sessionStorage.removeItem(key); } catch (error) {}
+}
 function AddListingForm(_ref12) {
   var _fields$photos;
   let {
     tourColor,
     onAdd,
     onCancel,
+    draftScope = "",
     initialFields = {}
   } = _ref12;
-  const [query, setQuery] = useState(initialFields.address || "");
+  const [draftKey] = useState(() => mrtListingDraftKey(draftScope, _fbAuth?.currentUser?.uid));
+  const [restored] = useState(() => mrtReadListingDraft(draftKey));
+  const [query, setQuery] = useState(restored?.fields.address || initialFields.address || "");
   const [suggestions, setSugg] = useState([]);
   const [selected, setSelected] = useState(null);
   const [fields, setFields] = useState({
@@ -5038,14 +5074,22 @@ function AddListingForm(_ref12) {
     agentEmail: "",
     agentPhone: "",
     photos: [],
-    ...initialFields
+    ...initialFields,
+    ...(restored?.fields || {})
   });
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const listingIdRef = useRef(null);
-  if (!listingIdRef.current) listingIdRef.current = initialFields.id || uid("listing");
+  if (!listingIdRef.current) listingIdRef.current = initialFields.id || restored?.id || uid("listing");
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState(restored ? "Your unsaved listing was restored." + (restored.needsPhotos ? " Please reattach any photos that were not uploaded." : "") : "");
+  const [draftAvailable, setDraftAvailable] = useState(true);
+  const completedRef = useRef(false);
+  useEffect(() => {
+    if (!completedRef.current && draftKey && draftKey === mrtListingDraftKey(draftScope, _fbAuth?.currentUser?.uid)) {
+      setDraftAvailable(mrtWriteListingDraft(draftKey, listingIdRef.current, fields, restored?.needsPhotos));
+    }
+  }, [draftKey, fields]);
   const [sessionToken, setToken] = useState(null);
   const inputRef = useRef(null);
   useEffect(() => {
@@ -5207,8 +5251,13 @@ function AddListingForm(_ref12) {
         price: Number(String(fields.price).replace(/[^0-9]/g, "")) || 0,
         photos: finalPhotos.length ? finalPhotos : ["https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop"]
       });
+      completedRef.current = true;
+      mrtClearListingDraft(draftKey);
     } catch (error) {
-      setStatus("Could not save the listing: " + (error.message || "Please try again. Your details are still here."));
+      const unavailable = error instanceof TypeError || /fetch|network|timeout|timed out|request failed \((500|502|503|504)\)/i.test(error.message || "") || ["unavailable", "deadline-exceeded"].includes(error.code);
+      setStatus(unavailable
+        ? "We couldn't confirm the save because the service couldn't be reached. Your details are still here. Wait a moment and try again."
+        : "Could not save the listing: " + (error.message || "Please try again.") + " Your details are still here.");
     } finally {
       savingRef.current = false;
       setSaving(false);
@@ -5426,7 +5475,8 @@ function AddListingForm(_ref12) {
       color: status.startsWith("✅") ? "var(--mrt-success)" : status.startsWith("❌") ? "var(--mrt-red)" : "var(--mrt-gold-deep)",
       marginBottom: 10
     }
-  }, status), fields.address && /*#__PURE__*/React.createElement("div", {
+  }, status), !draftAvailable && React.createElement("p", {role: "status", style: {fontSize: 13, color: B.red}},
+    "This browser couldn't keep a refresh-safe draft. Keep this form open or copy your details before refreshing."), fields.address && /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -5672,7 +5722,7 @@ function AddListingForm(_ref12) {
       marginTop: 4
     }
   }, /*#__PURE__*/React.createElement("button", {
-    onClick: onCancel,
+    onClick: () => { completedRef.current = true; mrtClearListingDraft(draftKey); onCancel(); },
     disabled: saving,
     className: "mrt-btn mrt-btn--ghost",
     style: {
@@ -8762,6 +8812,8 @@ function TourDetailPage(_ref19) {
       marginTop: 24
     }
   }, showAddForm ? /*#__PURE__*/React.createElement(AddListingForm, {
+    key: tour.id,
+    draftScope: "tour/" + tour.id,
     tourColor: tour.color,
     onAdd: addListing,
     onCancel: () => setShowAddForm(false)
@@ -13829,6 +13881,7 @@ function AttendanceListingForm({request, tours, onSaveTour, onDone, onCancel}) {
     existing ? React.createElement("p", {role: "status"}, "A listing has already been added from this request: " + existing.address)
       : target && React.createElement(AddListingForm, {
         key: request.id + "/" + tourId,
+        draftScope: "attendance/" + request.id + "/" + tourId,
         tourColor: target.color || "#2F44A0",
         initialFields: {
           id: listingId, agent: request.name || "", agentEmail: request.email || "",
