@@ -1,6 +1,10 @@
 name: Validate MarketReady Tours
 
 on:
+  workflow_call:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 13 * * *"
   push:
     branches: [main]
   pull_request:
@@ -12,7 +16,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -53,6 +57,22 @@ jobs:
 
       - name: Emulator workflow tests
         run: npm run test:workflow
+
+      - name: Install browser engines
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: iPhone and Chrome workflow tests
+        run: npm run test:browser
+
+      - name: Keep browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
 
       - name: Confirm generated bundle is reproducible
         run: git diff --exit-code -- www

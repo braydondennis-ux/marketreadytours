@@ -1,6 +1,6 @@
 # MarketReady Tours — Engineering Handoff
 
-_Updated 2026-10-22. Read this entire file before acting._
+_Updated 2026-10-23. Read this entire file before acting._
 
 **Current state.** The refresh is **LIVE** (cutover 2026-08-10) and edge-cached. Since
 2026-10-10 **the landing-page configuration is restored at `/` for mobile and desktop; the app
@@ -21,6 +21,34 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 **The app is genuinely in use.** The 2026-09-02 North Phoenix tour was built in production over
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
+
+## 2026-10-23 — approved reliability release
+
+Erik approved PR #1's staged rollout. All 25 repository-owned functions are updated and
+verified ACTIVE; inventory stays 30, with five legacy revisions and all existing identities,
+secret bindings, environment variables and ingress preserved. The scheduler timeout is 540s.
+A credential expiry interrupted deployment polling; one queued Cloud Build expired without
+replacing its live revision. Reauthentication and a named retry completed the rollout.
+Final runtime logs show zero ERROR entries since rollout began.
+
+Reminder-job permissions are now hardened and seven public sponsor URLs corrected, with
+read-back verification. One Erik-only test message was sent by the normal scheduler and
+confirmed in Gmail Inbox at 06:37 Phoenix. No test agent emails or private tour writes.
+Live data: 44/44 matching tours, 95 matching evaluations, no overdue/missing reminders.
+Duplicate prevention and the existing duplicate property remain explicitly deferred.
+
+This release includes truthful save acknowledgments, safe sponsor URLs, request lazy loading,
+daily browser checks and a mandatory same-commit Pages validation gate, sanitized failure
+reporting, bounded evaluation-email retries, read-only consistency alerts and dependency
+patches. CI caught and fixed an iPhone install-tip overlay covering form buttons. The tip
+now stays in document flow, and Requests reserves bottom-tab space.
+
+Validation: 156 unit tests, 13 static checks, seven privacy-rule tests plus the exact transition
+reminder-access test, full isolated callable workflows, 21 WebKit/Chrome browser checks and
+a native simulator build. Source d6ca33b passed hosted run 39899007006. Web publication uses
+PR #1's gated Pages workflow; its deployment checks and release meta tag identify the live
+commit. Native distribution is not published. Full evidence and remaining limits:
+docs/RELIABILITY-RELEASE-2026-10-22.md.
 
 ## 2026-10-22 — reliability-first full audit
 

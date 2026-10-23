@@ -153,6 +153,13 @@ function publicListing(listing) {
   };
 }
 
+function sponsorWebsite(source) {
+  const value = String(source.website || source.url || "").trim();
+  if (!value) return "";
+  try { return safeHttpUrl(/^[a-z][a-z0-9+.-]*:/i.test(value) ? value : "https://" + value); }
+  catch { return ""; }
+}
+
 function publicSponsor(sponsor) {
   const source = assertPlainObject(sponsor, "sponsor");
   const paid = source.paymentStatus === "paid" || source.paid === true;
@@ -162,7 +169,7 @@ function publicSponsor(sponsor) {
     name: cleanText(source.name, 160, "sponsor name", true),
     email: isValidEmail(source.email) ? normalizeEmail(source.email) : "",
     phone: cleanText(source.phone, 40, "sponsor phone"),
-    website: source.website ? safeHttpUrl(source.website) : "",
+    website: sponsorWebsite(source),
     logo: source.logo ? safeHttpUrl(source.logo) : "",
     headshot: source.headshot ? safeHttpUrl(source.headshot) : "",
     tourLead: source.tourLead === true,
