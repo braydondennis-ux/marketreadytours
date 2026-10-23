@@ -142,3 +142,10 @@ test("temporary uploads are owner-only and admin assets support deletion", async
 test.after(async () => {
   await testEnv.cleanup();
 });
+test("email outbox and diagnostics are unavailable to direct browser reads/writes",async()=>{
+ for(const db of [anonymousDb,outsiderDb,adminDb]){
+  for(const path of ['mrt_email_outbox/test','mrt_client_events/test']){
+   await assertFails(get(ref(db,path)));await assertFails(set(ref(db,path),{payload:'blocked'}));
+  }
+ }
+});

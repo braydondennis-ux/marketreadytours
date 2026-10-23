@@ -4,6 +4,12 @@ _Updated 2026-10-22. Production is live; see `CLAUDE.md` for what you are cleare
 
 Verified items note how they were confirmed, so nobody has to re-derive it.
 
+**October 22 implementation:** See RELIABILITY-RELEASE-2026-10-22.md. Repairs and automated
+browser/release safeguards are prepared and locally tested. The broader backend rollout needs
+specific approval after automatic review rejected its scope. Duplicate prevention and the
+existing Sonoran duplicate stops are explicitly deferred by Erik until the tour is over.
+Do not silently enable address-based duplicate prevention in this release.
+
 **October 22 full reliability audit:** See `RELIABILITY-AUDIT-2026-10-22.md` for evidence
 and repair acceptance criteria. First priorities: await failed inline/admin saves, prevent
 Create Tour duplicates beyond the 1.5-second guard, review Sonoran Showcase's repeated

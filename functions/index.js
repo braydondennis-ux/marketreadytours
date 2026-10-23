@@ -29,6 +29,7 @@ const {
   cancelTourReminders,
   candidateReminderIds,
   reconcileTourReminders,
+  planTourReminders,
 } = require("./lib/reminders");
 const {
   createSquareSandboxInvoice,
@@ -40,7 +41,8 @@ const {
   verifyCloverWebhook,
 } = require("./lib/clover");
 const {ensureBranded} = require("./lib/email");
-const {sendViaResend} = require("./lib/resend");
+const {sendViaResend, DEFAULT_FROM} = require("./lib/resend");
+const {deliverEmailJob, emailJob} = require("./lib/outbox");
 const {buildEvaluationEmail} = require("./lib/evaluation-email");
 
 if (!getApps().length) initializeApp();
@@ -243,7 +245,7 @@ function squareSandboxIsEnabled() {
   return isEmulator || projectId() === "marketready-tours-dev";
 }
 
-async function sendTransactionalEmail({to, subject, text, html, cta = null, footerNote = "", idempotencyKey = null}) {
+async function sendTransactionalEmail({to, subject, text, html, cta = null, footerNote = "", idempotencyKey = null, from = DEFAULT_FROM}) {
   const recipient = normalizeEmail(to);
   if (!isValidEmail(recipient)) throw new Error("Invalid email recipient");
   if (!transactionalEmailIsLive()) {
@@ -273,6 +275,7 @@ async function sendTransactionalEmail({to, subject, text, html, cta = null, foot
   if (resendKey) {
     const result = await sendViaResend({
       apiKey: resendKey,
+      from,
       to: recipient,
       subject,
       text,
@@ -500,12 +503,17 @@ exports.submitRating = onCall(
     let notificationStatus = "not_requested";
     if (isValidEmail(listing?.agentEmail)) {
       try {
-        await sendTransactionalEmail({
-          to: listing.agentEmail,
-          ...buildEvaluationEmail({tour: {...tour, id: tourId}, listing,
-            ratings: [{...rating, photoPaths, submittedAt}], single: true}),
-        });
-        notificationStatus = "sent";
+        const rendered = buildEvaluationEmail({tour: {...tour, id: tourId}, listing,
+          ratings: [{...rating, photoPaths, submittedAt}], single: true});
+        const id = stableHash(`${uid}/${tourId}/${listingId}/${request.data?.requestId || submittedAt}`);
+        const ref = getDatabase().ref(`mrt_email_outbox/${id}`);
+        const message = {to: listing.agentEmail, from: DEFAULT_FROM, ...rendered,
+          html: ensureBranded(rendered.html, {preheader: rendered.text?.split("\n")[0] || ""})};
+        const planned = emailJob(id, message);
+        await ref.transaction(current => current || planned);
+        const delivery = await deliverEmailJob(ref, sendEvaluationJob);
+        notificationStatus = delivery.status === "sent" ? "sent" : "queued";
+        if (delivery.status === "dead") notificationStatus = "failed";
       } catch (error) {
         notificationStatus = "failed";
         logger.error("Rating notification failed", {tourId, listingId, error});
@@ -523,6 +531,23 @@ exports.submitIntake = onCall(
   async (request) => {
   assertSafeProject();
   const uid = assertAuthenticated(request);
+  if (request.data?.type === "diagnostic") {
+    await enforceRateLimit("clientDiagnostic", request, 10, 60 * 60 * 1000);
+    const raw = request.data.payload || {};
+    const eventId = String(raw.eventId || "");
+    const operation = String(raw.operation || "");
+    const code = String(raw.code || "");
+    const release = String(raw.release || "unknown");
+    if (!/^[a-zA-Z0-9_-]{1,100}$/.test(eventId) || !/^[a-zA-Z]{1,60}$/.test(operation) ||
+        !["network", "internal", "unavailable", "deadline-exceeded", "request-failed"].includes(code) ||
+        !/^[a-zA-Z0-9_-]{1,64}$/.test(release)) {
+      throw new HttpsError("invalid-argument", "Invalid diagnostic event.");
+    }
+    const ref = getDatabase().ref(`mrt_client_events/${uid}/${eventId}`);
+    const transaction = await ref.transaction(current => current || {operation, code, release, receivedAt: Date.now()});
+    logger.error("Client operation failed", {eventId, operation, code, release});
+    return {ok: transaction.committed, id: eventId};
+  }
   await enforceRateLimit("submitIntake", request, 20, 24 * 60 * 60 * 1000);
   return idempotent("submitIntake", uid, request.data?.requestId, async () => {
     const type = cleanText(request.data?.type, 40, "type", true);
@@ -633,6 +658,75 @@ async function loadRemindersByIds(ids) {
   return Object.fromEntries(entries.filter(([, value]) => value));
 }
 
+async function publishTourProjection(tour) {
+  const projected = publicTourProjection(tour);
+  return getDatabase().ref(`mrt_tours_public/${tour.id}`).transaction(current => {
+    if (current && Number(current.version || 0) > Number(projected.version)) return;
+    return projected;
+  });
+}
+
+async function checkPublicTours() {
+  const tours = (await getDatabase().ref("mrt_tours_private").get()).val() || {};
+  const publicTours = (await getDatabase().ref("mrt_tours_public").get()).val() || {};
+  let repaired = 0;
+  for (const tour of Object.values(tours)) {
+    try {
+      const current = publicTours[tour.id];
+      const projected = publicTourProjection(tour);
+      const canonical = value => JSON.stringify(value, function(key, item) {
+        if (Array.isArray(item) && !item.length) return undefined;
+        return item && !Array.isArray(item) && typeof item === "object"
+          ? Object.fromEntries(Object.keys(item).sort().map(k => [k, item[k]])) : item;
+      });
+      if (canonical(current) !== canonical(projected) && Date.now() - Number(tour.updatedAt || 0) > 30000) {
+        repaired++;
+        logger.error("Public tour projection differs from saved tour", {tourId: tour.id,
+          privateVersion: tour.version, publicVersion: current?.version || null});
+      }
+    } catch (error) { logger.error("Public tour reconciliation failed", {tourId: tour.id, error: error.message}); }
+  }
+  const ratings = (await getDatabase().ref("mrt_ratings_private").get()).val() || {};
+  const aggregates = (await getDatabase().ref("mrt_ratings_public").get()).val() || {};
+  for (const [tourId, listings] of Object.entries(ratings)) {
+    for (const [listingId, submissions] of Object.entries(listings)) {
+      const expected = ratingAggregate(submissions), current = aggregates[tourId]?.[listingId];
+      if (!current || (Date.now() - Number(current.updatedAt || 0) > 30000 &&
+          (expected.count !== current.count || RATING_KEYS.some(key => expected.averages[key] !== current.averages?.[key])))) {
+        logger.error("Rating aggregate differs from saved evaluations", {tourId, listingId});
+      }
+    }
+  }
+  const reminders = (await getDatabase().ref("mrt_reminders").get()).val() || {};
+  for (const tour of Object.values(tours)) {
+    if (Date.now() - Number(tour.updatedAt || 0) < 30000) continue;
+    for (const id of planTourReminders({tour, now: Date.now()}).keys()) {
+      if (!reminders[id]) logger.error("Expected tour reminder missing", {tourId: tour.id, reminderId: id});
+    }
+  }
+  const overdue = Object.values(reminders).filter(row => ["pending", "failed"].includes(row.status) && Number(row.nextAttemptAt) < Date.now() - 15 * 60000).length;
+  if (overdue) logger.error("Tour reminders overdue", {count: overdue});
+  logger.info("Public tour consistency check completed", {checked: Object.keys(tours).length, mismatches: repaired});
+}
+
+async function sendEvaluationJob(message) {
+  if (transactionalEmailIsLive() && !RESEND_API_KEY.value()) throw new Error("Evaluation delivery requires the configured Resend sender");
+  return sendTransactionalEmail(message);
+}
+
+async function processEvaluationOutbox() {
+  const jobs = (await getDatabase().ref("mrt_email_outbox").orderByChild("nextAttemptAt").endAt(Date.now()).limitToFirst(10).get()).val() || {};
+  const counts = {};
+  const deadline = Date.now() + 20000;
+  for (const id of Object.keys(jobs)) {
+    if (Date.now() > deadline) break;
+    const result = await deliverEmailJob(getDatabase().ref(`mrt_email_outbox/${id}`), sendEvaluationJob);
+    counts[result.status] = (counts[result.status] || 0) + 1;
+    if (["failed", "dead"].includes(result.status)) logger.error("Evaluation email delivery needs attention", {jobId: id, status: result.status});
+  }
+  logger.info("Evaluation outbox completed", {scanned: Object.keys(jobs).length, ...counts});
+}
+
 // Saving tours only writes data and reconciles future reminder jobs. It must not
 // depend on the email provider's secret being available at container startup.
 exports.saveTour = onCall({...callableOptions, secrets: []}, async (request) => {
@@ -658,7 +752,7 @@ exports.saveTour = onCall({...callableOptions, secrets: []}, async (request) => 
       throw new HttpsError("aborted", "This tour changed elsewhere. Reload and try again.");
     }
     try {
-      await getDatabase().ref(`mrt_tours_public/${tourId}`).set(publicTourProjection(next));
+      await publishTourProjection(next);
     } catch (error) {
       logger.error("Failed to materialize public tour projection", {tourId, error});
       throw new HttpsError("internal", "The tour saved but its public view could not be updated.");
@@ -1876,6 +1970,8 @@ exports.createSponsorInvoice = onCall({
 const TERMINAL_NEXT_ATTEMPT_AT = 253402300799000;
 
 async function processDueReminders() {
+  try { await checkPublicTours(); } catch (error) {logger.error("Public tour reconciliation unavailable", {error: error.message});}
+  try { await processEvaluationOutbox(); } catch (error) {logger.error("Evaluation outbox unavailable", {error: error.message});}
   assertSafeProject();
   const now = Date.now();
   const snapshot = await getDatabase()
@@ -1987,6 +2083,7 @@ exports.processReminders = onSchedule(
   {
     region: REGION,
     schedule: "every 5 minutes",
+    timeoutSeconds: 540,
     timeZone: APP_TIME_ZONE,
     /* Scheduled functions do not inherit callableOptions, so this needs the Resend secret
        declared explicitly. Without it the send still "succeeds" — it silently falls back to the

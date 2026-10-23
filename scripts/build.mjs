@@ -28,7 +28,7 @@ const sourceHtml = await readFile(resolve(root, "index.html"), "utf8");
 const builtHtml = sourceHtml.replaceAll(
   "__MRT_APP_CHECK_SITE_KEY__",
   appCheckSiteKey || "__MRT_APP_CHECK_SITE_KEY__",
-).replaceAll("__MRT_APP_CHECK_PROVIDER__", appCheckProvider);
+).replaceAll("__MRT_APP_CHECK_PROVIDER__", appCheckProvider).replaceAll("__MRT_BUILD_ID__", process.env.GITHUB_SHA || "local");
 
 // The app sits at /app/ in maintenance and landing modes. It references manifest.json, sw.js
 // and icons/ RELATIVELY, so they must sit beside it there or they 404 and service-worker

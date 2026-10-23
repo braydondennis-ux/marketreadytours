@@ -86,6 +86,8 @@
       ".read": "auth != null && auth.token.mrtRole === 'super'",
       ".write": false
     },
+    "mrt_client_events": {".read": false, ".write": false},
+    "mrt_email_outbox": {".read": false, ".write": false, ".indexOn": ["nextAttemptAt"]},
     "mrt_reminders": {
       ".read": "auth != null && (auth.token.mrtRole === 'admin' || auth.token.mrtRole === 'super')",
       ".write": false,

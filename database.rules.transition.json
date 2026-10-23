@@ -75,6 +75,8 @@
       ".write": false
     },
 
+    "mrt_client_events": {".read": false, ".write": false},
+    "mrt_email_outbox": {".read": false, ".write": false, ".indexOn": ["nextAttemptAt"]},
     "mrt_reminders": {".read": "auth != null", ".write": "auth != null", ".indexOn": ["nextAttemptAt"]},
     "mrt_listing_requests": {
       ".read": "auth != null",

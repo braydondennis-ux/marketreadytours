@@ -88,3 +88,8 @@ test("Phoenix date helpers do not use UTC calendar rollover", () => {
 test("HTML escaping is context-safe for text", () => {
   assert.equal(escapeHtml(`<img src=x onerror="x">&'`), "&lt;img src=x onerror=&quot;x&quot;&gt;&amp;&#39;");
 });
+test('paid sponsor projections normalize the legacy website alias',()=>{
+ const tour={id:'t',name:'Tour',date:'2026-11-05',listings:[],sponsors:[{id:'s',name:'Sponsor',paid:true,url:'www.azgat.com'}]};
+ assert.equal(publicTourProjection(tour).sponsors[0].website,'https://www.azgat.com/');
+ tour.sponsors[0].url='javascript:alert(1)';assert.equal(publicTourProjection(tour).sponsors[0].website,'');
+});

@@ -17,21 +17,25 @@
     "test:e2e": "playwright test",
     "check": "npm run test && npm run validate",
     "ios:sync": "npm run build && npx cap sync ios",
-    "ios:build": "npm run ios:sync && xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -derivedDataPath /tmp/mrt-ios-derived CODE_SIGNING_ALLOWED=NO build"
+    "ios:build": "npm run ios:sync && xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -derivedDataPath /tmp/mrt-ios-derived CODE_SIGNING_ALLOWED=NO build",
+    "test:browser": "node scripts/run-browser-tests.mjs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@capacitor/core": "^8.1.0",
-    "@capacitor/ios": "^8.1.0"
+    "@capacitor/core": "^8.5.1",
+    "@capacitor/ios": "^8.5.1"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.1.0",
-    "@playwright/test": "1.62.0",
+    "@capacitor/cli": "^8.5.1",
     "@firebase/rules-unit-testing": "5.0.1",
+    "@playwright/test": "1.62.0",
     "firebase": "12.16.0",
-    "firebase-tools": "15.24.0"
+    "firebase-tools": "15.34.1"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.14.5"
   }
 }

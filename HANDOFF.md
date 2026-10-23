@@ -22,6 +22,23 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
 
+## 2026-10-22 — reliability repair package; backend rollout approval pending
+
+Erik approved the audit repairs but deferred duplicate prevention until after the current tour.
+See docs/RELIABILITY-RELEASE-2026-10-22.md. Existing duplicate entries and Create Tour behavior
+are untouched. Prepared: truthful save acknowledgments, safe sponsor URLs, request lazy loading,
+release gating with daily real browser tests, sanitized failure reporting, bounded durable
+notification retries and read-only integrity alerts, plus dependency/native patches.
+
+Local evidence: 156 tests/13 checks, seven rules tests, full mocked callable suite, 18 real
+browser checks over three device/browser projects, and native simulator BUILD SUCCEEDED.
+Two private/index rule nodes were added to exact live rules without changing existing rules.
+First named saveTour update is ACTIVE; unauthenticated POST 401 verified. No tour/listing content
+or agent emails changed. The bulk rollout to 24 existing repository-owned functions was
+REJECTED by automatic approval review because email/scheduler behavior and production disruption
+needed specific approval. Do not retry or bypass it without that approval. Remaining backend
+functions, public sponsor corrections and client publication are pending. Reviewable PR/CI follows.
+
 ## 2026-10-22 — reliability-first full audit
 
 Erik requested recent issue-email review, broad audit and prevention planning; he selected

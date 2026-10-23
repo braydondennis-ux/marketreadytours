@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
+<meta name="mrt-release-id" content="__MRT_BUILD_ID__">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="mobile-web-app-capable" content="yes"/>
@@ -495,12 +496,40 @@ async function mrtEnsureAuth() {
   const credential = await _fbAuth.signInAnonymously();
   return credential.user;
 }
+// Diagnostics contain operation/code/build only. Never queue entered fields or credentials.
+let mrtFlushingDiagnostics = false;
+function mrtQueueDiagnostic(operation, code) {
+  try {
+    const queue = JSON.parse(localStorage.getItem("mrt_diagnostics") || "[]");
+    const release = document.querySelector('meta[name="mrt-release-id"]')?.content || "unknown";
+    const event = {eventId: mrtRequestId("support"), operation, code,
+      release: /^[a-zA-Z0-9_-]{1,64}$/.test(release) ? release : "unknown"};
+    localStorage.setItem("mrt_diagnostics", JSON.stringify([...queue, event].slice(-10)));
+    return event.eventId;
+  } catch { return ""; }
+}
+async function mrtFlushDiagnostics() {
+  if (mrtFlushingDiagnostics || !_fbAuth?.currentUser) return;
+  mrtFlushingDiagnostics = true;
+  try {
+    const queue = JSON.parse(localStorage.getItem("mrt_diagnostics") || "[]");
+    for (const payload of queue) {
+      await mrtCall("submitIntake", {type: "diagnostic", payload});
+      const remaining = JSON.parse(localStorage.getItem("mrt_diagnostics") || "[]");
+      localStorage.setItem("mrt_diagnostics", JSON.stringify(remaining.filter(item => item.eventId !== payload.eventId)));
+    }
+  } catch {} finally { mrtFlushingDiagnostics = false; }
+}
+window.addEventListener("unhandledrejection", () => {mrtQueueDiagnostic("unhandledPromise", "internal"); void mrtFlushDiagnostics();});
+window.addEventListener("error", event => {if (event.error) {mrtQueueDiagnostic("browserError", "internal"); void mrtFlushDiagnostics();}});
+window.addEventListener("online", () => {void mrtFlushDiagnostics();});
 async function mrtCall(name, data, timeoutMs) {
   if (!MRT_SECURE_BACKEND) throw new Error("Secure backend is not enabled in this environment.");
   const user = await mrtEnsureAuth();
   const token = await user.getIdToken();
   const appCheckToken = _fbAppCheck ? await _fbAppCheck.getToken(false) : null;
-  const response = await fetchWithTimeout(mrtFunctionsUrl(name), {
+  let response;
+  try { response = await fetchWithTimeout(mrtFunctionsUrl(name), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -508,7 +537,11 @@ async function mrtCall(name, data, timeoutMs) {
       ...(appCheckToken && appCheckToken.token ? {"X-Firebase-AppCheck": appCheckToken.token} : {})
     },
     body: JSON.stringify({ data: data || {} })
-  }, timeoutMs || 20000);
+  }, timeoutMs || 20000); }
+  catch (error) {
+    if (data?.type !== "diagnostic") error.supportId = mrtQueueDiagnostic(name, "network");
+    throw error;
+  }
   let body = null;
   try { body = await response.json(); } catch (e) {}
   if (!response.ok || body && body.error) {
@@ -519,8 +552,12 @@ async function mrtCall(name, data, timeoutMs) {
     error.code = body && body.error && body.error.status
       ? String(body.error.status).toLowerCase().replace(/_/g, "-")
       : "request-failed";
+    if (data?.type !== "diagnostic" && ["internal", "unavailable", "deadline-exceeded", "request-failed"].includes(error.code)) {
+      error.supportId = mrtQueueDiagnostic(name, error.code);
+    }
     throw error;
   }
+  if (data?.type !== "diagnostic") void mrtFlushDiagnostics();
   return body && Object.prototype.hasOwnProperty.call(body, "result") ? body.result : body.data;
 }
 
@@ -3494,6 +3531,26 @@ function SummaryDashboard(_ref9) {
   }, LI("Download", 16), "Download PDF"))));
 }
 /* ── AGENT BRANDING MODAL ── */
+// Commit UI changes only after the server acknowledges them; failures keep the editor intact.
+async function mrtCommitEdit(save, updated, onSaved, message) {
+  try {
+    const saved = await save(updated);
+    if (onSaved) onSaved(saved || updated);
+    if (message) showToast(message, "success", 2500);
+    return true;
+  } catch (error) {
+    showToast((error.message || "Could not save. Your changes are still here; please try again.") + (error.supportId ? " Reference: " + error.supportId : ""), "error", 6000);
+    return false;
+  }
+}
+function mrtSponsorWebsite(sponsor) {
+  const value = String(sponsor.website || sponsor.url || "").trim();
+  if (!value) return "";
+  try {
+    const url = new URL(/^[a-z][a-z0-9+.-]*:/i.test(value) ? value : "https://" + value);
+    return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password ? url.href : "";
+  } catch (error) { return ""; }
+}
 function AgentBrandingModal(_ref0) {
   let {
     tour,
@@ -3891,7 +3948,7 @@ function TourSponsorsModal(_ref10) {
       contactName: sp.contactName || "",
       phone: sp.phone || "",
       email: sp.email || "",
-      url: sp.url || "",
+      url: mrtSponsorWebsite(sp),
       logo: sp.logo || "",
       headshot: sp.headshot || "",
       tagline: sp.tagline || "",
@@ -3902,10 +3959,7 @@ function TourSponsorsModal(_ref10) {
     setLogoPreview(sp.logo || "");
     setHeadshotPreview(sp.headshot || "");
   };
-  const updateAndSave = newList => {
-    setSponsorsLocal(newList);
-    onSave(newList);
-  };
+  const updateAndSave = newList => mrtCommitEdit(onSave, newList, () => setSponsorsLocal(newList));
   const togglePaid = async id => {
     const sp = sponsors.find(s => s.id === id);
     const newPaid = sp ? !sp.paid : true;
@@ -3972,7 +4026,7 @@ function TourSponsorsModal(_ref10) {
   const FULL_PRICE = 199;
   const SPLIT_PRICE = 49.75;
   const sponsorCount = sponsors.length;
-  const saveSponsor = () => {
+  const saveSponsor = async () => {
     if (!draft.name) return;
     let newList;
     if (editing === "new") {
@@ -3997,7 +4051,7 @@ function TourSponsorsModal(_ref10) {
         ...draft
       } : sp);
     }
-    updateAndSave(newList);
+    if (!await updateAndSave(newList)) return;
     setEditing(null);
     setDraft({
       name: "",
@@ -4019,9 +4073,7 @@ function TourSponsorsModal(_ref10) {
      sponsor outright — including a PAID one, taking them off the public tour page with no
      undo. Confirm first, matching the tour-delete modal. */
   const [confirmRemoveSponsor, setConfirmRemoveSponsor] = useState(null);
-  const removeSponsor = id => {
-    updateAndSave(sponsors.filter(sp => sp.id !== id));
-  };
+  const removeSponsor = id => updateAndSave(sponsors.filter(sp => sp.id !== id));
   return /*#__PURE__*/React.createElement("div", {
     style: {
       position: "fixed",
@@ -4714,9 +4766,8 @@ function TourSponsorsModal(_ref10) {
     className: "mrt-btn mrt-btn--ghost",
     style: {flex: 1}
   }, "Cancel"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
-      removeSponsor(confirmRemoveSponsor.id);
-      setConfirmRemoveSponsor(null);
+    onClick: async () => {
+      if (await removeSponsor(confirmRemoveSponsor.id)) setConfirmRemoveSponsor(null);
     },
     className: "mrt-btn",
     style: {flex: 1, background: "var(--mrt-red)", color: "#fff"}
@@ -5845,14 +5896,9 @@ function InviteCampaignTab(_ref15) {
       setEmailTemplates(buildCampaignEmails(tour));
     }
   }, [tour.id]);
-  const saveTemplates = () => {
-    onUpdateTour({
-      ...tour,
-      campaignEmails: emailTemplates
-    });
-    setShowTemplates(false);
-    setEditingEmail(null);
-  };
+  const saveTemplates = () => mrtCommitEdit(onUpdateTour, {...tour, campaignEmails: emailTemplates}, () => {
+    setShowTemplates(false); setEditingEmail(null);
+  }, "Templates saved");
   const [apiKeyStatus, setApiKeyStatus] = useState("");
   const saveApiKey = async () => {
     if (!apiKeyInput.trim()) {
@@ -5937,7 +5983,7 @@ function InviteCampaignTab(_ref15) {
       return;
     }
     const reader = new FileReader();
-    reader.onload = ev => {
+    reader.onload = async ev => {
       const result = parseCSV(ev.target.result);
       const parsed = result.contacts;
       if (parsed.length === 0) {
@@ -5947,11 +5993,9 @@ function InviteCampaignTab(_ref15) {
       }
       // Add ALL parsed contacts, including emails that already exist in the list
       const merged = [...contacts, ...parsed];
-      setContacts(merged);
-      onUpdateTour({
-        ...tour,
-        campaignContacts: merged
-      });
+      if (!await mrtCommitEdit(onUpdateTour, {...tour, campaignContacts: merged}, () => setContacts(merged))) {
+        setCsvStatus("Import was not saved. Select the file again to retry."); return;
+      }
       const parts = ["\u2705 Imported " + parsed.length + " of " + result.totalRows + " contacts"];
       const skipped = [];
       if (result.invalid > 0) skipped.push(result.invalid + " invalid email" + (result.invalid !== 1 ? "s" : ""));
@@ -5966,33 +6010,21 @@ function InviteCampaignTab(_ref15) {
   };
   const removeContact = id => {
     const updated = contacts.filter(c => c.id !== id);
-    setContacts(updated);
-    onUpdateTour({
-      ...tour,
-      campaignContacts: updated
-    });
+    return mrtCommitEdit(onUpdateTour, {...tour, campaignContacts: updated}, () => setContacts(updated), "Contacts saved");
   };
   const markNotInterested = email => {
     const updated = contacts.map(c => c.email.toLowerCase() === email.toLowerCase() ? {
       ...c,
       status: "not_interested"
     } : c);
-    setContacts(updated);
-    onUpdateTour({
-      ...tour,
-      campaignContacts: updated
-    });
+    return mrtCommitEdit(onUpdateTour, {...tour, campaignContacts: updated}, () => setContacts(updated), "Contacts saved");
   };
   const markRegistered = email => {
     const updated = contacts.map(c => c.email.toLowerCase() === email.toLowerCase() ? {
       ...c,
       status: "registered"
     } : c);
-    setContacts(updated);
-    onUpdateTour({
-      ...tour,
-      campaignContacts: updated
-    });
+    return mrtCommitEdit(onUpdateTour, {...tour, campaignContacts: updated}, () => setContacts(updated), "Contacts saved");
   };
   const launchCampaign = async () => {
     const pending = contacts.filter(c => c.status === "pending");
@@ -7440,17 +7472,15 @@ function TourDetailPage(_ref19) {
     };
     setAdminNotes(notes);
   };
+  const commitListings = (listings, onSaved, message) => mrtCommitEdit(onUpdateTour,
+    {...tour, listings}, saved => {setAdminListings(saved.listings || listings); if (onSaved) onSaved();}, message);
   const moveStop = (idx, dir) => {
-    const arr = [...adminListings];
+    const arr = adminListings.map(listing => ({...listing}));
     const si = idx + dir;
     if (si < 0 || si >= arr.length) return;
     [arr[idx].order, arr[si].order] = [arr[si].order, arr[idx].order];
     const sorted = [...arr].sort((a, b) => a.order - b.order);
-    setAdminListings(sorted);
-    onUpdateTour({
-      ...tour,
-      listings: sorted
-    }); // auto-save order change
+    return commitListings(sorted, null, "Tour order saved");
   };
   const addListing = async listingData => {
     if (adminListings.some(listing => listing.id === listingData.id)) return;
@@ -7474,11 +7504,7 @@ function TourDetailPage(_ref19) {
       ...l,
       order: i + 1
     }));
-    setAdminListings(updated);
-    onUpdateTour({
-      ...tour,
-      listings: updated
-    }); // auto-save immediately
+    return commitListings(updated, null, "Listing removed and saved");
   };
   const [optimizing, setOptimizing] = useState(false);
   const optimizeRoute = async () => {
@@ -7545,7 +7571,12 @@ function TourDetailPage(_ref19) {
   });
   const syncAgentContacts = async () => {
     if (!_fb || !listingRequests) { showToast("Not ready — try again in a moment", "warn"); return; }
-    const approvedReqs = listingRequests.filter(r => r.tourId === tour.id && r.status === "approved");
+    let requests = listingRequests;
+    if (MRT_SECURE_BACKEND) {
+      try { requests = Object.values((await _fb.ref("mrt_listing_requests").once("value")).val() || {}); }
+      catch (error) {showToast("Could not load agent contacts. Please try again.", "error", 6000); return;}
+    }
+    const approvedReqs = requests.filter(r => r.tourId === tour.id && r.status === "approved");
     const listings = tour.listings || [];
     let updated = false;
     const newListings = listings.map(l => {
@@ -7558,8 +7589,7 @@ function TourDetailPage(_ref19) {
       return patch;
     });
     if (!updated) { showToast("All listings already have contact info ✅", "success"); return; }
-    onUpdateTour({...tour, listings: newListings});
-    showToast("✅ Agent contacts synced!", "success", 2500);
+    await commitListings(newListings, null, "✅ Agent contacts synced!");
   };
   const sendSavedEvaluationReports = async reportType => {
     if (!canSend(reportType + "_" + tour.id, 5000)) {
@@ -8049,22 +8079,11 @@ function TourDetailPage(_ref19) {
     onClose: () => setShowQR(false)
   }), showBranding && /*#__PURE__*/React.createElement(AgentBrandingModal, {
     tour: tour,
-    onSave: d => {
-      onUpdateTour({
-        ...tour,
-        ...d
-      });
-      setShowBranding(false);
-    },
+    onSave: d => mrtCommitEdit(onUpdateTour, {...tour, ...d}, () => setShowBranding(false), "Branding saved"),
     onClose: () => setShowBranding(false)
   }), showSponsors && /*#__PURE__*/React.createElement(TourSponsorsModal, {
     tour: tour,
-    onSave: s => {
-      onUpdateTour({
-        ...tour,
-        sponsors: s
-      });
-    },
+    onSave: sponsors => onUpdateTour({...tour, sponsors}),
     onClose: () => setShowSponsors(false)
   }), showInvite && /*#__PURE__*/React.createElement("div", {
     style: {
@@ -8768,13 +8787,7 @@ function TourDetailPage(_ref19) {
         ...item,
         ...editFields
       } : item);
-      setAdminListings(updated);
-      onUpdateTour({
-        ...tour,
-        listings: updated
-      }); // auto-save inline edit
-      setEditingStop(null);
-      showToast("✅ Listing updated and saved", "success", 2000);
+      return commitListings(updated, () => setEditingStop(null), "✅ Listing updated and saved");
     },
     style: {
       background: B.navy,
@@ -9602,7 +9615,7 @@ function TourDetailPage(_ref19) {
     onError: e => {
       e.target.parentElement.style.display = "none";
     }
-  }))), (sp.phone || sp.email || sp.url) && /*#__PURE__*/React.createElement("div", {
+  }))), (sp.phone || sp.email || mrtSponsorWebsite(sp)) && /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,
@@ -9642,8 +9655,8 @@ function TourDetailPage(_ref19) {
       fontSize: 12,
       textDecoration: "none"
     }
-  }, LI("Mail", 14), "Contact sponsor"), sp.url && /*#__PURE__*/React.createElement("a", {
-    href: sp.url,
+  }, LI("Mail", 14), "Contact sponsor"), mrtSponsorWebsite(sp) && /*#__PURE__*/React.createElement("a", {
+    href: mrtSponsorWebsite(sp),
     target: "_blank",
     rel: "noreferrer",
     style: {
@@ -9785,7 +9798,7 @@ function TourDetailPage(_ref19) {
     onError: e => {
       e.target.parentElement.style.display = "none";
     }
-  }))), (sp.phone || sp.email || sp.url) && /*#__PURE__*/React.createElement("div", {
+  }))), (sp.phone || sp.email || mrtSponsorWebsite(sp)) && /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,
@@ -9825,8 +9838,8 @@ function TourDetailPage(_ref19) {
       fontSize: 12,
       textDecoration: "none"
     }
-  }, LI("Mail", 14), "Email"), sp.url && /*#__PURE__*/React.createElement("a", {
-    href: sp.url,
+  }, LI("Mail", 14), "Email"), mrtSponsorWebsite(sp) && /*#__PURE__*/React.createElement("a", {
+    href: mrtSponsorWebsite(sp),
     target: "_blank",
     rel: "noreferrer",
     style: {
@@ -10593,8 +10606,8 @@ function SponsorsPage(_ref22) {
       color: B.gray,
       lineHeight: 1.4
     }
-  }, sp.tagline), sp.url && /*#__PURE__*/React.createElement("a", {
-    href: sp.url,
+  }, sp.tagline), mrtSponsorWebsite(sp) && /*#__PURE__*/React.createElement("a", {
+    href: mrtSponsorWebsite(sp),
     target: "_blank",
     rel: "noreferrer",
     onClick: e => e.stopPropagation(),
@@ -15614,9 +15627,11 @@ function App() {
       [isAnyAdmin ? "mrt_ratings_private" : "mrt_ratings_public"]: val => setSharedRatings(val || {}),
       ...(authUid ? { ["mrt_favorites/" + authUid]: val => setSharedFavorites(val || {}) } : {}),
       ...(isAnyAdmin ? {
-        "mrt_listing_requests": val => setListingRequests(toList(val)),
-        "mrt_tour_requests": val => setTourRequests(toList(val)),
-        "mrt_contact_requests": val => setContactRequests(toList(val)),
+        ...(page === "requests-admin" ? {
+          "mrt_listing_requests": val => setListingRequests(toList(val)),
+          "mrt_tour_requests": val => setTourRequests(toList(val)),
+          "mrt_contact_requests": val => setContactRequests(toList(val)),
+        } : {}),
         "admins": val => setSubAdmins(toList(val).filter(user => user.active !== false && user.role !== "super").map(user => ({...user, id: user.uid || user.id})))
       } : {})
     } : {
@@ -15754,7 +15769,7 @@ function App() {
         fbPollInterval.current = null;
       } catch (e) {}
     };
-  }, [isAnyAdmin, authUid, fbLoadAttempt]);
+  }, [isAnyAdmin, authUid, fbLoadAttempt, page === "requests-admin"]);
 
   // Debounced write to Firebase — waits 800ms after last change before writing
   const fbWrite = (path, data) => {
