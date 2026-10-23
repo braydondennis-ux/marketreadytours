@@ -4,10 +4,11 @@ _Updated 2026-10-22. Production is live; see `CLAUDE.md` for what you are cleare
 
 Verified items note how they were confirmed, so nobody has to re-derive it.
 
-**October 22 implementation:** See RELIABILITY-RELEASE-2026-10-22.md. Repairs and automated
-browser/release safeguards are prepared and locally tested. The broader backend rollout needs
-specific approval after automatic review rejected its scope. Duplicate prevention and the
-existing Sonoran duplicate stops are explicitly deferred by Erik until the tour is over.
+**October 23 reliability release:** See RELIABILITY-RELEASE-2026-10-22.md and PR #1.
+All 25 repository-owned backend functions are updated and verified; 30 functions remain ACTIVE.
+Narrow reminder access hardening and seven sponsor URLs are live. The single Erik-only test
+email reached Inbox. Source CI passed; the web release uses the full same-commit Pages gate.
+Duplicate prevention and existing Sonoran duplicate stops remain explicitly deferred by Erik.
 Do not silently enable address-based duplicate prevention in this release.
 
 **October 22 full reliability audit:** See `RELIABILITY-AUDIT-2026-10-22.md` for evidence

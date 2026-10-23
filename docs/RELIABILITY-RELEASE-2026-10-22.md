@@ -53,45 +53,55 @@ normalization or rejection of duplicate addresses was added, and no tour entry w
 - Seven privacy/rules tests pass, including denying browser reads/writes to outbox/diagnostics.
   A separate test checks the production transition rules (documentation keys stripped) for reminder permissions.
 - Full isolated callable workflow suite passes with mocked outbound email.
-- 18 original browser checks pass locally; 21 checks including the install tip regression are rerunning
-  across small iPhone/WebKit, large iPhone/WebKit and Chrome.
+- 21 browser checks pass locally and in hosted CI across small iPhone/WebKit, large
+  iPhone/WebKit and Chrome.
 - iOS simulator build: BUILD SUCCEEDED using Capacitor 8.5.1.
-- Final GitHub validation is tracked on the implementation PR.
+- Full hosted validation passed for source d6ca33b: Actions run 39899007006, PR #1.
 
-## Production state and approval boundary
+## Approved production rollout, October 23
 
-Live already: two new private rule nodes for mrt_email_outbox (with nextAttemptAt index) and
-mrt_client_events. The exact current production rules were read/backed up and patched; every
-existing rule was preserved. Both new nodes deny direct client reads and writes. No strict
-rules-file cutover occurred.
+Erik explicitly approved the staged rollout and reiterated that test emails go only to
+erik@marketreadysystems.ai. All 25 existing repository-owned functions were deployed by name
+and verified ACTIVE with new revisions. The full inventory remains 30 ACTIVE functions.
+Service accounts, secret bindings, environment variables and ingress settings match the
+pre-rollout inventory. processReminders has the approved 540-second timeout. The five legacy
+functions (sendCampaignEmails, sendEmail, trackEmail, sendTourReminders and sendOneHourReminder)
+retain their original revisions. No endpoint or scheduler was created.
 
-The first named saveTour source/dependency update is ACTIVE and safely returns 401 to an
-unauthenticated test request. No test tour/listing was saved during this implementation pass.
+The deployment paused when cloud credentials expired. One Cloud Build remained queued and
+expired without replacing its live revision; the named retry succeeded after reauthentication.
+This is not evidence of the original listing-save incident's root cause. Final runtime logs
+contain zero ERROR entries from the start of this rollout through the backend completion check.
 
-Automatic approval review rejected the proposed broad staged rollout. The verified inventory
-contains 25 existing functions whose source is in this repository. Its stated concern was the large production rollout,
-including new email and scheduler behavior, could disrupt service and needed specific user
-approval. That rollout has not run. No workaround or series of deployments was used to bypass it.
-The five legacy functions outside this source (sendCampaignEmails, sendEmail, trackEmail,
-sendTourReminders and sendOneHourReminder) are preserved; no bare functions deployment is used.
+Live rules now deny direct browser reads/writes to the private email outbox and diagnostics.
+Reminder jobs are admin-readable and server-write-only. The exact live rules were backed up
+and narrowly patched; every other rule and index was preserved and read-back verified.
+No strict rules-file cutover occurred.
 
-Final review also found that the old transition rules allowed any authenticated account to
-read/write reminder jobs. The staged patch makes jobs admin-readable and server-write-only,
-matching the active backend's ownership. This existing reminder rule has **not** been changed
-live yet; the earlier two-node rules patch preserved it. The rollout approval includes this
-narrow hardening, with every other existing rule retained.
+Seven sponsor website corrections across three public tour projections were conditionally
+applied and read-back verified. No private tour content, listing order or duplicate stop was
+changed. Ignored backups are under .mrt-backups/2026-10-23-approved-reliability/.
 
-Reviewable approval plan: deploy the 25 named existing functions in small verified stages,
-checking ACTIVE revision, unchanged identities/secret bindings and safe callable responses after
-each. processReminders receives a 540-second timeout for bounded retry work. Publish the matching
-client only after its backend contract is live and full GitHub validation is green. Keep inventory
-at 30. Stop and inspect any failed stage before moving on.
+Live consistency audit: 44 private/public tours match, all 95 evaluations match public
+aggregates, and no future reminders are missing or overdue. The existing worker's normal
+scheduled runs also report 44 checked tours, zero mismatches and zero delivery failures.
+The three legacy schedulers remain paused.
 
-Seven derived sponsor website corrections across three public tour projections are prepared
-from existing private sponsor data; they must be applied conditionally against current versions,
-without changing private tour content, listing order or duplicate stops. They are not yet applied.
-An Erik-only outbox test can follow approval; no agent receives a test email.
+Exactly one release test email was queued, addressed only to Erik. The normal scheduled
+worker sent it at 06:37 Phoenix with a provider receipt and zero failed attempts. Gmail
+computer use confirmed Inbox placement. No test customer tour, listing or evaluation was
+created, and no test agent email or financial transaction occurred.
 
-Mailgun forwarding/branded sender still depends on Braydon and remains deferred. Actual checkout,
-physical-phone testing, automated backup/restore verification, complete request pagination and
-a known cause for the original runtime startup failure remain separate follow-up items.
+The matching web release ships through PR #1 and the gated Pages workflow: full validation
+of the merge commit must pass before publication. Application source d6ca33b passed hosted
+CI run 39899007006; the only subsequent pre-merge changes record this rollout in documentation.
+The release meta tag identifies the actual deployed commit. Native Capacitor compilation
+passed, but no App Store/native distribution was published.
+
+## Deferred work
+
+Duplicate prevention and existing duplicate stops remain explicitly deferred until Erik
+reopens that work after the tour. Mailgun forwarding/branded sender depends on Braydon.
+Physical-phone camera/cellular testing, actual checkout, automated backup/restore verification,
+complete request pagination and a confirmed cause of the original runtime startup failure
+remain follow-up items. Do not equate passing checks with a guarantee against every failure.
