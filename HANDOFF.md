@@ -68,7 +68,8 @@ is **30 functions, all ACTIVE**; the original central saveTour remains intact.
 
 Validation: 142 tests and 13 static checks passed; full isolated emulator workflow passed
 with mocked email after the secret-dependency change. New configuration tests verify saveTour
-needs no email secret while email-sending callables retain it. Release CI pending.
+needs no email secret while email-sending callables retain it. Release f880821 passed full
+validation 39877195725 (including rules and emulator workflows) and Pages 39877195610.
 Follow-up: investigate recurring runtime startup failures and duplicate save callers.
 At 20:40 and 21:04 UTC, each earlier successful listing save had a concurrent version-conflict
 POST. The recovery verification had exactly one successful POST; do not assume the earlier
