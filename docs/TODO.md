@@ -4,6 +4,14 @@ _Updated 2026-10-22. Production is live; see `CLAUDE.md` for what you are cleare
 
 Verified items note how they were confirmed, so nobody has to re-derive it.
 
+**October 22 full reliability audit:** See `RELIABILITY-AUDIT-2026-10-22.md` for evidence
+and repair acceptance criteria. First priorities: await failed inline/admin saves, prevent
+Create Tour duplicates beyond the 1.5-second guard, review Sonoran Showcase's repeated
+32644 North 40th Place (stops 3/6), and gate deployment on full validation plus real browser
+workflows. Review dependency advisories; repair sponsor URL aliases; reduce historical request
+photo downloads. No customer records were changed. The new local snapshot audit detects
+projection/rating drift, reminder backlog/missing plans and duplicate upcoming properties.
+
 **October 22 backend incident follow-up:** Listing saves recovered and an authenticated
 Norterra save persisted in both projections. The Cloud Run startup failure's root cause is
 unconfirmed; other affected functions recovered without changes. Investigate recurrence and
@@ -117,40 +125,33 @@ callable, so it deserves its own change.
 
 ---
 
-## 🟠 4. Harden the remaining realtime writes (19 sites)
+## 🟠 4. Audit remaining direct writes and user-visible acknowledgment
 
-RTDB writes go over the realtime socket with no timeout, so a stalled socket leaves the UI
-spinning with no error (this is what hung Sign In and Team Management). `mrtDbSet()` races the
-socket write against a REST write, but is applied to the three `admins/` writes only. **19 other
-`_fb.ref(...)` write sites remain unprotected.**
+The October 22 audit reproduced an inline listing editor claiming success before a rejected
+save resolved. Reorder/remove, sponsor, contact-sync and campaign handlers also contain
+unawaited onUpdateTour calls. Audit active secure paths separately from fenced legacy code;
+the older count of 19 direct writes is not a fresh active-path inventory. See R1 in the audit.
+The Synced pill is not proof that the last edit reached the database.
 
-Note the "Synced" pill reflects `fbReady` (initial data loaded, possibly via REST fallback) and
-**not** socket health, so a dead socket looks healthy until you try to write.
+## 🟠 5. Secure writes are per-tour; projection reconciliation remains open
 
----
+The whole-collection last-write-wins problem described here was the legacy production path.
+Current secure saves use a per-tour transaction with expectedVersion and reject stale edits.
+Today's 44 private/public projections and all evaluation aggregates matched. The isolated
+preflight also rejected stale writes. Do not describe the live path as still replacing every tour.
 
-## 🟠 5. Sync is whole-collection last-write-wins
-
-Production lost data on 2026-07-31 (Scott: 7 of 8 listings, repeatedly). The immediate bug is
-fixed, but every write still replaces the entire collection and resolution is last-write-wins:
-
-- A genuine remote edit arriving inside our own 2.5s ignore window is **dropped**, and nothing
-  re-fetches it — that client stays stale until reload.
-- Two admins editing different tours simultaneously can still clobber one another.
-
-Real fix is per-tour granular writes (`mrt_tours/<id>`), which the pre-rollback May build had in
-`15e501f` and the February rollback discarded.
-
-Note this is partially mitigated for tours: `saveTour` uses `expectedVersion` optimistic
-concurrency and rejects stale writes with 409. Now well evidenced — the 2026-09-02 tour was built
-in production over two weeks and reached **version 56 across ~55 saves** with no lost updates.
+Remaining concerns are unawaited UI saves, shared-object mutation during reorder, and the
+separate private/public writes in saveTour. If the public write fails after private commit,
+reconciliation is needed. Full-root listeners also need pagination as history grows. See the
+October 22 audit, including failure reproduction and the repeatable snapshot checker.
 
 ---
 
 ## 🟡 6. Smaller open items
 
-- **September 10 create-tour guard still needs follow-up.** It releases after 1,500 ms while
-  the save may still be pending; recheck before changing it. The inverted uptime-alert condition
+- **Create-tour guard defect confirmed October 22.** A delayed first save followed by a
+  second click after 1,500 ms issues two distinct tour IDs in an isolated reproduction.
+  Hold the guard through completion and retain the draft ID across uncertain retries. The inverted uptime-alert condition
   was reverified and repaired October 8: failed-check count now `> 0` for five minutes, with the
   existing notification channels preserved. See `HEALTH-CHECK-2026-10-08.md`. The separate
   admin-delete permission mismatch was resolved September 11 in `8eab1cf`. Historical duplicate

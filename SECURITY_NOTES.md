@@ -1,6 +1,6 @@
 # MarketReady Tours — Security Status
 
-_Updated 2026-09-02. **These controls are deployed and live in production.** The previous
+_Updated 2026-10-22. **These controls are deployed and live in production.** The previous
 version of this file said they were not; that was true until the 2026-08-10 cutover._
 
 ## Legacy `mrt_tours` exposure — CLOSED 2026-08-13 (M5)
@@ -62,8 +62,14 @@ into chat — set them with `firebase functions:secrets:set`.
 `CLOVER_MERCHANT_ID`, `CLOVER_WEBHOOK_SECRET`, `MRT_SIGNING_SECRET`, plus the Square Sandbox
 values described in `docs/SQUARE-SANDBOX.md`.
 
-`MRT_RESEND_API_KEY` is declared on `callableOptions`, so every callable carries it. Ten call
-sites reach `sendTransactionalEmail`, and a missing secret only surfaces at send time.
+`MRT_RESEND_API_KEY` is declared on shared email-capable `callableOptions`. Data-only
+`saveTour` overrides secrets to an empty list as of October 22, so its startup does not depend
+on the email secret. Email-sending callables retain the binding; regression tests cover both.
+The original runtime startup incident's cause remains unconfirmed.
+
+October 22 dependency audit found high/critical advisories in repository lockfiles. See
+`docs/RELIABILITY-AUDIT-2026-10-22.md` R5 for verified versions, maintainer sources and scope.
+This is not evidence of exploitation or proof of the production outage's cause.
 
 ## Configuration notes
 

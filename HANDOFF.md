@@ -22,6 +22,36 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
 
+## 2026-10-22 — reliability-first full audit
+
+Erik requested recent issue-email review, broad audit and prevention planning; he selected
+reliability first without a growth target. See docs/RELIABILITY-AUDIT-2026-10-22.md. Gmail
+threads reviewed: Lou's October 22 Failed to fetch, Nicole's October 21 signup/editor problem,
+Lou's October 8 missing evaluations and October 6 sponsor links. Existing Cloud error alert
+mail did arrive in Erik's inbox. No replies or customer notifications sent by the audit.
+
+Production read-only results: all 44 private/public projections match; 95 evaluations across
+34 listing buckets/seven tours match public aggregates; 48 reminder rows (30 sent, 16 pending,
+two cancelled), no overdue/missing future jobs. All 30 functions ACTIVE and the active reminder
+scheduler healthy. Private unauthenticated reads reject access; legacy mrt_tours stays null.
+Fourteen isolated six-stop tour preflight scenarios pass with mocked outbound delivery.
+
+New findings: inline edits falsely announce saved before failed requests; Create Tour can
+issue two IDs after its 1,500ms timer while a save is pending; Sonoran Showcase repeats
+32644 North 40th Place at stops 3 and 6 with the same agent email. One listing is from manual
+entry, the other attendance recovery. **Do not delete/merge without organizer review.**
+Pages deploys independently of full validation; Playwright discovers zero browser tests.
+Also review dependency advisories, sponsor url/website aliases (live relative link 404), old
+inline request photos (about 2.2MB), email retry durability and projection reconciliation.
+Initial incognito app navigation was blank until reload; route subsequently loaded in Cave
+Creek. Do not claim this transient has a confirmed cause or physical-iPhone coverage.
+
+Added read-only local snapshot audit with four regressions. It flags the duplicate property
+and rejects incomplete exports. 149 tests and 13 static checks pass locally. Existing
+5a7d5f5 full CI 39887001339 is green; audit-tool release CI pending. Production application
+code/functions/data were not changed during this audit. TODO and security notes corrected
+where they still described legacy collection writes or a universal email-secret binding.
+
 ## 2026-10-22 — backend monitoring and listing draft safeguards
 
 Added direct Cloud Monitoring probes for saveTour, submitIntake and submitRating every
