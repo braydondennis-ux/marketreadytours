@@ -30,14 +30,17 @@ are untouched. Prepared: truthful save acknowledgments, safe sponsor URLs, reque
 release gating with daily real browser tests, sanitized failure reporting, bounded durable
 notification retries and read-only integrity alerts, plus dependency/native patches.
 
-Local evidence: 156 tests/13 checks, seven rules tests, full mocked callable suite, 18 real
+Local evidence: 156 tests/13 checks, seven rules tests, full mocked callable suite, 21 real
 browser checks over three device/browser projects, and native simulator BUILD SUCCEEDED.
 Two private/index rule nodes were added to exact live rules without changing existing rules.
 First named saveTour update is ACTIVE; unauthenticated POST 401 verified. No tour/listing content
-or agent emails changed. The bulk rollout to 24 existing repository-owned functions was
+or agent emails changed. The bulk rollout to 25 existing repository-owned functions was
 REJECTED by automatic approval review because email/scheduler behavior and production disruption
 needed specific approval. Do not retry or bypass it without that approval. Remaining backend
-functions, public sponsor corrections and client publication are pending. Reviewable PR/CI follows.
+functions, public sponsor corrections and client publication are pending. Reviewable PR: https://github.com/braydondennis-ux/marketreadytours/pull/1.
+Final review added narrow reminder-rule hardening (staged only), and CI exposed an install-tip
+overlay blocking iPhone form buttons. The tip now stays in normal document flow and Requests
+reserves bottom-tab space. Exact transition-rule access and mobile regressions are included.
 
 ## 2026-10-22 — reliability-first full audit
 

@@ -79,3 +79,12 @@ test('attendance signup appears in Requests and its prefilled listing saves succ
  await expect.poll(async()=>{const t=await read('mrt_tours_private/tour-demo-1');return(t.listings||[]).some(l=>l.address==='300 Browser Listing Way')}).toBeTruthy();
  expect(Object.keys(await read('mrt_tour_requests')).length).toBe(1);
 });
+
+test('installation tip stays in document flow and can be dismissed',async({page,browserName})=>{
+ await page.goto('/app/#/');
+ const tip=page.locator('#mrt-a2hs');
+ if(browserName!=='webkit'){await expect(tip).toHaveCount(0);return;}
+ await expect(tip).toBeVisible();await expect(tip).toHaveCSS('position','relative');
+ await tip.getByRole('button',{name:'Dismiss installation tip'}).click();await expect(tip).toHaveCount(0);
+ await page.reload();await expect(tip).toHaveCount(0);
+});
