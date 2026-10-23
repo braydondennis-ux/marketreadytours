@@ -48,7 +48,8 @@ Creek. Do not claim this transient has a confirmed cause or physical-iPhone cove
 
 Added read-only local snapshot audit with four regressions. It flags the duplicate property
 and rejects incomplete exports. 149 tests and 13 static checks pass locally. Existing
-5a7d5f5 full CI 39887001339 is green; audit-tool release CI pending. Production application
+5a7d5f5 full CI 39887001339 is green. Audit-tool release aedfb8c passed full validation
+39890361284 (rules and callable workflows included) and Pages 39890361248. Production application
 code/functions/data were not changed during this audit. TODO and security notes corrected
 where they still described legacy collection writes or a universal email-secret binding.
 
