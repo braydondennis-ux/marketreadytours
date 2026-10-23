@@ -1,6 +1,6 @@
 # MarketReady Tours — Engineering Handoff
 
-_Updated 2026-10-21. Read this entire file before acting._
+_Updated 2026-10-22. Read this entire file before acting._
 
 **Current state.** The refresh is **LIVE** (cutover 2026-08-10) and edge-cached. Since
 2026-10-10 **the landing-page configuration is restored at `/` for mobile and desktop; the app
@@ -21,6 +21,58 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 **The app is genuinely in use.** The 2026-09-02 North Phoenix tour was built in production over
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
+
+## 2026-10-22 — Norterra listing saves restored; startup cause unconfirmed
+
+Lou reported Failed to fetch while adding homes to Norterra 85085
+(`tour-1792533538690-1-3oweu`). Browser OPTIONS returned 500 without CORS headers;
+Cloud Run logs showed “The request failed because the instance could not start successfully.”
+Requests failed before application execution. deleteTour, submitIntake, submitRating,
+verifyTourCode, sendAdminEmail and approveListingRequest showed the same preflight failure.
+This was separate from the October 21 form-validation fixes.
+
+The original us-central1 saveTour is now ACTIVE on revision **savetour-00013-bim**,
+build **ab721307-cd1b-4e0a-b532-27858c53fa5e**, deployed at 2026-10-23 00:12 UTC
+(October 22 Phoenix). The named source deployment removed its unused MRT_RESEND_API_KEY
+binding, with Erik's explicit approval. Source overrides secrets: [] for saveTour only;
+email-capable functions retain their secret. Auth, App Check, rules and IAM were preserved.
+Runtime remains gen2 / 512Mi from the earlier recovery attempt, with
+MRT_RECOVERY_REVISION=20261022. No frontend routing change was published.
+
+Live verification: all seven checked endpoints returned OPTIONS 204; unauthenticated saveTour
+POST returned 401. Chrome saved the existing Norterra tour unchanged at 00:15:26 UTC:
+POST 200, Auth VALID, App Check VALID, UI returned Synced. Private and public records both
+advanced version 6 to 7. Only version, updatedAt and updatedBy changed; both listings and
+sponsors were identical. Reminders: 4 unchanged, 0 created/updated/cancelled/revived/locked.
+No test listing, rating or agent email was created. Private before/after backups are ignored
+under .mrt-backups/2026-10-22-norterra-{before,after}-save-check.json.
+The saved homes remain 27418 North 22nd Lane and 28636 North 21st Lane.
+This verifies an authenticated save, not a new listing added by Lou or every application feature.
+
+**Do not claim the unused secret caused the outage.** Other functions recovered without
+changes during the approval gap. Billing was enabled, runtime service account existed,
+secret version 1 was enabled, and effective Secret Accessor permission was CAN_ACCESS with
+no deny. Service Health's active Python remote-registry incident did not match this workload.
+Service Health and Policy Troubleshooter APIs were enabled for diagnostics; no IAM grant
+was added. Underlying startup cause remains unconfirmed.
+
+Earlier attempts: restart of the old image failed because its Artifact Registry tag had been
+cleaned up by the Firebase one-day policy; this does not prove cleanup caused the serving outage.
+Source rebuild 9f13ae92-86bc-408f-86e1-db0961e4c437 produced failed revision
+savetour-00011-mig; gen2/512Mi revision savetour-recovery-gen2 also failed startup.
+Erik approved temporary us-west1 saveTour; build c9dab441-0871-4c63-8084-e564c18b7281
+succeeded but revision savetour-00001-waj failed the same infrastructure health check.
+It never received app traffic and returned 404. The unpublished regional routing draft was
+removed. The failed temporary endpoint was deleted after central recovery. Final inventory
+is **30 functions, all ACTIVE**; the original central saveTour remains intact.
+
+Validation: 142 tests and 13 static checks passed; full isolated emulator workflow passed
+with mocked email after the secret-dependency change. New configuration tests verify saveTour
+needs no email secret while email-sending callables retain it. Release CI pending.
+Follow-up: investigate recurring runtime startup failures and duplicate save callers.
+At 20:40 and 21:04 UTC, each earlier successful listing save had a concurrent version-conflict
+POST. The recovery verification had exactly one successful POST; do not assume the earlier
+conflicts caused the infrastructure outage.
 
 ## 2026-10-21 — Nicole signup and manual-listing repair
 

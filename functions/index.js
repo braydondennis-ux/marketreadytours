@@ -83,10 +83,10 @@ const callableOptions = {
   invoker: "public",
   enforceAppCheck: !isEmulator,
   cors: true,
-  /* Declared on every callable rather than per-function: ten different call sites reach
+  /* Shared by email-capable callables: ten different call sites reach
      sendTransactionalEmail, and a missing secret surfaces only at runtime when someone tries
-     to send. Granting it everywhere costs nothing and removes a whole class of "works
-     locally, fails in production" bug. */
+     to send. Data-only saveTour overrides this list so email-secret availability cannot
+     prevent a listing-save container from starting. */
   secrets: [RESEND_API_KEY],
 };
 
@@ -633,7 +633,9 @@ async function loadRemindersByIds(ids) {
   return Object.fromEntries(entries.filter(([, value]) => value));
 }
 
-exports.saveTour = onCall(callableOptions, async (request) => {
+// Saving tours only writes data and reconciles future reminder jobs. It must not
+// depend on the email provider's secret being available at container startup.
+exports.saveTour = onCall({...callableOptions, secrets: []}, async (request) => {
   assertSafeProject();
   const {uid} = assertAdmin(request);
   return idempotent("saveTour", uid, request.data?.requestId, async () => {

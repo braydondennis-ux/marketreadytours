@@ -1,8 +1,14 @@
 # MarketReady Tours — open items
 
-_Updated 2026-10-10. Production is live; see `CLAUDE.md` for what you are cleared to do._
+_Updated 2026-10-22. Production is live; see `CLAUDE.md` for what you are cleared to do._
 
 Verified items note how they were confirmed, so nobody has to re-derive it.
+
+**October 22 backend incident follow-up:** Listing saves recovered and an authenticated
+Norterra save persisted in both projections. The Cloud Run startup failure's root cause is
+unconfirmed; other affected functions recovered without changes. Investigate recurrence and
+the earlier paired successful/conflicting save requests separately. Preserve Auth/App Check.
+See HANDOFF.md for revisions, probes and verification limits.
 
 **Mobile audit, October 10:** See `MOBILE-AUDIT-2026-10-10.md`. iPhone Safari simulator
 and 320/430px browser audit found and fixed keyboard/rating/draft/retry issues; 129 tests and
