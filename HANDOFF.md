@@ -1,6 +1,6 @@
 # MarketReady Tours — Engineering Handoff
 
-_Updated 2026-10-23. Read this entire file before acting._
+_Updated 2026-10-28. Read this entire file before acting._
 
 **Current state.** The refresh is **LIVE** (cutover 2026-08-10) and edge-cached. Since
 2026-10-10 **the landing-page configuration is restored at `/` for mobile and desktop; the app
@@ -21,6 +21,17 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 **The app is genuinely in use.** The 2026-09-02 North Phoenix tour was built in production over
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
+
+## 2026-10-28 — tour overview layout
+
+Braydon flagged the sparse empty 85255 tour screen. Tour detail now has a larger semantic
+heading, compact desktop action groups, phone touch targets, and an empty-lineup card above
+sponsors. Organizers get Add your first listing, opening the existing editor and address form;
+public visitors see a coming-soon explanation with no admin action. Existing tours retain their
+listing cards, sponsor links and toolbar destinations. No backend, customer data or mail changes.
+Local checks: 156 unit tests, 13 static checks, 24 isolated Chrome/small-and-large iPhone WebKit
+checks pass. Empty-state screenshots inspected on desktop and iPhone; new shortcut opens the
+form and Cancel works. Publication uses the mandatory same-commit full validation gate.
 
 ## 2026-10-23 — approved reliability release
 

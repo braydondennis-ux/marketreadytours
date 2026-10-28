@@ -88,3 +88,23 @@ test('installation tip stays in document flow and can be dismissed',async({page,
  await tip.getByRole('button',{name:'Dismiss installation tip'}).click();await expect(tip).toHaveCount(0);
  await page.reload();await expect(tip).toHaveCount(0);
 });
+
+
+test('empty tour has a usable organizer shortcut and a clear public state',async({page},testInfo)=>{
+ for(const node of ['mrt_tours_private','mrt_tours_public']) {
+  const response=await fetch('http://127.0.0.1:9000/'+node+'/tour-demo-1/listings.json?ns=mrt-local-audit',{method:'DELETE',headers:{Authorization:'Bearer owner'}});
+  expect(response.ok).toBeTruthy();
+ }
+ await page.goto('/app/#/tour/tour-demo-1');
+ await expect(page.getByRole('heading',{name:'The lineup is coming soon.'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Add your first listing'})).toHaveCount(0);
+ await login(page);
+ await page.goto('/app/#/');await page.goto('/app/#/tour/tour-demo-1');
+ const add=page.getByRole('button',{name:'Add your first listing'});
+ await expect(add).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
+ await page.screenshot({path:testInfo.outputPath('empty-tour.png'),fullPage:true});
+ await add.click();
+ await expect(page.getByPlaceholder('Start typing an address...')).toBeVisible();
+ await page.getByRole('button',{name:'Cancel',exact:true}).click();
+});

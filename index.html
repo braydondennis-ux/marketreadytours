@@ -347,6 +347,39 @@ body.mrt-rating-active #mrt-a2hs{display:none!important;}
   .mrt-summary-property { box-shadow:none !important; overflow:visible !important; break-inside:avoid; }
   .mrt-summary-property + .mrt-summary-property { break-before:page; }
 }
+
+/* Tour overview: clear hierarchy and touch-friendly controls. */
+.mrt-tour-header{position:relative!important;box-shadow:none!important;padding-top:20px!important;padding-bottom:20px!important}
+.mrt-tour-title{font-size:clamp(26px,4vw,36px)!important;line-height:1.2;margin:12px 0 20px;letter-spacing:-.7px;overflow-wrap:anywhere}
+.mrt-tour-actions{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))}
+.mrt-tour-actions>button{min-height:64px;background:rgba(255,255,255,.07)!important}
+.mrt-tour-actions>button:hover{background:rgba(255,255,255,.16)!important}
+.mrt-tour-meta{background:transparent!important;padding:16px 0!important}
+.mrt-tour-tabs{margin-top:0!important;flex-wrap:wrap}
+.mrt-tour-tabs>button{min-height:44px;padding:10px 12px!important;background:transparent!important}
+.mrt-tour-empty{display:flex;flex-wrap:wrap;align-items:center;gap:20px;padding:32px!important;margin:24px 14px!important;background:#fff;border:1px solid var(--mrt-hair);border-radius:18px}
+.mrt-tour-empty-icon{width:64px;height:64px;display:grid;place-items:center;background:#EDF0F8;color:#2F44A0;border-radius:16px;flex-shrink:0}
+.mrt-tour-empty-copy{flex:1;min-width:220px}
+.mrt-tour-empty h2{margin:8px 0;font-size:24px;line-height:1.25;letter-spacing:-.4px;color:#101A36}
+.mrt-tour-empty p{margin:0;max-width:520px;color:#5B5F6B;font-size:15px;line-height:1.6}
+.mrt-tour-add{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 20px;border:0;border-radius:10px;background:#2F44A0;color:white;font:700 14px var(--mrt-font-body);cursor:pointer}
+.mrt-tour-add:hover{background:#243680}
+.mrt-tour-sponsors{background:transparent!important;border-bottom:0!important;padding:20px 14px!important}
+.mrt-tour-sponsors a{min-height:44px}
+@media(min-width:1024px){
+ body.mrt-desktop .mrt-detail-col>.mrt-tour-empty{max-width:1164px!important;width:calc(100% - 36px);margin-top:28px!important;margin-bottom:8px!important}
+ .mrt-tour-actions,.mrt-tour-tabs{max-width:680px}
+}
+@media(max-width:600px){
+ .mrt-tour-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .mrt-tour-actions>button{flex-direction:row!important;flex-wrap:wrap;gap:6px!important;padding:10px!important;min-height:48px}
+ .mrt-tour-actions>button>span:last-child{flex-basis:100%;font-size:11px!important}
+ .mrt-tour-tabs{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .mrt-tour-empty{padding:24px!important;gap:16px}
+ .mrt-tour-empty-copy{min-width:0;flex-basis:100%}
+ .mrt-tour-empty h2{font-size:23px}
+ .mrt-tour-add{width:100%}
+}
 </style>
 </head>
 <body>
@@ -2946,7 +2979,7 @@ function RankingPage(_ref8) {
       paddingBottom: 40
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "mrt-appbar",
+    className: "mrt-appbar mrt-tour-header",
     style: {
       background: B.surface,
       padding: "14px 18px",
@@ -2960,6 +2993,7 @@ function RankingPage(_ref8) {
     }
   }, /*#__PURE__*/React.createElement("button", {
     onClick: onBack,
+    "aria-label": "Back to tours",
     style: {
       background: "none",
       border: "none",
@@ -9237,7 +9271,8 @@ function TourDetailPage(_ref19) {
       background: "#fff",
       padding: 4
     }
-  }))), /*#__PURE__*/React.createElement("div", {
+  }))), /*#__PURE__*/React.createElement("h1", {
+    className: "mrt-tour-title",
     style: {
       color: "#fff",
       fontFamily: "DM Sans, system-ui, sans-serif",
@@ -9249,6 +9284,7 @@ function TourDetailPage(_ref19) {
       gap: 9
     }
   }, React.createElement(TourDot, { tour: tour, size: 12 }), React.createElement("span", { style: { marginLeft: 0, fontFamily: "DM Sans, system-ui, sans-serif" } }, tour.name)), isAdmin && /*#__PURE__*/React.createElement("div", {
+    className: "mrt-tour-actions",
     style: {
       display: "flex",
       gap: 8,
@@ -9377,6 +9413,7 @@ function TourDetailPage(_ref19) {
       lineHeight: 1.2
     }
   }, "Edit Stops"))), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-tour-meta",
     style: {
       marginTop: 10,
       background: "rgba(255,255,255,.1)",
@@ -9414,6 +9451,7 @@ function TourDetailPage(_ref19) {
   }, LI("Heart", 13, { marginRight: 5 }), favCount, " fav", /*#__PURE__*/React.createElement("span", { style: { opacity: .45, margin: "0 9px" } }, "·"), LI("Star", 13, { marginRight: 5 }), ratedCount, " rated"),
   sorted.length>=2&&/*#__PURE__*/React.createElement("a",{href:"https://www.google.com/maps/dir/"+sorted.map(l=>encodeURIComponent((l.address||"")+" "+(l.city||""))).join("/"),target:"_blank",rel:"noreferrer",style:{background:"rgba(255,255,255,.2)",color:"#fff",borderRadius:7,padding:"3px 9px",fontSize:11,fontWeight:700,textDecoration:"none",whiteSpace:"nowrap",border:"1px solid rgba(255,255,255,.3)"}},LI("Map", 12, { marginRight: 4 }),"All Stops")
 )), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-tour-tabs",
     style: {
       display: "flex",
       gap: 8,
@@ -9475,7 +9513,19 @@ function TourDetailPage(_ref19) {
       fontWeight: 600,
       display: "flex", alignItems: "center", justifyContent: "center", gap: 5
     }
-  }, LI("Megaphone", 14), "Campaign"))), paidSponsors.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, LI("Megaphone", 14), "Campaign"))), sorted.length === 0 && React.createElement("section", { className: "mrt-tour-empty" },
+    React.createElement("div", { className: "mrt-tour-empty-icon" }, LI("Home", 30)),
+    React.createElement("div", { className: "mrt-tour-empty-copy" },
+      React.createElement("span", { className: "mrt-eyebrow" }, "Tour lineup"),
+      React.createElement("h2", null, isAdmin ? "Build your tour, one home at a time." : "The lineup is coming soon."),
+      React.createElement("p", null, isAdmin ? "Add the first property to start your route. Your listings will appear here as you add them." : "The organizer is putting this tour together. Check back here for homes and route details.")),
+    isAdmin && React.createElement("button", { className: "mrt-tour-add", onClick: () => {
+      setAdminListings([...(tour.listings || [])].sort((a, b) => a.order - b.order));
+      setAdminNotes(tour.notes || {});
+      setShowAdmin(true);
+      setShowAddForm(true);
+    } }, LI("Plus", 18), "Add your first listing")), paidSponsors.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "mrt-tour-sponsors",
     style: {
       background: "#fff",
       borderBottom: "1px solid #F0EDE6",
@@ -9876,17 +9926,7 @@ function TourDetailPage(_ref19) {
       color: B.gray,
       fontWeight: 600
     }
-  }, sorted.length, sorted.length === 1 ? " listing" : " listings")), sorted.length === 0 && /*#__PURE__*/React.createElement("div", {
-    style: {
-      textAlign: "center",
-      padding: "60px 20px",
-      color: B.gray
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginBottom: 12
-    }
-  }, LI("Home", 40, { color: B.gray })), /*#__PURE__*/React.createElement("p", null, "No listings yet.", isAdmin ? " Tap the gear icon to add some." : "")), /*#__PURE__*/React.createElement("div", { className: "mrt-list mrt-list-listings" }, sorted.map((listing, _stopIx) => {
+  }, sorted.length, sorted.length === 1 ? " listing" : " listings")), /*#__PURE__*/React.createElement("div", { className: "mrt-list mrt-list-listings" }, sorted.map((listing, _stopIx) => {
     var _tour$favorites, _tour$ratings5, _tour$ratings6, _tour$notes;
     const isFav = ((_tour$favorites = tour.favorites) === null || _tour$favorites === void 0 ? void 0 : _tour$favorites[listing.id]) || false;
     const isRated = ((_tour$ratings5 = tour.ratings) === null || _tour$ratings5 === void 0 ? void 0 : _tour$ratings5[listing.id]) && Object.values(tour.ratings[listing.id]).some(v => v > 0);
