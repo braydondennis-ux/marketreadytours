@@ -380,6 +380,26 @@ body.mrt-rating-active #mrt-a2hs{display:none!important;}
  .mrt-tour-empty h2{font-size:23px}
  .mrt-tour-add{width:100%}
 }
+
+/* Sponsor visibility: substantial identities before the lineup, including empty tours. */
+.mrt-tour-sponsors{padding-top:28px!important;padding-bottom:16px!important}
+.mrt-tour-sponsors>div:first-child:not(.mrt-sponsor-feature){font-size:16px!important;color:#2F44A0!important;letter-spacing:1.5px!important;margin-bottom:18px!important}
+.mrt-sponsor-feature{padding:28px!important;border-radius:18px!important;border:1px solid #BBC8DE!important;border-top:4px solid #2F44A0!important;box-shadow:0 6px 24px rgba(16,26,54,.06);margin-bottom:18px!important}
+.mrt-sponsor-feature>div:first-child{min-width:0}
+.mrt-sponsor-feature a{min-height:48px;font-size:15px!important;background:#EDF0F8!important;border-color:#D6DDEC!important;color:#233777!important}
+.mrt-sponsor-feature a:hover{background:#DDE4F5!important}
+.mrt-sponsor-feature>div:last-child:has(a){margin-top:24px!important;gap:12px!important}
+.mrt-sponsor-feature-lead{padding-top:38px!important}
+.mrt-sponsor-feature-lead a{background:rgba(255,255,255,.14)!important;color:white!important}
+@media(max-width:600px){
+ .mrt-sponsor-feature{padding:20px!important}
+ .mrt-sponsor-feature>div:has(>img),.mrt-sponsor-feature>div:has(>div>img){flex-wrap:wrap;gap:16px!important}
+ .mrt-sponsor-feature>div>img{width:80px!important;height:80px!important}
+ .mrt-sponsor-feature>div>div:has(>img){width:128px!important;height:88px!important}
+ .mrt-sponsor-feature>div>div[style*="min-width"]{flex-basis:calc(100% - 100px)!important;overflow-wrap:anywhere}
+ .mrt-sponsor-feature:not(.mrt-sponsor-feature-lead)>div>div[style*="min-width"]>div:first-child{font-size:23px!important;line-height:1.2}
+ .mrt-sponsor-feature-lead{padding-top:38px!important}
+}
 </style>
 </head>
 <body>
@@ -9513,18 +9533,7 @@ function TourDetailPage(_ref19) {
       fontWeight: 600,
       display: "flex", alignItems: "center", justifyContent: "center", gap: 5
     }
-  }, LI("Megaphone", 14), "Campaign"))), sorted.length === 0 && React.createElement("section", { className: "mrt-tour-empty" },
-    React.createElement("div", { className: "mrt-tour-empty-icon" }, LI("Home", 30)),
-    React.createElement("div", { className: "mrt-tour-empty-copy" },
-      React.createElement("span", { className: "mrt-eyebrow" }, "Tour lineup"),
-      React.createElement("h2", null, isAdmin ? "Build your tour, one home at a time." : "The lineup is coming soon."),
-      React.createElement("p", null, isAdmin ? "Add the first property to start your route. Your listings will appear here as you add them." : "The organizer is putting this tour together. Check back here for homes and route details.")),
-    isAdmin && React.createElement("button", { className: "mrt-tour-add", onClick: () => {
-      setAdminListings([...(tour.listings || [])].sort((a, b) => a.order - b.order));
-      setAdminNotes(tour.notes || {});
-      setShowAdmin(true);
-      setShowAddForm(true);
-    } }, LI("Plus", 18), "Add your first listing")), paidSponsors.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, LI("Megaphone", 14), "Campaign"))), paidSponsors.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "mrt-tour-sponsors",
     style: {
       background: "#fff",
@@ -9533,6 +9542,7 @@ function TourDetailPage(_ref19) {
     }
   }, paidSponsors.filter(sp => sp.tourLead).map(sp => /*#__PURE__*/React.createElement("div", {
     key: sp.id + "lead",
+    className: "mrt-sponsor-feature mrt-sponsor-feature-lead",
     style: {
       background: "linear-gradient(135deg, " + B.navy + " 0%, " + B.navyDark + " 100%)",
       borderRadius: 16,
@@ -9568,8 +9578,8 @@ function TourDetailPage(_ref19) {
     src: sp.headshot,
     alt: sp.contactName || sp.name,
     style: {
-      width: 64,
-      height: 64,
+      width: 112,
+      height: 112,
       borderRadius: "50%",
       objectFit: "cover",
       border: "3px solid " + B.gold,
@@ -9577,8 +9587,8 @@ function TourDetailPage(_ref19) {
     }
   }) : sp.logo ? /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 64,
-      height: 64,
+      width: 112,
+      height: 112,
       borderRadius: 12,
       background: "#fff",
       border: "2px solid " + B.gold,
@@ -9601,8 +9611,8 @@ function TourDetailPage(_ref19) {
     }
   })) : /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 64,
-      height: 64,
+      width: 112,
+      height: 112,
       borderRadius: "50%",
       background: B.gold,
       display: "flex",
@@ -9624,27 +9634,27 @@ function TourDetailPage(_ref19) {
   }, "Presenting Sponsor"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontWeight: 800,
-      fontSize: 18,
+      fontSize: 28,
       color: "#fff"
     }
   }, sp.name), sp.contactName && /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 13,
+      fontSize: 18,
       color: B.lightGold,
       fontWeight: 600,
       marginTop: 2
     }
   }, sp.contactName), sp.tagline && /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 11,
+      fontSize: 15,
       color: "rgba(255,255,255,.7)",
       marginTop: 2,
       fontStyle: "italic"
     }
   }, sp.tagline)), sp.logo && sp.headshot && /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 52,
-      height: 52,
+      width: 160,
+      height: 112,
       borderRadius: 10,
       background: "#fff",
       border: "1.5px solid rgba(255,255,255,.3)",
@@ -9685,7 +9695,7 @@ function TourDetailPage(_ref19) {
       borderRadius: 10,
       padding: "10px 0",
       fontWeight: 700,
-      fontSize: 12,
+      fontSize: 15,
       textDecoration: "none"
     }
   }, LI("Phone", 14), "Call"), sp.email && /*#__PURE__*/React.createElement("a", {
@@ -9702,7 +9712,7 @@ function TourDetailPage(_ref19) {
       borderRadius: 10,
       padding: "10px 0",
       fontWeight: 700,
-      fontSize: 12,
+      fontSize: 15,
       textDecoration: "none"
     }
   }, LI("Mail", 14), "Contact sponsor"), mrtSponsorWebsite(sp) && /*#__PURE__*/React.createElement("a", {
@@ -9721,12 +9731,12 @@ function TourDetailPage(_ref19) {
       borderRadius: 10,
       padding: "10px 0",
       fontWeight: 700,
-      fontSize: 12,
+      fontSize: 15,
       textDecoration: "none"
     }
   }, LI("Globe", 14), "Website")))), paidSponsors.filter(sp => !sp.tourLead).length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 11,
+      fontSize: 15,
       color: B.gray,
       textTransform: "uppercase",
       letterSpacing: 1.2,
@@ -9738,8 +9748,9 @@ function TourDetailPage(_ref19) {
       justifyContent: "center",
       gap: 5
     }
-  }, LI("Star", 13, { color: B.gold }), "Tour Sponsors"), paidSponsors.filter(sp => !sp.tourLead).map(sp => /*#__PURE__*/React.createElement("div", {
+  }, LI("Star", 13, { color: B.gold }), "Meet your tour sponsors"), paidSponsors.filter(sp => !sp.tourLead).map(sp => /*#__PURE__*/React.createElement("div", {
     key: sp.id,
+    className: "mrt-sponsor-feature",
     style: {
       background: B.paper,
       borderRadius: 14,
@@ -9751,14 +9762,14 @@ function TourDetailPage(_ref19) {
     style: {
       display: "flex",
       alignItems: "center",
-      gap: 14
+      gap: 24
     }
   }, sp.headshot ? /*#__PURE__*/React.createElement("img", {
     src: sp.headshot,
     alt: sp.contactName || sp.name,
     style: {
-      width: 56,
-      height: 56,
+      width: 112,
+      height: 112,
       borderRadius: "50%",
       objectFit: "cover",
       border: "3px solid " + B.gold,
@@ -9766,8 +9777,8 @@ function TourDetailPage(_ref19) {
     }
   }) : sp.logo ? /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 56,
-      height: 56,
+      width: 112,
+      height: 112,
       borderRadius: 12,
       background: "#fff",
       border: "1.5px solid #E4E2DB",
@@ -9790,8 +9801,8 @@ function TourDetailPage(_ref19) {
     }
   })) : /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 56,
-      height: 56,
+      width: 112,
+      height: 112,
       borderRadius: "50%",
       background: B.surface,
       display: "flex",
@@ -9807,27 +9818,27 @@ function TourDetailPage(_ref19) {
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontWeight: 800,
-      fontSize: 16,
+      fontSize: 28,
       color: B.dark
     }
   }, sp.name), sp.contactName && /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 13,
+      fontSize: 18,
       color: B.primary,
       fontWeight: 600,
       marginTop: 1
     }
   }, sp.contactName), sp.tagline && /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 11,
+      fontSize: 15,
       color: B.gray,
       marginTop: 2,
       fontStyle: "italic"
     }
   }, sp.tagline)), sp.logo && sp.headshot && /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 48,
-      height: 48,
+      width: 160,
+      height: 112,
       borderRadius: 8,
       background: "#fff",
       border: "1px solid #E4E2DB",
@@ -9868,7 +9879,7 @@ function TourDetailPage(_ref19) {
       borderRadius: 10,
       padding: "10px 0",
       fontWeight: 700,
-      fontSize: 12,
+      fontSize: 15,
       textDecoration: "none"
     }
   }, LI("Phone", 14), "Call"), sp.email && /*#__PURE__*/React.createElement("a", {
@@ -9885,7 +9896,7 @@ function TourDetailPage(_ref19) {
       borderRadius: 10,
       padding: "10px 0",
       fontWeight: 700,
-      fontSize: 12,
+      fontSize: 15,
       textDecoration: "none"
     }
   }, LI("Mail", 14), "Email"), mrtSponsorWebsite(sp) && /*#__PURE__*/React.createElement("a", {
@@ -9904,10 +9915,21 @@ function TourDetailPage(_ref19) {
       borderRadius: 10,
       padding: "10px 0",
       fontWeight: 700,
-      fontSize: 12,
+      fontSize: 15,
       textDecoration: "none"
     }
-  }, LI("Globe", 14), "Website")))))), /*#__PURE__*/React.createElement("div", {
+  }, LI("Globe", 14), "Website")))))), sorted.length === 0 && React.createElement("section", { className: "mrt-tour-empty" },
+    React.createElement("div", { className: "mrt-tour-empty-icon" }, LI("Home", 30)),
+    React.createElement("div", { className: "mrt-tour-empty-copy" },
+      React.createElement("span", { className: "mrt-eyebrow" }, "Tour lineup"),
+      React.createElement("h2", null, isAdmin ? "Build your tour, one home at a time." : "The lineup is coming soon."),
+      React.createElement("p", null, isAdmin ? "Add the first property to start your route. Your listings will appear here as you add them." : "The organizer is putting this tour together. Check back here for homes and route details.")),
+    isAdmin && React.createElement("button", { className: "mrt-tour-add", onClick: () => {
+      setAdminListings([...(tour.listings || [])].sort((a, b) => a.order - b.order));
+      setAdminNotes(tour.notes || {});
+      setShowAdmin(true);
+      setShowAddForm(true);
+    } }, LI("Plus", 18), "Add your first listing")), /*#__PURE__*/React.createElement("div", {
     style: {
       padding: "16px 14px",
       display: "flex",

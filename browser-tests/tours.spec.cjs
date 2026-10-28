@@ -91,6 +91,11 @@ test('installation tip stays in document flow and can be dismissed',async({page,
 
 
 test('empty tour has a usable organizer shortcut and a clear public state',async({page},testInfo)=>{
+ const portrait='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><rect width="160" height="160" fill="#AEBFD6"/><text x="80" y="95" text-anchor="middle" font-size="48" fill="#101A36">TC</text></svg>');
+ const logo='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="240" height="120"><rect width="240" height="120" fill="white"/><text x="120" y="65" text-anchor="middle" font-size="22" fill="#101A36">BRIGHT HOME</text></svg>');
+ for(const node of ['mrt_tours_private','mrt_tours_public']) {
+  await fetch('http://127.0.0.1:9000/'+node+'/tour-demo-1/sponsors.json?ns=mrt-local-audit',{method:'PUT',headers:{Authorization:'Bearer owner','Content-Type':'application/json'},body:JSON.stringify([{id:'sponsor-paid',paid:true,name:'Bright Home Solar',contactName:'Tyler Carlisle',headshot:portrait,logo,phone:'5555550100',email:'sponsor@example.com',website:'https://example.com'}])});
+ }
  for(const node of ['mrt_tours_private','mrt_tours_public']) {
   const response=await fetch('http://127.0.0.1:9000/'+node+'/tour-demo-1/listings.json?ns=mrt-local-audit',{method:'DELETE',headers:{Authorization:'Bearer owner'}});
   expect(response.ok).toBeTruthy();
@@ -103,6 +108,7 @@ test('empty tour has a usable organizer shortcut and a clear public state',async
  const add=page.getByRole('button',{name:'Add your first listing'});
  await expect(add).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
+ await expect(page.getByText('Bright Home Solar',{exact:true})).toBeVisible();
  await page.screenshot({path:testInfo.outputPath('empty-tour.png'),fullPage:true});
  await add.click();
  await expect(page.getByPlaceholder('Start typing an address...')).toBeVisible();

@@ -22,6 +22,16 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
 
+## 2026-10-28 — sponsor prominence follow-up
+
+Erik clarified Braydon meant the sponsor was too small on desktop. Sponsor cards now precede
+the empty-lineup panel, with a prominent section label, 112px desktop headshots, 160x112 logo
+panels when both images exist, 28px company names, 18px contact names and 48px contact actions.
+Phone layout wraps the logo below the identity instead of squeezing the text. Lead sponsors
+retain their distinct label and dark card. Sponsor eligibility, payment and contact targets
+are unchanged. Local 156 unit/13 static checks and 24 isolated browser checks passed; desktop
+and small-iPhone screenshots with both images inspected. No production data or outbound mail.
+
 ## 2026-10-28 — tour overview layout
 
 Braydon flagged the sparse empty 85255 tour screen. Tour detail now has a larger semantic
