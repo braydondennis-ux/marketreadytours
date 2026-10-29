@@ -22,6 +22,12 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
 
+## 2026-10-28 — restore desktop toolbar alignment
+
+Erik flagged the empty right side of the tour header. Removed the 680px cap introduced in
+this day's overview pass. Both toolbar rows again fill the shared desktop content width,
+aligning with the sponsor card. Mobile grids and sponsor sizing are unchanged.
+
 ## 2026-10-28 — sponsor scale adjustment
 
 After viewing the live page in Safari, Erik found the sponsor too large. Reduced desktop
