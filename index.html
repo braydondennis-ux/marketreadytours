@@ -382,22 +382,22 @@ body.mrt-rating-active #mrt-a2hs{display:none!important;}
 }
 
 /* Sponsor visibility: substantial identities before the lineup, including empty tours. */
-.mrt-tour-sponsors{padding-top:28px!important;padding-bottom:16px!important}
-.mrt-tour-sponsors>div:first-child:not(.mrt-sponsor-feature){font-size:16px!important;color:#2F44A0!important;letter-spacing:1.5px!important;margin-bottom:18px!important}
-.mrt-sponsor-feature{padding:28px!important;border-radius:18px!important;border:1px solid #BBC8DE!important;border-top:4px solid #2F44A0!important;box-shadow:0 6px 24px rgba(16,26,54,.06);margin-bottom:18px!important}
+.mrt-tour-sponsors{padding-top:20px!important;padding-bottom:16px!important}
+.mrt-tour-sponsors>div:first-child:not(.mrt-sponsor-feature){font-size:13px!important;color:#2F44A0!important;letter-spacing:1.5px!important;margin-bottom:12px!important}
+.mrt-sponsor-feature{padding:20px!important;border-radius:18px!important;border:1px solid #BBC8DE!important;border-top:3px solid #2F44A0!important;box-shadow:0 6px 24px rgba(16,26,54,.06);margin-bottom:12px!important}
 .mrt-sponsor-feature>div:first-child{min-width:0}
-.mrt-sponsor-feature a{min-height:48px;font-size:15px!important;background:#EDF0F8!important;border-color:#D6DDEC!important;color:#233777!important}
+.mrt-sponsor-feature a{min-height:44px;font-size:13px!important;background:#EDF0F8!important;border-color:#D6DDEC!important;color:#233777!important}
 .mrt-sponsor-feature a:hover{background:#DDE4F5!important}
-.mrt-sponsor-feature>div:last-child:has(a){margin-top:24px!important;gap:12px!important}
+.mrt-sponsor-feature>div:last-child:has(a){margin-top:16px!important;gap:12px!important}
 .mrt-sponsor-feature-lead{padding-top:38px!important}
 .mrt-sponsor-feature-lead a{background:rgba(255,255,255,.14)!important;color:white!important}
 @media(max-width:600px){
  .mrt-sponsor-feature{padding:20px!important}
  .mrt-sponsor-feature>div:has(>img),.mrt-sponsor-feature>div:has(>div>img){flex-wrap:wrap;gap:16px!important}
- .mrt-sponsor-feature>div>img{width:80px!important;height:80px!important}
- .mrt-sponsor-feature>div>div:has(>img){width:128px!important;height:88px!important}
+ .mrt-sponsor-feature>div>img{width:64px!important;height:64px!important}
+ .mrt-sponsor-feature>div>div:has(>img){width:88px!important;height:64px!important}
  .mrt-sponsor-feature>div>div[style*="min-width"]{flex-basis:calc(100% - 100px)!important;overflow-wrap:anywhere}
- .mrt-sponsor-feature:not(.mrt-sponsor-feature-lead)>div>div[style*="min-width"]>div:first-child{font-size:23px!important;line-height:1.2}
+ .mrt-sponsor-feature:not(.mrt-sponsor-feature-lead)>div>div[style*="min-width"]>div:first-child{font-size:20px!important;line-height:1.2}
  .mrt-sponsor-feature-lead{padding-top:38px!important}
 }
 </style>
@@ -9578,8 +9578,8 @@ function TourDetailPage(_ref19) {
     src: sp.headshot,
     alt: sp.contactName || sp.name,
     style: {
-      width: 112,
-      height: 112,
+      width: 80,
+      height: 80,
       borderRadius: "50%",
       objectFit: "cover",
       border: "3px solid " + B.gold,
@@ -9587,8 +9587,8 @@ function TourDetailPage(_ref19) {
     }
   }) : sp.logo ? /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 112,
-      height: 112,
+      width: 80,
+      height: 80,
       borderRadius: 12,
       background: "#fff",
       border: "2px solid " + B.gold,
@@ -9611,8 +9611,8 @@ function TourDetailPage(_ref19) {
     }
   })) : /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 112,
-      height: 112,
+      width: 80,
+      height: 80,
       borderRadius: "50%",
       background: B.gold,
       display: "flex",
@@ -9634,12 +9634,12 @@ function TourDetailPage(_ref19) {
   }, "Presenting Sponsor"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontWeight: 800,
-      fontSize: 28,
+      fontSize: 22,
       color: "#fff"
     }
   }, sp.name), sp.contactName && /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 18,
+      fontSize: 15,
       color: B.lightGold,
       fontWeight: 600,
       marginTop: 2
@@ -9653,8 +9653,8 @@ function TourDetailPage(_ref19) {
     }
   }, sp.tagline)), sp.logo && sp.headshot && /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 160,
-      height: 112,
+      width: 104,
+      height: 80,
       borderRadius: 10,
       background: "#fff",
       border: "1.5px solid rgba(255,255,255,.3)",
@@ -9762,14 +9762,14 @@ function TourDetailPage(_ref19) {
     style: {
       display: "flex",
       alignItems: "center",
-      gap: 24
+      gap: 16
     }
   }, sp.headshot ? /*#__PURE__*/React.createElement("img", {
     src: sp.headshot,
     alt: sp.contactName || sp.name,
     style: {
-      width: 112,
-      height: 112,
+      width: 80,
+      height: 80,
       borderRadius: "50%",
       objectFit: "cover",
       border: "3px solid " + B.gold,
@@ -9777,8 +9777,8 @@ function TourDetailPage(_ref19) {
     }
   }) : sp.logo ? /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 112,
-      height: 112,
+      width: 80,
+      height: 80,
       borderRadius: 12,
       background: "#fff",
       border: "1.5px solid #E4E2DB",
@@ -9801,8 +9801,8 @@ function TourDetailPage(_ref19) {
     }
   })) : /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 112,
-      height: 112,
+      width: 80,
+      height: 80,
       borderRadius: "50%",
       background: B.surface,
       display: "flex",
@@ -9818,12 +9818,12 @@ function TourDetailPage(_ref19) {
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontWeight: 800,
-      fontSize: 28,
+      fontSize: 22,
       color: B.dark
     }
   }, sp.name), sp.contactName && /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 18,
+      fontSize: 15,
       color: B.primary,
       fontWeight: 600,
       marginTop: 1
@@ -9837,8 +9837,8 @@ function TourDetailPage(_ref19) {
     }
   }, sp.tagline)), sp.logo && sp.headshot && /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 160,
-      height: 112,
+      width: 104,
+      height: 80,
       borderRadius: 8,
       background: "#fff",
       border: "1px solid #E4E2DB",

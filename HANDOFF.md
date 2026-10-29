@@ -22,6 +22,13 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
 
+## 2026-10-28 — sponsor scale adjustment
+
+After viewing the live page in Safari, Erik found the sponsor too large. Reduced desktop
+headshots to 80px, logo panels to 104x80, company names to 22px and contact names to 15px.
+Card padding is 20px; contact actions retain 44px touch targets. Phones use 64px headshots,
+88x64 logos and 20px company names. Prominent placement and sponsor links are preserved.
+
 ## 2026-10-28 — sponsor prominence follow-up
 
 Erik clarified Braydon meant the sponsor was too small on desktop. Sponsor cards now precede
