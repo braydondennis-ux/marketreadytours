@@ -22,6 +22,14 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
 
+## 2026-10-28 — group tour metadata with title
+
+Erik requested better placement for the date/time/stops and favorite/rating counts. Moved the
+existing metadata beside the title on desktop and directly below it on phones, before the
+organizer actions. Both toolbar rows now sit together with a 12px gap. Sponsor cards and
+metadata behavior/links are unchanged. Local 156 unit tests, 13 static checks and all 24
+isolated Chrome/iPhone browser checks passed; desktop and small-phone screenshots inspected.
+
 ## 2026-10-28 — restore desktop toolbar alignment
 
 Erik flagged the empty right side of the tour header. Removed the 680px cap introduced in

@@ -354,8 +354,16 @@ body.mrt-rating-active #mrt-a2hs{display:none!important;}
 .mrt-tour-actions{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))}
 .mrt-tour-actions>button{min-height:64px;background:rgba(255,255,255,.07)!important}
 .mrt-tour-actions>button:hover{background:rgba(255,255,255,.16)!important}
-.mrt-tour-meta{background:transparent!important;padding:16px 0!important}
-.mrt-tour-tabs{margin-top:0!important;flex-wrap:wrap}
+.mrt-tour-heading-row{display:flex;flex-direction:column;gap:8px;margin:12px 0 20px}
+.mrt-tour-heading-row .mrt-tour-title{margin:0!important;min-width:0}
+.mrt-tour-meta{background:transparent!important;padding:0!important;margin:0!important;gap:6px!important}
+.mrt-tour-meta>div{justify-content:flex-start!important;flex-wrap:wrap}
+@media(min-width:1024px){
+ .mrt-tour-heading-row{flex-direction:row;align-items:center;justify-content:space-between;gap:24px}
+ .mrt-tour-meta{flex-shrink:0;text-align:right}
+ .mrt-tour-meta>div{justify-content:flex-end!important;gap:16px!important}
+}
+.mrt-tour-tabs{margin-top:12px!important;flex-wrap:wrap}
 .mrt-tour-tabs>button{min-height:44px;padding:10px 12px!important;background:transparent!important}
 .mrt-tour-empty{display:flex;flex-wrap:wrap;align-items:center;gap:20px;padding:32px!important;margin:24px 14px!important;background:#fff;border:1px solid var(--mrt-hair);border-radius:18px}
 .mrt-tour-empty-icon{width:64px;height:64px;display:grid;place-items:center;background:#EDF0F8;color:#2F44A0;border-radius:16px;flex-shrink:0}
@@ -9290,7 +9298,7 @@ function TourDetailPage(_ref19) {
       background: "#fff",
       padding: 4
     }
-  }))), /*#__PURE__*/React.createElement("h1", {
+  }))), React.createElement("div", { className: "mrt-tour-heading-row" }, /*#__PURE__*/React.createElement("h1", {
     className: "mrt-tour-title",
     style: {
       color: "#fff",
@@ -9302,7 +9310,45 @@ function TourDetailPage(_ref19) {
       alignItems: "center",
       gap: 9
     }
-  }, React.createElement(TourDot, { tour: tour, size: 12 }), React.createElement("span", { style: { marginLeft: 0, fontFamily: "DM Sans, system-ui, sans-serif" } }, tour.name)), isAdmin && /*#__PURE__*/React.createElement("div", {
+  }, React.createElement(TourDot, { tour: tour, size: 12 }), React.createElement("span", { style: { marginLeft: 0, fontFamily: "DM Sans, system-ui, sans-serif" } }, tour.name)), /*#__PURE__*/React.createElement("div", {
+    className: "mrt-tour-meta",
+    style: {
+      marginTop: 10,
+      background: "rgba(255,255,255,.1)",
+      borderRadius: 10,
+      padding: "10px 14px",
+      display: "flex",
+      flexDirection: "column",
+      gap: 9
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#fff",
+      fontSize: 14,
+      fontWeight: 700,
+      lineHeight: 1.6
+    }
+  }, LI("Calendar", 14, { marginRight: 5 }), (tour.date ? new Date(tour.date + "T12:00:00") : new Date()).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric"
+  }), " \xB7 ", LI("Clock", 14, { marginRight: 5 }), tour.time, " \xB7 ", LI("MapPin", 14, { marginRight: 5 }), sorted.length, sorted.length === 1 ? " stop" : " stops"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "rgba(255,255,255,.85)",
+      fontSize: 12.5,
+      fontWeight: 600,
+      whiteSpace: "nowrap"
+    }
+  }, LI("Heart", 13, { marginRight: 5 }), favCount, " fav", /*#__PURE__*/React.createElement("span", { style: { opacity: .45, margin: "0 9px" } }, "·"), LI("Star", 13, { marginRight: 5 }), ratedCount, " rated"),
+  sorted.length>=2&&/*#__PURE__*/React.createElement("a",{href:"https://www.google.com/maps/dir/"+sorted.map(l=>encodeURIComponent((l.address||"")+" "+(l.city||""))).join("/"),target:"_blank",rel:"noreferrer",style:{background:"rgba(255,255,255,.2)",color:"#fff",borderRadius:7,padding:"3px 9px",fontSize:11,fontWeight:700,textDecoration:"none",whiteSpace:"nowrap",border:"1px solid rgba(255,255,255,.3)"}},LI("Map", 12, { marginRight: 4 }),"All Stops")
+))), isAdmin && /*#__PURE__*/React.createElement("div", {
     className: "mrt-tour-actions",
     style: {
       display: "flex",
@@ -9432,44 +9478,6 @@ function TourDetailPage(_ref19) {
       lineHeight: 1.2
     }
   }, "Edit Stops"))), /*#__PURE__*/React.createElement("div", {
-    className: "mrt-tour-meta",
-    style: {
-      marginTop: 10,
-      background: "rgba(255,255,255,.1)",
-      borderRadius: 10,
-      padding: "10px 14px",
-      display: "flex",
-      flexDirection: "column",
-      gap: 9
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: "#fff",
-      fontSize: 14,
-      fontWeight: 700,
-      lineHeight: 1.6
-    }
-  }, LI("Calendar", 14, { marginRight: 5 }), (tour.date ? new Date(tour.date + "T12:00:00") : new Date()).toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric"
-  }), " \xB7 ", LI("Clock", 14, { marginRight: 5 }), tour.time, " \xB7 ", LI("MapPin", 14, { marginRight: 5 }), sorted.length, sorted.length === 1 ? " stop" : " stops"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: 10
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: "rgba(255,255,255,.85)",
-      fontSize: 12.5,
-      fontWeight: 600,
-      whiteSpace: "nowrap"
-    }
-  }, LI("Heart", 13, { marginRight: 5 }), favCount, " fav", /*#__PURE__*/React.createElement("span", { style: { opacity: .45, margin: "0 9px" } }, "·"), LI("Star", 13, { marginRight: 5 }), ratedCount, " rated"),
-  sorted.length>=2&&/*#__PURE__*/React.createElement("a",{href:"https://www.google.com/maps/dir/"+sorted.map(l=>encodeURIComponent((l.address||"")+" "+(l.city||""))).join("/"),target:"_blank",rel:"noreferrer",style:{background:"rgba(255,255,255,.2)",color:"#fff",borderRadius:7,padding:"3px 9px",fontSize:11,fontWeight:700,textDecoration:"none",whiteSpace:"nowrap",border:"1px solid rgba(255,255,255,.3)"}},LI("Map", 12, { marginRight: 4 }),"All Stops")
-)), /*#__PURE__*/React.createElement("div", {
     className: "mrt-tour-tabs",
     style: {
       display: "flex",
