@@ -580,8 +580,32 @@ async function mrtFlushDiagnostics() {
     }
   } catch {} finally { mrtFlushingDiagnostics = false; }
 }
-window.addEventListener("unhandledrejection", () => {mrtQueueDiagnostic("unhandledPromise", "internal"); void mrtFlushDiagnostics();});
-window.addEventListener("error", event => {if (event.error) {mrtQueueDiagnostic("browserError", "internal"); void mrtFlushDiagnostics();}});
+// Only fixed categories are recorded, never raw exception messages or stacks.
+function mrtReportClientFailure(operation, error) {
+  const code = typeof error?.code === "string" ? error.code : "";
+  const category = code.startsWith("auth/") ? "Auth" : code.startsWith("appCheck/") ? "AppCheck" :
+    code.startsWith("storage/") ? "Storage" : error?.name === "TypeError" ? "TypeError" :
+    error?.name === "AbortError" ? "Abort" : error?.name === "NotAllowedError" ? "Permission" : "Unknown";
+  mrtQueueDiagnostic(operation + category, "internal");
+  void mrtFlushDiagnostics();
+}
+async function mrtShareTour(tour) {
+  const url = "https://marketreadytours.com/t/" + tour.id;
+  const nativeShare = typeof navigator.share === "function";
+  try {
+    if (nativeShare) await navigator.share({title: (tour.emoji || "🏡") + " " + tour.name, url});
+    else {
+      await navigator.clipboard.writeText(url);
+      showToast("🔗 Share link copied!", "success", 2500);
+    }
+  } catch (error) {
+    if (nativeShare && error?.name === "AbortError") return;
+    mrtReportClientFailure("shareTour", error);
+    showToast("Could not share the tour. Please try again.", "error", 4000);
+  }
+}
+window.addEventListener("unhandledrejection", event => {mrtReportClientFailure("unhandledPromise", event.reason);});
+window.addEventListener("error", event => {if (event.error) mrtReportClientFailure("browserError", event.error);});
 window.addEventListener("online", () => {void mrtFlushDiagnostics();});
 async function mrtCall(name, data, timeoutMs) {
   if (!MRT_SECURE_BACKEND) throw new Error("Secure backend is not enabled in this environment.");
@@ -7474,19 +7498,24 @@ function TourDetailPage(_ref19) {
     setAdminListings([...(tour.listings || [])].sort((a, b) => a.order - b.order));
   }, [tour]);
   const toggleFavorite = async listingId => {
-    const cur = !!(tour.favorites || {})[listingId];
-    const next = !cur;
-    if (_fb && MRT_SECURE_BACKEND) {
-      const user = await mrtEnsureAuth();
-      const ref = _fb.ref("mrt_favorites/" + user.uid + "/" + tour.id + "/" + listingId);
-      if (next) await ref.set(true); else await ref.remove();
-    } else if (_fb) {
-      try {
-        const ref = _fb.ref("mrt_favorites/" + tour.id + "/" + listingId + "/" + mrtUserKey());
+    try {
+      const cur = !!(tour.favorites || {})[listingId];
+      const next = !cur;
+      if (_fb && MRT_SECURE_BACKEND) {
+        const user = await mrtEnsureAuth();
+        const ref = _fb.ref("mrt_favorites/" + user.uid + "/" + tour.id + "/" + listingId);
         if (next) await ref.set(true); else await ref.remove();
-      } catch (e) {}
+      } else if (_fb) {
+        try {
+          const ref = _fb.ref("mrt_favorites/" + tour.id + "/" + listingId + "/" + mrtUserKey());
+          if (next) await ref.set(true); else await ref.remove();
+        } catch (e) {}
+      }
+      await onUpdateTour({ ...tour, favorites: { ...(tour.favorites || {}), [listingId]: next } });
+    } catch (error) {
+      mrtReportClientFailure("toggleFavorite", error);
+      showToast("Could not confirm your favorite was saved. Please try again.", "error", 4000);
     }
-    onUpdateTour({ ...tour, favorites: { ...(tour.favorites || {}), [listingId]: next } });
   };
   const handleRatingSubmit = async (listingId, ratings, extra) => {
     const newSub = { ...ratings, ...(extra || {}), submittedAt: new Date().toISOString() };
@@ -9356,14 +9385,7 @@ function TourDetailPage(_ref19) {
       marginTop: 12
     }
   }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
-      const shareUrl = "https://marketreadytours.com/t/" + tour.id;
-      if (navigator.share) {
-        navigator.share({ title: (tour.emoji || "\uD83C\uDFE1") + " " + tour.name, url: shareUrl });
-      } else {
-        navigator.clipboard.writeText(shareUrl).then(() => showToast("\uD83D\uDD17 Share link copied!", "success", 2500));
-      }
-    },
+    onClick: () => mrtShareTour(tour),
     style: {
       flex: 1,
       background: "rgba(255,255,255,.15)",

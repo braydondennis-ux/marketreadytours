@@ -1,6 +1,6 @@
 # MarketReady Tours — Engineering Handoff
 
-_Updated 2026-10-28. Read this entire file before acting._
+_Updated 2026-10-29. Read this entire file before acting._
 
 **Current state.** The refresh is **LIVE** (cutover 2026-08-10) and edge-cached. Since
 2026-10-10 **the landing-page configuration is restored at `/` for mobile and desktop; the app
@@ -21,6 +21,21 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 **The app is genuinely in use.** The 2026-09-02 North Phoenix tour was built in production over
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
+
+## 2026-10-29 — post-tour health check
+
+Read-only audit: Sonoran Showcase has five homes and 48 evaluations, all aggregates matching;
+43 tours/143 evaluations site-wide match. 53 evaluation email jobs today are sent with provider
+IDs, none stuck; provider acceptance only because the configured Resend key is send-only.
+No organizer post-tour report call observed. Reminders healthy, all 30 functions ACTIVE.
+One submitRating 500 from a database disconnect recovered with a saved evaluation and email
+receipt four seconds later. A separate network-error report also has saved data/email receipt.
+Five generic unhandled promise reports remain unexplained. Follow-up confirmed all 139
+submission receipts complete. Client hardening handles share cancellation/failure and favorite
+save failure; diagnostics now retain fixed error categories without raw exception content.
+160 local unit tests and 13 static checks pass. Today's full CI passed. Current
+Sonoran data no longer contains the old duplicate; this audit made no data edits and duplicate
+prevention remains deferred. Details: docs/HEALTH-CHECK-2026-10-29.md.
 
 ## 2026-10-28 — group tour metadata with title
 

@@ -1,8 +1,17 @@
 # MarketReady Tours — open items
 
-_Updated 2026-10-22. Production is live; see `CLAUDE.md` for what you are cleared to do._
+_Updated 2026-10-29. Production is live; see `CLAUDE.md` for what you are cleared to do._
 
 Verified items note how they were confirmed, so nobody has to re-derive it.
+
+**October 29 health follow-ups:** Monitor recurrence of the transient submitRating database
+ disconnect (observed retry saved within four seconds; all 139 submission receipts complete).
+ Five historic generic browser promise failures cannot be attributed from retained diagnostics.
+ Fixed-category diagnostics and share/favorite failure handling are now implemented and tested. Evaluate read-only
+ provider delivery visibility: existing Resend credential is send-only, so outbox receipts cannot
+ establish inbox delivery. See HEALTH-CHECK-2026-10-29.md. The old Sonoran duplicate is absent
+ from today's snapshot; no audit deletion was made. Duplicate-prevention work remains deferred.
+
 
 **October 23 reliability release:** See RELIABILITY-RELEASE-2026-10-22.md and PR #1.
 All 25 repository-owned backend functions are updated and verified; 30 functions remain ACTIVE.
