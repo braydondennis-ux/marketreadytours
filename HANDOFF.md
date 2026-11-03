@@ -32,7 +32,8 @@ a 48px minimum height and stronger emphasis. Secondary List a home stays to its 
 desktop. Section navigation appears at 1100px to avoid crowding. Normal scrolling and direct
 Next tour links remain. Added regression coverage for returning visitors and phone header fit.
 Verified 161 unit tests, 13 static checks and 27 isolated Chrome/iPhone browser checks;
-inspected desktop and small-phone header screenshots.
+inspected desktop and small-phone header screenshots. The first CI run caught small-phone
+overflow in sponsor pricing with wider fallback fonts; pricing columns now wrap to fit.
 
 ## 2026-10-29 — post-tour health check
 

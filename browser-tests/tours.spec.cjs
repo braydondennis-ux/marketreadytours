@@ -29,7 +29,7 @@ test('returning visitors keep the landing page with an accessible top-right app 
  await expect(button).toBeVisible();const box=await button.boundingBox();
  expect(box.height).toBeGreaterThanOrEqual(48);
  expect(box.x+box.width/2).toBeGreaterThan(page.viewportSize().width/2);
- expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize().width);
  expect(await page.evaluate(()=>getComputedStyle(document.documentElement).scrollSnapType)).toBe('none');
  await page.screenshot({path:test.info().outputPath('landing-header.png')});
  await button.click();await expect(page).toHaveURL(/\/app\/#\/$/);
