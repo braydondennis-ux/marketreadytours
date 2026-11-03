@@ -15,8 +15,7 @@
   function toApp(){ if (location.hash.indexOf("#/") === 0) { location.replace(APP + location.search + location.hash); return true; } }
   if (toApp()) return;
   addEventListener("hashchange", toApp);
-  // Staff who have signed in on this device go straight to the app. ?home shows this page anyway.
-  try { if (localStorage.getItem("mrt_signed_in") === "1" && !/[?&]home(=|&|$)/.test(location.search)) { location.replace(APP); return; } } catch (e) {}
+  // The home page stays visible for returning visitors. App entry is an explicit link.
 })();
 if (!matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window) document.documentElement.classList.add("motion");
 </script>
@@ -78,14 +77,16 @@ p{margin:0}
 .nav .well{display:flex;align-items:center;justify-content:space-between;height:100%;gap:16px}
 /* Logo is 5.22:1. 46px tall on desktop; on phones it shrinks just enough to leave room for the button. */
 .nav-logo{display:block;flex:none}
-.nav-logo img{height:min(46px,calc((100vw - 190px) / 5.22));width:auto}
+.nav-logo img{height:min(46px,calc((100vw - 210px) / 5.22));width:auto}
 .nav-links{display:none;gap:28px;align-items:center}
 .nav-links a{color:var(--muted);text-decoration:none;font-size:15px;font-weight:500;padding:12px 0}
 .nav-links a:hover{color:var(--text)}
 .nav-cta{display:flex;gap:10px;align-items:center;flex-shrink:0}
-.nav-cta .btn{min-height:42px;padding:0 16px;font-size:15px;white-space:nowrap}
+.nav-cta .btn{min-height:48px;padding:0 18px;font-size:16px;white-space:nowrap}
+.nav-cta .btn-primary{font-weight:700;box-shadow:0 3px 8px rgba(47,68,160,.18)}
 .nav-listing{display:none}
-@media (min-width:900px){.nav-links{display:flex}.nav-listing{display:inline-flex}}
+@media (min-width:900px){.nav-listing{display:inline-flex}}
+@media (min-width:1100px){.nav-links{display:flex}}
 
 /* Hero */
 .hero-grid{display:grid;gap:clamp(32px,5vw,72px);align-items:center}
@@ -399,7 +400,7 @@ footer img{height:28px;width:auto}
 
 /* ── Touch screens: 44px-tall tap targets ── */
 @media (pointer:coarse){
-  .nav-cta .btn{min-height:44px}
+  .nav-cta .btn{min-height:48px}
   .stars{gap:0}
   .star{padding:10px 7px}
 }
@@ -452,8 +453,8 @@ footer img{height:28px;width:auto}
       <a href="#sponsors">Sponsors</a>
     </nav>
     <div class="nav-cta">
-      <a class="btn btn-primary" href="__MRT_APP_BASE__#/" data-app="#/">Go to app <svg aria-hidden="true"><use href="#i-arrow"/></svg></a>
       <a class="btn btn-ghost nav-listing" href="__MRT_APP_BASE__#/request" data-app="#/request">List a home</a>
+      <a class="btn btn-primary" href="__MRT_APP_BASE__#/" data-app="#/">Go to app <svg aria-hidden="true"><use href="#i-arrow"/></svg></a>
     </div>
   </div>
 </header>

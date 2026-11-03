@@ -61,3 +61,14 @@ test("legacy emailed hash routes preserve their query when forwarded to the app"
   });
   assert.deepEqual(redirects, ["app/?spt=token#/tour/real-tour"]);
 });
+
+
+test("returning signed-in visitors stay on the landing page", () => {
+  const redirects = [];
+  vm.runInNewContext(scripts[0].replaceAll("__MRT_APP_BASE__", "app/"), {
+    window: {}, location: {hash: "", search: "", replace: url => redirects.push(url)},
+    localStorage: {getItem: () => "1"}, addEventListener() {},
+    matchMedia: () => ({matches: true}),
+  });
+  assert.deepEqual(redirects, []);
+});

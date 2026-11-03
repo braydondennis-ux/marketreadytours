@@ -1,6 +1,6 @@
 # MarketReady Tours — Engineering Handoff
 
-_Updated 2026-10-29. Read this entire file before acting._
+_Updated 2026-11-03. Read this entire file before acting._
 
 **Current state.** The refresh is **LIVE** (cutover 2026-08-10) and edge-cached. Since
 2026-10-10 **the landing-page configuration is restored at `/` for mobile and desktop; the app
@@ -21,6 +21,18 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 **The app is genuinely in use.** The 2026-09-02 North Phoenix tour was built in production over
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
+
+## 2026-11-03 — keep the landing page visible for returning visitors
+
+Erik wants the landing page with a prominent top-right Go to app button and no page snapping.
+The root was already serving landing.html, but its mrt_signed_in flag automatically skipped
+it for returning staff. Removed that automatic redirect; explicit legacy #/ links still forward
+to the app with query parameters intact. Go to app is now the rightmost header control with
+a 48px minimum height and stronger emphasis. Secondary List a home stays to its left on
+desktop. Section navigation appears at 1100px to avoid crowding. Normal scrolling and direct
+Next tour links remain. Added regression coverage for returning visitors and phone header fit.
+Verified 161 unit tests, 13 static checks and 27 isolated Chrome/iPhone browser checks;
+inspected desktop and small-phone header screenshots.
 
 ## 2026-10-29 — post-tour health check
 

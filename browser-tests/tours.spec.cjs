@@ -22,6 +22,18 @@ async function login(page){
  await expect(page.getByRole('button',{name:'Login',exact:true})).toHaveCount(0);
  await page.goto('/app/#/tour/tour-demo-1');await page.getByRole('button',{name:/Manage Edit Stops/}).click();
 }
+test('returning visitors keep the landing page with an accessible top-right app button',async({page})=>{
+ await page.addInitScript(()=>localStorage.setItem('mrt_signed_in','1'));
+ await page.goto('/');await expect(page).toHaveURL(/\/$/);
+ const button=page.locator('header').getByRole('link',{name:'Go to app'});
+ await expect(button).toBeVisible();const box=await button.boundingBox();
+ expect(box.height).toBeGreaterThanOrEqual(48);
+ expect(box.x+box.width/2).toBeGreaterThan(page.viewportSize().width/2);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ expect(await page.evaluate(()=>getComputedStyle(document.documentElement).scrollSnapType)).toBe('none');
+ await page.screenshot({path:test.info().outputPath('landing-header.png')});
+ await button.click();await expect(page).toHaveURL(/\/app\/#\/$/);
+});
 test('landing Next tour opens the exact tour and fresh attendees see Rate Home',async({page})=>{
  await page.goto('/');await page.locator('#next').click();await expect(page).toHaveURL(/\/app\/#\/tour\/tour-demo-1$/);
  await expect(page.getByText('Demo North Tour',{exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Rate Home',exact:true}).first()).toBeVisible();
