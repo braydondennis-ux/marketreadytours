@@ -12145,9 +12145,9 @@ function ToursDashboard(_ref26) {
     const _tMs=tour.date?new Date(tour.date+"T00:00:00").getTime():null;
     const _dAway=_tMs!==null?Math.round((_tMs-new Date().setHours(0,0,0,0))/86400000):null;
     const _badge=_dAway===0?{l:"LIVE TODAY",bg:"#DC2626",live:true}
-      :_dAway===1?{l:"Tomorrow",bg:"#D97706"}
-      :_dAway!==null&&_dAway>0&&_dAway<=6?{l:"In "+_dAway+" days",bg:"rgba(0,0,0,.3)"}
-      :_dAway!==null&&_dAway<0?{l:"Completed",bg:"rgba(0,0,0,.2)"}
+      :_dAway===1?{l:"Tomorrow",bg:"#92400E"}
+      :_dAway!==null&&_dAway>0&&_dAway<=6?{l:"In "+_dAway+" days",bg:"#525252"}
+      :_dAway!==null&&_dAway<0?{l:"Completed",bg:"#525252"}
       :null;
     return /*#__PURE__*/React.createElement("div", {
       key: tour.id,
