@@ -6,6 +6,7 @@ const functions = require("../index");
 test("tour saves start without an email-provider secret", () => {
   assert.deepEqual(functions.saveTour.__endpoint.secretEnvironmentVariables, []);
   assert.ok(functions.saveTour.__endpoint.callableTrigger);
+  assert.equal(functions.saveTour.__endpoint.availableMemoryMb, 512);
 });
 
 test("email-sending callables retain their provider secret", () => {

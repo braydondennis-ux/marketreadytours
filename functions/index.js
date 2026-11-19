@@ -733,7 +733,8 @@ async function processEvaluationOutbox() {
 
 // Saving tours only writes data and reconciles future reminder jobs. It must not
 // depend on the email provider's secret being available at container startup.
-exports.saveTour = onCall({...callableOptions, secrets: []}, async (request) => {
+// Preserve the live Cloud Run gen2 minimum; an implicit 256 MiB default rejects deployments.
+exports.saveTour = onCall({...callableOptions, memory: "512MiB", secrets: []}, async (request) => {
   assertSafeProject();
   const {uid} = assertAdmin(request);
   return idempotent("saveTour", uid, request.data?.requestId, async () => {
