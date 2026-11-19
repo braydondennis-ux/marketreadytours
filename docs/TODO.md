@@ -4,6 +4,13 @@ _Updated 2026-10-29. Production is live; see `CLAUDE.md` for what you are cleare
 
 Verified items note how they were confirmed, so nobody has to re-derive it.
 
+**November 19 sponsor cancellation follow-up:** Retained cancellation, payment-reference
+acknowledgment, organizer email and refund-resolution tasks are implemented; release verification
+is in progress. See TOUR-CANCELLATION-2026-11-19.md. Future work: provider-verified refund state,
+exact Clover transaction deep links where available, and authorized sponsor cancellation notices.
+No automatic refunds or chargeback responses. Off-platform cancellations remain undetectable.
+Monitor RTDB root transaction size/latency as data grows.
+
 **October 29 health follow-ups:** Monitor recurrence of the transient submitRating database
  disconnect (observed retry saved within four seconds; all 139 submission receipts complete).
  Five historic generic browser promise failures cannot be attributed from retained diagnostics.

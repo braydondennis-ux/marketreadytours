@@ -65,7 +65,7 @@ test("every terminal transition in the worker parks nextAttemptAt", () => {
   assert.equal(terminalWrites.length, 3, "expected exactly three terminal transitions");
   assert.equal(
     (SRC.match(/TERMINAL_NEXT_ATTEMPT_AT/g) || []).length,
-    4, // the declaration plus one use per terminal transition
+    6, // declaration, three original terminals, cancellation commit and worker recheck
     "each terminal transition must park nextAttemptAt",
   );
 });

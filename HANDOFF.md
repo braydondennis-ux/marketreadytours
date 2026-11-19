@@ -22,6 +22,14 @@ Resend. The September 10 audit recorded 38 tours in each of `mrt_tours_private` 
 two weeks and reached version 56 across ~55 saves with no lost data, which is the first real
 exercise of the optimistic-concurrency work.
 
+## 2026-11-19 — cancellation workflow
+
+Cancel Tour now preserves payment history and refund follow-up, requires acknowledgment of
+paid sponsors, queues an organizer-only email and blocks new checkouts on cancelled tours.
+See docs/TOUR-CANCELLATION-2026-11-19.md for behavior, limitations and release verification.
+No automatic refunds. Local validation: 167 unit tests, 13 static checks, Firebase workflows
+and all 33 iPhone/Chrome browser cases passed. Production rollout is being verified.
+
 ## 2026-11-03 — keep the landing page visible for returning visitors
 
 Erik wants the landing page with a prominent top-right Go to app button and no page snapping.

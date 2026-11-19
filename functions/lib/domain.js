@@ -180,6 +180,7 @@ function publicSponsor(sponsor) {
 
 function publicTourProjection(tour) {
   const source = assertPlainObject(tour, "tour");
+  if (source.cancelled === true) return null;
   const listings = (Array.isArray(source.listings) ? source.listings : []).map(publicListing);
   const sponsors = (Array.isArray(source.sponsors) ? source.sponsors : [])
     .map(publicSponsor)

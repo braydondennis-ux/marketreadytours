@@ -46,7 +46,7 @@ test("the Past tab includes completed legacy tours without an archived flag", as
 
   assert.match(
     source,
-    /const pastTours = tours\.filter\(t => !!t\.archived \|\| !!t\.date && t\.date < todayStr\)/,
+    /const pastTours = tours\.filter\(t => !t\.cancelled && \(!!t\.archived \|\| !!t\.date && t\.date < todayStr\)\)/,
   );
   assert.match(source, /showArchived\s*\? pastTours/);
   assert.match(source, /"aria-pressed": !showArchived/);

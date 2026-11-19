@@ -71,6 +71,7 @@ function candidateReminderIds({tour, previous}) {
 
 /* What SHOULD exist for this tour right now, keyed by reminder id. */
 function planTourReminders({tour, now}) {
+  if (tour?.cancelled) return new Map();
   const plan = new Map();
   const tourId = String(tour?.id || "");
   if (!tourId || tour?.archived === true) return plan;

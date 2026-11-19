@@ -145,3 +145,27 @@ test('paid sponsor removal is blocked without losing sponsor data', async ({page
  const response = await fetch('http://127.0.0.1:9000/mrt_tours_private/tour-demo-1/sponsors.json?ns=mrt-local-audit', {headers:{Authorization:'Bearer owner'}});
  expect((await response.json())[0]).toEqual(sponsor);
 });
+
+test('cancel tour shows payment references, requires acknowledgement and keeps refund follow-up', async ({page}) => {
+ const sponsor={id:'refund-sp',paid:true,paymentStatus:'paid',name:'Refund Sponsor',email:'sponsor@example.com'};
+ for(const root of ['mrt_tours_private','mrt_tours_public']) await fetch('http://127.0.0.1:9000/'+root+'/tour-demo-1/sponsors.json?ns=mrt-local-audit',{method:'PUT',headers:{Authorization:'Bearer owner','Content-Type':'application/json'},body:JSON.stringify([sponsor])});
+ await fetch('http://127.0.0.1:9000/mrt_sponsor_payments/browser-session.json?ns=mrt-local-audit',{method:'PUT',headers:{Authorization:'Bearer owner','Content-Type':'application/json'},body:JSON.stringify({tourId:'tour-demo-1',sponsorId:'refund-sp',status:'paid',amountCents:4975,cloverPaymentId:'PAY-BROWSER',checkoutSessionId:'browser-session'})});
+ await login(page); await page.goto('/app/#/');
+ await page.getByRole('button',{name:'Cancel tour Demo North Tour',exact:true}).click();
+ const dialog=page.getByRole('dialog',{name:'Tour cancellation'});
+ await expect(dialog.getByText('Payment ID: PAY-BROWSER')).toBeVisible();
+ await expect(dialog.getByRole('button',{name:'Cancel tour',exact:true})).toBeDisabled();
+ await dialog.getByRole('checkbox').check();
+ await dialog.getByRole('button',{name:'Cancel tour',exact:true}).click();
+ await expect(dialog.getByRole('heading',{name:'Tour cancelled',exact:true})).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
+ const notice=await fetch('http://127.0.0.1:9000/mrt_email_outbox/cancellation_tour-demo-1.json?ns=mrt-local-audit',{headers:{Authorization:'Bearer owner'}}).then(r=>r.json());
+ expect(notice.message.to).toBe('admin@example.com');expect(notice.message.text).toContain('PAY-BROWSER');
+ await dialog.getByRole('button',{name:'Done',exact:true}).click();
+ await page.getByText('Cancelled tours · Refund follow-up',{exact:true}).click();
+ await page.getByRole('button',{name:'Demo North Tour · 1 pending',exact:true}).click();
+ page.once('dialog', d=>d.accept('Refund complete: test reference REF-BROWSER'));
+ await dialog.getByRole('button',{name:'Mark refund resolved',exact:true}).click();
+ await expect(dialog.getByText('Resolution: Refund complete: test reference REF-BROWSER')).toBeVisible();
+ await page.screenshot({path:test.info().outputPath('cancelled-tour-refunds.png')});
+});

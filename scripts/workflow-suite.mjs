@@ -231,14 +231,14 @@ assert.equal(invoice.mocked, true);
 assert.equal(invoice.amountCents, 9950);
 assert.equal(invoice.paymentUrl, "");
 
-async function sendSquareInvoiceEvent(type, status) {
+async function sendSquareInvoiceEvent(type, status, targetInvoiceId = invoice.invoiceId) {
   const event = {
     event_id: crypto.randomUUID(),
     type,
     data: {
       type: "invoice",
-      id: invoice.invoiceId,
-      object: {invoice: {id: invoice.invoiceId, status}},
+      id: targetInvoiceId,
+      object: {invoice: {id: targetInvoiceId, status}},
     },
   };
   const rawEvent = JSON.stringify(event);
@@ -403,9 +403,8 @@ const deleteRequest = {tourId: "tour-reminder-cleanup", expectedVersion: 1, requ
 const deleted = await callable("deleteTour", deleteRequest);
 assert.equal(deleted.deleted, true, "regular admins must be allowed to delete tours");
 assert.deepEqual(await callable("deleteTour", deleteRequest), deleted, "retrying the same deletion must be idempotent");
-for (const root of ["mrt_tours_private", "mrt_tours_public"]) {
-  assert.equal((await get(ref(db, `${root}/tour-reminder-cleanup`))).exists(), false, `${root} must remove the deleted tour`);
-}
+assert.equal((await get(ref(db, 'mrt_tours_private/tour-reminder-cleanup/cancelled'))).val(), true);
+assert.equal((await get(ref(db, 'mrt_tours_public/tour-reminder-cleanup'))).exists(), false);
 const afterCleanupDelete = Object.values((await get(ref(db, "mrt_reminders"))).val() || {})
   .filter((r) => r.tourId === "tour-reminder-cleanup");
 assert.equal(afterCleanupDelete.length, 2, "records are kept for the audit trail");
@@ -420,6 +419,63 @@ await signInWithEmailAndPassword(auth, "super@example.com", "test1234");
 await callable("saveTour", {tour: {...deletableTour, id: "tour-super-delete", listings: []}, expectedVersion: 0, requestId: requestId("super-delete-save")});
 const superDeleted = await callable("deleteTour", {tourId: "tour-super-delete", expectedVersion: 1, requestId: requestId("super-delete")});
 assert.equal(superDeleted.deleted, true, "super-admins must retain deletion access");
+
+const cancellationTour = await callable("saveTour", {tour:{...deletableTour,id:"tour-cancel-paid",sponsors:[{id:"cancel-sp",name:"Paid Sponsor",paymentPlan:"split"}]},expectedVersion:0,requestId:requestId("cancel-create")});
+await callable("markSponsorPaid",{tourId:"tour-cancel-paid",sponsorId:"cancel-sp",paid:true,requestId:requestId("cancel-paid")});
+let preview = await callable("deleteTour",{action:"preview",tourId:"tour-cancel-paid"});
+assert.equal(preview.tasks.length,1);
+assert.equal(preview.tasks[0].amountCents,null,"manual amounts must not be guessed from the plan");
+await callable("deleteTour",{tourId:"tour-cancel-paid",expectedVersion:preview.version,previewKey:preview.previewKey,requestId:requestId("no-ack")},400);
+await fetch('http://127.0.0.1:9000/mrt_sponsor_payments/before-session.json?ns=mrt-local-audit',{method:'PUT',headers:{Authorization:'Bearer owner','Content-Type':'application/json'},body:JSON.stringify({tourId:'tour-cancel-paid',sponsorId:'cancel-sp',status:'paid',amountCents:4975,checkoutSessionId:'before-session',cloverPaymentId:'before-payment'})});
+await callable('deleteTour',{action:'cancel',tourId:'tour-cancel-paid',expectedVersion:preview.version,previewKey:preview.previewKey,acknowledgeRefunds:true,requestId:requestId('stale-payment-preview')},400);
+preview=await callable('deleteTour',{action:'preview',tourId:'tour-cancel-paid'});
+const cancelRequest={action:"cancel",tourId:"tour-cancel-paid",expectedVersion:preview.version,previewKey:preview.previewKey,acknowledgeRefunds:true,requestId:requestId("ack-cancel"),email:"wrong@example.com"};
+const cancelled=await callable("deleteTour",cancelRequest);
+assert.deepEqual(await callable("deleteTour",cancelRequest),cancelled);
+assert.equal(cancelled.tour.cancelled,true);
+const encodedPay=Buffer.from(JSON.stringify({t:'tour-cancel-paid',s:'cancel-sp',p:'split',exp:Date.now()+60000})).toString('base64url');
+const closedPayToken=encodedPay+'.'+crypto.createHmac('sha256','mrt-workflow-signing-secret').update(encodedPay).digest('hex');
+await callable('createSponsorCheckout',{token:closedPayToken},404);
+
+assert.equal(cancelled.tour.cancellation.notificationEmail,"super@example.com","recipient must come from Auth");
+assert.equal((await get(ref(db,"mrt_tours_public/tour-cancel-paid"))).exists(),false);
+await callable("saveTour",{tour:{...cancelled.tour,cancelled:false},expectedVersion:cancelled.tour.version,requestId:requestId("restore-cancelled")},400);
+await callable("verifyTourCode",{tourId:"tour-cancel-paid",code:"1234"},403);
+await callable("markSponsorPaid",{tourId:"tour-cancel-paid",sponsorId:"cancel-sp",paid:true,requestId:requestId("pay-cancelled")},404);
+await callable("deleteTour",{action:"resolve",tourId:"tour-cancel-paid",taskId:preview.tasks[0].id,resolutionNote:"Refund completed, test reference REF-123",requestId:requestId("resolve-cancel")});
+const resolved=await callable("deleteTour",{action:"preview",tourId:"tour-cancel-paid"});
+assert.equal(resolved.tasks[0].status,"resolved");
+assert.equal(resolved.tasks[0].resolutionNote,"Refund completed, test reference REF-123");
+const notice=await fetch("http://127.0.0.1:9000/mrt_email_outbox/cancellation_tour-cancel-paid.json?ns=mrt-local-audit",{headers:{Authorization:"Bearer owner"}}).then(r=>r.json());
+assert.equal(notice.message.to,"super@example.com");
+assert.match(notice.message.text,/No refund has been issued/);
+assert.match(notice.message.text,/Paid Sponsor/);
+assert.equal(notice.status,"pending");
+
+// A checkout opened before cancellation can still be paid. Capture it once and notify
+// the original canceling organizer, without republishing the cancelled tour.
+const lateSession='late-session';
+await fetch('http://127.0.0.1:9000/mrt_sponsor_payments/'+lateSession+'.json?ns=mrt-local-audit',{method:'PUT',headers:{Authorization:'Bearer owner','Content-Type':'application/json'},body:JSON.stringify({tourId:'tour-cancel-paid',sponsorId:'cancel-sp',status:'pending',provider:'clover',amountCents:4975,checkoutSessionId:lateSession})});
+const event={type:'PAYMENT',id:'late-payment',status:'APPROVED',checkoutSessionId:lateSession};
+const raw=JSON.stringify(event), ts=Math.floor(Date.now()/1000);
+const sig=crypto.createHmac('sha256','mrt-workflow-clover-secret').update(ts+'.'+raw).digest('hex');
+for(let i=0;i<2;i++) {
+ const result=await fetch(functionUrl('cloverWebhook'),{method:'POST',headers:{'Content-Type':'application/json','Clover-Signature':`t=${ts},v1=${sig}`},body:raw});
+ assert.equal(result.status,200,await result.text());
+}
+const latePreview=await callable('deleteTour',{action:'preview',tourId:'tour-cancel-paid'});
+assert.equal(latePreview.tasks.filter(t=>t.paymentId==='late-payment').length,1);
+assert.equal(latePreview.tasks.find(t=>t.paymentId==='late-payment').status,'pending');
+assert.equal((await get(ref(db,'mrt_tours_public/tour-cancel-paid'))).exists(),false);
+const lateNotice=await fetch('http://127.0.0.1:9000/mrt_email_outbox/cancelled_payment_late-session.json?ns=mrt-local-audit',{headers:{Authorization:'Bearer owner'}}).then(r=>r.json());
+assert.equal(lateNotice.message.to,'super@example.com');assert.match(lateNotice.message.text,/late-payment/);
+
+// An old Square invoice must also retain payment follow-up after cancellation.
+await fetch('http://127.0.0.1:9000/mrt_invoices/late-square.json?ns=mrt-local-audit',{method:'PUT',headers:{Authorization:'Bearer owner','Content-Type':'application/json'},body:JSON.stringify({tourId:'tour-cancel-paid',signupId:'late-square-signup',status:'pending',amountCents:9950})});
+await sendSquareInvoiceEvent('invoice.payment_made','PAID','late-square');
+const squarePreview=await callable('deleteTour',{action:'preview',tourId:'tour-cancel-paid'});
+assert.equal(squarePreview.tasks.find(t=>t.paymentId==='late-square').amountCents,9950);
+assert.equal((await get(ref(db,'mrt_tours_public/tour-cancel-paid'))).exists(),false);
 
 console.log(
   "Workflow suite passed: rating, intake, approval, manual payment, campaign, opt-out, Square payment, refund, and reminders.",

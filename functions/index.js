@@ -45,6 +45,7 @@ const {sendViaResend, DEFAULT_FROM} = require("./lib/resend");
 const {deliverEmailJob, emailJob} = require("./lib/outbox");
 const {buildEvaluationEmail} = require("./lib/evaluation-email");
 const {sponsorsWithFunds, sponsorRemovalBlocked} = require("./lib/sponsor-safety");
+const {refundTasks, cancellationPreview, cancellationMessage} = require("./lib/cancellation");
 
 if (!getApps().length) initializeApp();
 
@@ -376,6 +377,7 @@ function normalizeTourForWrite(raw, uid, previous = null) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     throw new HttpsError("invalid-argument", "tour must be an object.");
   }
+  if (previous?.cancelled) throw new HttpsError("failed-precondition", "This tour has been cancelled. Its payment records are retained for refund follow-up.");
   const id = cleanText(raw.id, 128, "tour id", true);
   if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
     throw new HttpsError("invalid-argument", "tour id contains unsupported characters.");
@@ -403,6 +405,8 @@ function normalizeTourForWrite(raw, uid, previous = null) {
     updatedBy: uid,
     version: Number(previous?.version || 0) + 1,
   };
+  delete next.cancelled;
+  delete next.cancellation;
   delete next.ratings;
   delete next.ratingSubmissions;
   delete next.favorites;
@@ -424,7 +428,7 @@ exports.verifyTourCode = onCall(callableOptions, async (request) => {
   const tourId = cleanText(request.data?.tourId, 128, "tourId", true);
   const code = cleanText(request.data?.code, 32, "code", true);
   const tour = (await getDatabase().ref(`mrt_tours_private/${tourId}`).get()).val();
-  if (!tour || !timingSafeTextEqual(tour.code, code)) {
+  if (!tour || tour.cancelled || !timingSafeTextEqual(tour.code, code)) {
     throw new HttpsError("permission-denied", "The tour code is incorrect.");
   }
   const expiresAt = Date.now() + 12 * 60 * 60 * 1000;
@@ -462,7 +466,7 @@ exports.submitRating = onCall(
     ) {
       throw new HttpsError("permission-denied", "Tour access has expired. Enter the code again.");
     }
-    if (!tour?.listings?.some((listing) => listing?.id === listingId)) {
+    if (tour?.cancelled || !tour?.listings?.some((listing) => listing?.id === listingId)) {
       throw new HttpsError("not-found", "The selected listing does not exist.");
     }
     let rating;
@@ -588,7 +592,7 @@ exports.submitIntake = onCall(
       const plan = sponsorPlanDetails(payload.paymentPlan || payload.plan);
       const tourId = cleanText(payload.tourId, 128, "tourId", true);
       const tour = (await getDatabase().ref(`mrt_tours_private/${tourId}`).get()).val();
-      if (!tour || tour.archived === true || tour.date < localYmd()) {
+      if (!tour || tour.cancelled || tour.archived === true || tour.date < localYmd()) {
         throw new HttpsError("failed-precondition", "That tour is no longer open.");
       }
       record.tourId = tourId;
@@ -662,11 +666,47 @@ async function loadRemindersByIds(ids) {
   return Object.fromEntries(entries.filter(([, value]) => value));
 }
 
+// Cancellation, payment receipts and their notification jobs commit together. Root transactions
+// are limited to multi-location admin/payment operations, not ratings or read requests.
+async function atomicState(change) {
+  const ref = getDatabase().ref();
+  const fresh = (await ref.get()).val() || {};
+  let first = true, failure = null;
+  const result = await ref.transaction(current => {
+    const state = current === null && first ? fresh : current;
+    first = false; failure = null;
+    if (!state) return;
+    try { return change(state); } catch (error) { failure = error; return; }
+  });
+  if (failure) throw failure;
+  if (!result.committed) throw new HttpsError("aborted", "Data changed. Reload and try again.");
+  return result;
+}
+function setStatePath(state, path, value) {
+  const parts = path.split('/'); let node = state;
+  for (const key of parts.slice(0, -1)) node = node[key] ||= {};
+  if (value === null) delete node[parts.at(-1)]; else node[parts.at(-1)] = value;
+}
+async function commitActiveUpdates(updates) {
+  return atomicState(state => {
+    for (const [path, value] of Object.entries(updates)) {
+      const [root, id] = path.split('/');
+      const tour = state.mrt_tours_private?.[id];
+      if (root === 'mrt_tours_private' && tour?.cancelled) throw new HttpsError("failed-precondition", "This tour has been cancelled.");
+      if (root === 'mrt_tours_private' && value?.version && tour && value.version !== Number(tour.version || 0) + 1) throw new HttpsError("aborted", "The tour changed. Reload and try again.");
+      if (root === 'mrt_tours_public' && tour?.cancelled) { setStatePath(state, path, null); continue; }
+      if (root === 'mrt_reminders' && state.mrt_tours_private?.[state.mrt_reminders?.[id]?.tourId || value?.tourId]?.cancelled) continue;
+      setStatePath(state, path, value);
+    }
+    return state;
+  });
+}
 async function publishTourProjection(tour) {
-  const projected = publicTourProjection(tour);
-  return getDatabase().ref(`mrt_tours_public/${tour.id}`).transaction(current => {
-    if (current && Number(current.version || 0) > Number(projected.version)) return;
-    return projected;
+  return atomicState(state => {
+    const latest = state.mrt_tours_private?.[tour.id];
+    if (!latest) return state;
+    setStatePath(state, `mrt_tours_public/${tour.id}`, publicTourProjection(latest));
+    return state;
   });
 }
 
@@ -683,7 +723,7 @@ async function checkPublicTours() {
         return item && !Array.isArray(item) && typeof item === "object"
           ? Object.fromEntries(Object.keys(item).sort().map(k => [k, item[k]])) : item;
       });
-      if (canonical(current) !== canonical(projected) && Date.now() - Number(tour.updatedAt || 0) > 30000) {
+      if (canonical(current || null) !== canonical(projected) && Date.now() - Number(tour.updatedAt || 0) > 30000) {
         repaired++;
         logger.error("Public tour projection differs from saved tour", {tourId: tour.id,
           privateVersion: tour.version, publicVersion: current?.version || null});
@@ -790,7 +830,7 @@ exports.saveTour = onCall({...callableOptions, memory: "512MiB", maxInstances: 2
         actorUid: uid,
       });
       if (Object.keys(result.updates).length > 0) {
-        await getDatabase().ref().update(result.updates);
+        await commitActiveUpdates(result.updates);
       }
       reminders = result.stats;
       logger.info("Reminders reconciled", {tourId, ...result.stats});
@@ -804,44 +844,59 @@ exports.saveTour = onCall({...callableOptions, memory: "512MiB", maxInstances: 2
 exports.deleteTour = onCall(callableOptions, async (request) => {
   assertSafeProject();
   const {uid} = assertAdmin(request);
-  return idempotent("deleteTour", uid, request.data?.requestId, async () => {
-    const tourId = cleanText(request.data?.tourId, 128, "tourId", true);
-    const expectedVersion = Number(request.data?.expectedVersion || 0);
-    const privateRef = getDatabase().ref(`mrt_tours_private/${tourId}`);
-    const current = (await privateRef.get()).val();
-    if (!current) return {ok: true, deleted: false};
-    if (Number(current.version || 0) !== expectedVersion) {
-      throw new HttpsError("aborted", "This tour changed elsewhere. Reload and try again.");
+  const tourId = cleanText(request.data?.tourId, 128, "tourId", true);
+  if (!/^[a-zA-Z0-9_-]+$/.test(tourId)) throw new HttpsError("invalid-argument", "Invalid tour identifier.");
+  const action = request.data?.action || 'cancel';
+  if (action === 'preview') {
+    const [tour, payments, invoices] = await Promise.all([
+      getDatabase().ref(`mrt_tours_private/${tourId}`).get(), getDatabase().ref('mrt_sponsor_payments').get(), getDatabase().ref('mrt_invoices').get()
+    ]);
+    if (!tour.exists()) throw new HttpsError("not-found", "Tour was not found.");
+    const preview = cancellationPreview(tour.val(), payments.val() || {}, invoices.val() || {});
+    if (preview.cancelled) {
+      const job = (await getDatabase().ref(`mrt_email_outbox/cancellation_${tourId}`).get()).val();
+      preview.notificationStatus = job?.status === 'sent' ? 'accepted by email provider' : job?.status === 'dead' ? 'failed; contact support' : job?.status === 'failed' ? 'queued for retry' : job ? 'queued' : 'not queued';
     }
-    if (sponsorsWithFunds(current.sponsors).length) {
-      throw new HttpsError("failed-precondition", "This tour has paid sponsors and cannot be deleted. Contact each sponsor and resolve their payment first. Deleting a tour does not issue refunds.");
-    }
-    /* Cancel the tour's reminders in the same atomic update as the delete. Without this the
-       worker keeps its jobs and mails every agent about a tour that no longer exists — the
-       reminder rows live under mrt_reminders, not under the tour, so nulling the tour does not
-       take them with it. Reminders that already sent are left exactly as they are. */
-    let reminderUpdates = {};
-    try {
-      const existing = await loadRemindersByIds(candidateReminderIds({tour: current, previous: null}));
-      reminderUpdates = cancelTourReminders({
-        tour: current,
-        existing,
-        now: Date.now(),
-        actorUid: uid,
-      }).updates;
-    } catch (error) {
-      logger.error("Could not load reminders while deleting a tour", {tourId, error: error?.message});
-      throw new HttpsError("internal", "The tour was not deleted because its reminders could not be cancelled.");
-    }
-    await getDatabase().ref().update({
-      [`mrt_tours_private/${tourId}`]: null,
-      [`mrt_tours_public/${tourId}`]: null,
-      [`mrt_ratings_private/${tourId}`]: null,
-      [`mrt_ratings_public/${tourId}`]: null,
-      [`mrt_campaigns/${tourId}`]: null,
-      ...reminderUpdates,
+    return preview;
+  }
+  if (!['cancel', 'resolve'].includes(action)) throw new HttpsError("invalid-argument", "Unknown cancellation action.");
+  // Resolve the recipient from Firebase Auth, never a client-provided address.
+  const actor = await getAuth().getUser(uid);
+  const email = normalizeEmail(actor.email);
+  if (!isValidEmail(email)) throw new HttpsError("failed-precondition", "Your account needs an email address before cancelling a tour.");
+  return idempotent('deleteTour', uid, request.data?.requestId, async () => {
+    let saved;
+    await atomicState(state => {
+      const tour = state.mrt_tours_private?.[tourId];
+      if (!tour) throw new HttpsError("not-found", "Tour was not found.");
+      if (action === 'resolve') {
+        const tasks = tour.cancellation?.refundTasks || {};
+        const task = Object.hasOwn(tasks, request.data.taskId) ? tasks[request.data.taskId] : null;
+        if (!tour.cancelled || !task) throw new HttpsError("not-found", "Refund task was not found.");
+        const note = typeof request.data.resolutionNote === 'string' ? request.data.resolutionNote.trim() : '';
+        if (note.length < 5 || note.length > 2000) throw new HttpsError("invalid-argument", "Enter a refund reference or resolution note (5–2000 characters).");
+        if (task.status !== 'resolved') Object.assign(task, {status:'resolved', resolutionNote:note, resolvedAt:Date.now(), resolvedBy:uid});
+        saved = tour;
+        return state;
+      }
+      if (tour.cancelled) { saved = tour; return state; }
+      if (Number(tour.version || 0) !== Number(request.data.expectedVersion || 0)) throw new HttpsError("aborted", "This tour changed. Review its current payments and try again.");
+      const preview = cancellationPreview(tour, state.mrt_sponsor_payments || {}, state.mrt_invoices || {});
+      if (preview.tasks.length && (request.data.acknowledgeRefunds !== true || request.data.previewKey !== preview.previewKey)) throw new HttpsError("failed-precondition", "Review the paid sponsors and acknowledge that their payments still need to be resolved.");
+      const now = Date.now();
+      const tasks = Object.fromEntries(preview.tasks.map(task => [task.id, task]));
+      saved = {...tour, cancelled:true, version:Number(tour.version || 0)+1, updatedAt:now,
+        cancellation:{cancelledAt:now, cancelledBy:uid, notificationEmail:email, refundTasks:tasks}};
+      state.mrt_tours_private[tourId] = saved;
+      setStatePath(state, `mrt_tours_public/${tourId}`, null);
+      for (const row of Object.values(state.mrt_reminders || {})) {
+        if (row.tourId === tourId && ['pending','failed','processing'].includes(row.status)) Object.assign(row, {status:'cancelled', cancelledBy:uid, updatedAt:now, nextAttemptAt:TERMINAL_NEXT_ATTEMPT_AT});
+      }
+      const jobId = 'cancellation_' + tourId;
+      setStatePath(state, `mrt_email_outbox/${jobId}`, emailJob(jobId, cancellationMessage(saved, tasks, email), now));
+      return state;
     });
-    return {ok: true, deleted: true};
+    return {ok:true, cancelled:true, deleted:true, tour:(await getDatabase().ref(`mrt_tours_private/${tourId}`).get()).val()};
   });
 });
 
@@ -1164,7 +1219,7 @@ exports.approveListingRequest = onCall(
           alreadyInTour = false;
           atCapacity = false;
           if (current === null && tourTransactionAttempts === 1) current = initialTour;
-          if (!current) return;
+          if (!current || current.cancelled) return;
           const listings = Array.isArray(current.listings) ? current.listings : [];
           if (listings.some((entry) => entry?.id === listingId)) {
             alreadyInTour = true;
@@ -1213,7 +1268,7 @@ exports.approveListingRequest = onCall(
         } catch (error) {
           logger.error("Reminder reconciliation failed on approval", {tourId, error: error?.message});
         }
-        await getDatabase().ref().update({
+        await commitActiveUpdates({
           [`mrt_tours_public/${tourId}`]: publicTourProjection(nextTour),
           [`mrt_listing_requests/${requestIdToApprove}/status`]: "approved",
           [`mrt_listing_requests/${requestIdToApprove}/listingId`]: listingId,
@@ -1363,7 +1418,7 @@ exports.launchCampaign = onCall(
     return idempotent("launchCampaign", uid, request.data?.requestId, async () => {
       const tourId = cleanText(request.data?.tourId, 128, "tourId", true);
       const tour = (await getDatabase().ref(`mrt_tours_private/${tourId}`).get()).val();
-      if (!tour) throw new HttpsError("not-found", "Tour was not found.");
+      if (!tour || tour.cancelled) throw new HttpsError("not-found", "This tour is unavailable or cancelled.");
       const daysUntil = daysBetweenYmd(
         new Intl.DateTimeFormat("en-CA", {
           timeZone: APP_TIME_ZONE,
@@ -1589,7 +1644,7 @@ exports.approveSponsorSignup = onCall(callableOptions, async (request) => {
     const tourId = cleanText(signup.tourId, 128, "tourId", true);
     const tourRef = getDatabase().ref(`mrt_tours_private/${tourId}`);
     const tour = (await tourRef.get()).val();
-    if (!tour) throw new HttpsError("not-found", "Tour was not found.");
+    if (!tour || tour.cancelled) throw new HttpsError("not-found", "This tour is unavailable or cancelled.");
     const sponsorId = `sponsor_${stableHash(signupId).slice(0, 20)}`;
     const sponsor = {
       ...signup,
@@ -1613,7 +1668,7 @@ exports.approveSponsorSignup = onCall(callableOptions, async (request) => {
       updatedAt: Date.now(),
       updatedBy: uid,
     };
-    await getDatabase().ref().update({
+    await commitActiveUpdates({
       [`mrt_tours_private/${tourId}`]: nextTour,
       [`mrt_tours_public/${tourId}`]: publicTourProjection(nextTour),
       [`mrt_sponsor_signups/${signupId}/status`]: "approved",
@@ -1634,7 +1689,7 @@ exports.markSponsorPaid = onCall(callableOptions, async (request) => {
     const paid = request.data?.paid === true;
     const tourRef = getDatabase().ref(`mrt_tours_private/${tourId}`);
     const tour = (await tourRef.get()).val();
-    if (!tour) throw new HttpsError("not-found", "Tour was not found.");
+    if (!tour || tour.cancelled) throw new HttpsError("not-found", "This tour is unavailable or cancelled.");
     const sponsors = Array.isArray(tour.sponsors) ? tour.sponsors : [];
     const sponsorIndex = sponsors.findIndex((entry) => String(entry?.id) === sponsorId);
     if (sponsorIndex < 0) throw new HttpsError("not-found", "Sponsor was not found.");
@@ -1682,7 +1737,7 @@ exports.markSponsorPaid = onCall(callableOptions, async (request) => {
       updates[`mrt_sponsor_signups/${sponsor.signupId}/paidBy`] = sponsor.paidBy;
       updates[`mrt_sponsor_signups/${sponsor.signupId}/updatedAt`] = now;
     }
-    await getDatabase().ref().update(updates);
+    await commitActiveUpdates(updates);
     return {ok: true, paid, sponsor, version: nextTour.version};
   });
 });
@@ -1727,7 +1782,7 @@ function parseSponsorPayToken(token) {
    agree on what "payable" means. */
 async function loadPayableSponsor(tourId, sponsorId) {
   const tour = (await getDatabase().ref(`mrt_tours_private/${tourId}`).get()).val();
-  if (!tour) throw new HttpsError("not-found", "Tour was not found.");
+  if (!tour || tour.cancelled) throw new HttpsError("not-found", "This tour is unavailable or cancelled.");
   const sponsors = Array.isArray(tour.sponsors) ? tour.sponsors : [];
   const sponsor = sponsors.find((entry) => String(entry?.id) === String(sponsorId));
   if (!sponsor) throw new HttpsError("not-found", "Sponsor was not found on this tour.");
@@ -1825,10 +1880,12 @@ exports.createSponsorCheckout = onCall({
     throw new HttpsError("unavailable", "Payment could not be started. Please try again shortly.");
   }
 
+  await loadPayableSponsor(payload.t, payload.s);
   /* Recorded BEFORE the sponsor is sent to Clover, so an inbound webhook always finds a
      record to match — webhooks can arrive before the browser returns. */
   await getDatabase().ref(`mrt_sponsor_payments/${session.checkoutSessionId}`).set({
     checkoutSessionId: session.checkoutSessionId,
+    merchantId: CLOVER_MERCHANT_ID.value(),
     tourId: payload.t,
     sponsorId: payload.s,
     plan: details.key,
@@ -1888,7 +1945,7 @@ exports.createSponsorInvoice = onCall({
     const tourId = cleanText(signup.tourId, 128, "tourId", true);
     const tourRef = getDatabase().ref(`mrt_tours_private/${tourId}`);
     const tour = (await tourRef.get()).val();
-    if (!tour) throw new HttpsError("not-found", "Tour was not found.");
+    if (!tour || tour.cancelled) throw new HttpsError("not-found", "This tour is unavailable or cancelled.");
     const plan = sponsorPlanDetails(signup.paymentPlan || signup.plan);
     const dueDate = localYmd(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
 
@@ -1966,7 +2023,7 @@ exports.createSponsorInvoice = onCall({
       updatedAt: Date.now(),
       updatedBy: uid,
     };
-    await getDatabase().ref().update({
+    await commitActiveUpdates({
       [`mrt_invoices/${created.invoiceId}`]: invoiceRecord,
       [`mrt_sponsor_signups/${signupId}/paymentStatus`]: "invoiced",
       [`mrt_sponsor_signups/${signupId}/invoiceId`]: created.invoiceId,
@@ -2068,6 +2125,11 @@ async function processDueReminders() {
       continue;
     }
     const claimed = claim.snapshot.val();
+    const latestTour = (await getDatabase().ref(`mrt_tours_private/${claimed.tourId}`).get()).val();
+    if (!latestTour || latestTour.cancelled) {
+      await ref.update({status:'cancelled', nextAttemptAt:TERMINAL_NEXT_ATTEMPT_AT});
+      skipped += 1; continue;
+    }
     try {
       await sendTransactionalEmail({
         to: claimed.agentEmail,
@@ -2327,14 +2389,6 @@ exports.cloverWebhook = onRequest(
         160, "event id", true,
       );
 
-      const claim = await getDatabase().ref(`mrt_webhook_events/clover/${eventId}`).transaction(
-        (current) => (current ? undefined : {receivedAt: Date.now(), type: event.type || "unknown"}),
-      );
-      if (!claim.committed) {
-        response.status(204).send(); // already processed
-        return;
-      }
-
       const paymentRef = getDatabase().ref(`mrt_sponsor_payments/${sessionId}`);
       const payment = (await paymentRef.get()).val();
       if (!payment) {
@@ -2356,6 +2410,7 @@ exports.cloverWebhook = onRequest(
         logger.warn("Clover webhook: event not treated as approved", {
           sessionId, statusText: statusText || "(none)",
         });
+        if (payment.status === 'paid') { response.status(200).send("ok"); return; }
         await paymentRef.update({
           status: "declined",
           providerStatus: cleanText(event.status, 40, "status"),
@@ -2365,47 +2420,33 @@ exports.cloverWebhook = onRequest(
         return;
       }
 
-      const tourRef = getDatabase().ref(`mrt_tours_private/${payment.tourId}`);
-      const tour = (await tourRef.get()).val();
-      if (!tour) {
-        logger.error("Clover payment for a tour that no longer exists", {sessionId, tourId: payment.tourId});
-        response.status(200).send("ok");
-        return;
-      }
-
-      const sponsors = Array.isArray(tour.sponsors) ? tour.sponsors : [];
-      const index = sponsors.findIndex((entry) => String(entry?.id) === String(payment.sponsorId));
-      if (index < 0) {
-        logger.error("Clover payment for a sponsor no longer on the tour", {sessionId});
-        response.status(200).send("ok");
-        return;
-      }
-
-      const now = Date.now();
-      const nextSponsors = sponsors.map((entry, i) => (i === index ? {
-        ...entry,
-        paid: true,
-        paymentStatus: "paid",
-        paymentMethod: "clover",
-        paidAt: now,
-      } : entry));
-      const nextTour = {
-        ...tour,
-        sponsors: nextSponsors,
-        version: Number(tour.version || 0) + 1,
-        updatedAt: now,
-      };
-
-      /* Single atomic update: the sponsor is marked paid and the public projection is
-         re-materialised together, so the sponsor becomes publicly visible the moment payment
-         lands — publicSponsor() drops anything unpaid. */
-      await getDatabase().ref().update({
-        [`mrt_tours_private/${payment.tourId}`]: nextTour,
-        [`mrt_tours_public/${payment.tourId}`]: publicTourProjection(nextTour),
-        [`mrt_sponsor_payments/${sessionId}/status`]: "paid",
-        [`mrt_sponsor_payments/${sessionId}/paidAt`]: now,
-        [`mrt_sponsor_payments/${sessionId}/cloverPaymentId`]:
-          cleanText(event.paymentUuid || event.paymentId, 160, "payment id") || null,
+      await atomicState(state => {
+        const stored = state.mrt_sponsor_payments?.[sessionId];
+        if (!stored || stored.status === 'paid') return state;
+        const now = Date.now();
+        setStatePath(state, `mrt_webhook_events/clover/${eventId}`, {receivedAt:now, processedAt:now, type:event.type || 'unknown'});
+        const paymentId = cleanText(event.paymentUuid || event.paymentId || event.id, 160, "payment id");
+        Object.assign(stored, {status:'paid', paidAt:now, cloverPaymentId:paymentId || null});
+        const tour = state.mrt_tours_private?.[stored.tourId];
+        if (!tour) {
+          logger.error("Clover payment requires manual review: tour missing", {sessionId, tourId:stored.tourId});
+          stored.needsReview = true; return state;
+        }
+        const sponsors = tour.sponsors || [];
+        const sponsor = sponsors.find(s=>s.id === stored.sponsorId);
+        if (sponsor) Object.assign(sponsor, {paid:true, paymentStatus:'paid', paymentMethod:'clover', paidAt:now, paymentRef:paymentId || sessionId});
+        tour.version = Number(tour.version || 0) + 1; tour.updatedAt = now;
+        if (tour.cancelled) {
+          const tasks = refundTasks(tour, {[sessionId]:stored});
+          // The builder includes unmatched manual sponsors; only add this new payment task.
+          const taskId = 'payment_' + sessionId;
+          tour.cancellation.refundTasks ||= {};
+          tour.cancellation.refundTasks[taskId] = tasks[taskId];
+          const jobId = 'cancelled_payment_' + sessionId;
+          setStatePath(state, `mrt_email_outbox/${jobId}`, emailJob(jobId, cancellationMessage(tour, {[taskId]:tasks[taskId]}, tour.cancellation.notificationEmail, true), now));
+        }
+        setStatePath(state, `mrt_tours_public/${tour.id}`, publicTourProjection(tour));
+        return state;
       });
 
       response.status(200).send("ok");
@@ -2432,14 +2473,6 @@ exports.squareWebhook = onRequest(
       }
       const event = request.body || {};
       const eventId = cleanText(event.event_id || event.id, 160, "event id", true);
-      const eventRef = getDatabase().ref(`mrt_webhook_events/square/${eventId}`);
-      const claim = await eventRef.transaction((current) =>
-        current ? undefined : {receivedAt: Date.now(), type: event.type || "unknown"},
-      );
-      if (!claim.committed) {
-        response.status(204).send();
-        return;
-      }
       const providerInvoice = event.data?.object?.invoice || {};
       const invoiceId = cleanText(
         providerInvoice.id || event.data?.id || event.invoice_id,
@@ -2447,9 +2480,6 @@ exports.squareWebhook = onRequest(
         "invoice id",
         true,
       );
-      const invoiceRef = getDatabase().ref(`mrt_invoices/${invoiceId}`);
-      const invoice = (await invoiceRef.get()).val();
-      if (!invoice) throw new Error("Unknown invoice");
       const providerStatus = cleanText(providerInvoice.status, 40, "provider status");
       const paymentStatus =
         event.type === "invoice.payment_made" && providerStatus === "PAID"
@@ -2459,33 +2489,35 @@ exports.squareWebhook = onRequest(
             : ["invoice.refunded", "refund.updated"].includes(event.type)
               ? "refunded"
               : null;
-      if (paymentStatus) {
-        await invoiceRef.update({
-          status: paymentStatus,
-          providerStatus: providerStatus || null,
-          updatedAt: Date.now(),
-        });
-        await getDatabase().ref(`mrt_sponsor_signups/${invoice.signupId}`).update({
-          paymentStatus,
-          paid: paymentStatus === "paid",
-          updatedAt: Date.now(),
-        });
-        if (invoice.tourId) {
-          const tourRef = getDatabase().ref(`mrt_tours_private/${invoice.tourId}`);
-          const tour = (await tourRef.get()).val();
+      await atomicState(state => {
+        if (state.mrt_webhook_events?.square?.[eventId]) return state;
+        const invoice = state.mrt_invoices?.[invoiceId];
+        if (!invoice) throw new Error("Unknown invoice");
+        const now = Date.now();
+        if (paymentStatus) {
+          Object.assign(invoice, {status:paymentStatus, providerStatus:providerStatus || null, updatedAt:now});
+          const signup = state.mrt_sponsor_signups?.[invoice.signupId];
+          if (signup) Object.assign(signup, {paymentStatus, paid:paymentStatus === 'paid', updatedAt:now});
+          const tour = state.mrt_tours_private?.[invoice.tourId];
           if (tour) {
-            const sponsors = (tour.sponsors || []).map((sponsor) =>
-              sponsor.signupId === invoice.signupId
-                ? {...sponsor, paymentStatus, paid: paymentStatus === "paid"}
-                : sponsor,
-            );
-            const next = {...tour, sponsors, version: Number(tour.version || 0) + 1, updatedAt: Date.now()};
-            await tourRef.set(next);
-            await getDatabase().ref(`mrt_tours_public/${invoice.tourId}`).set(publicTourProjection(next));
-          }
+            for (const sponsor of tour.sponsors || []) {
+              if (sponsor.signupId === invoice.signupId) Object.assign(sponsor, {paymentStatus, paid:paymentStatus === 'paid'});
+            }
+            tour.version = Number(tour.version || 0) + 1; tour.updatedAt = now;
+            if (tour.cancelled && ['paid','partially_paid'].includes(paymentStatus)) {
+              const taskId = 'invoice_' + invoiceId;
+              const task = refundTasks(tour, {}, {[invoiceId]:invoice})[taskId];
+              tour.cancellation.refundTasks ||= {};
+              tour.cancellation.refundTasks[taskId] = task;
+              const jobId = 'cancelled_square_' + eventId;
+              setStatePath(state, `mrt_email_outbox/${jobId}`, emailJob(jobId, cancellationMessage(tour, {[taskId]:task}, tour.cancellation.notificationEmail, true), now));
+            }
+            setStatePath(state, `mrt_tours_public/${tour.id}`, publicTourProjection(tour));
+          } else if (['paid','partially_paid'].includes(paymentStatus)) invoice.needsReview = true;
         }
-      }
-      await eventRef.update({processedAt: Date.now()});
+        setStatePath(state, `mrt_webhook_events/square/${eventId}`, {receivedAt:now, processedAt:now, type:event.type || 'unknown'});
+        return state;
+      });
       response.status(204).send();
     } catch (error) {
       webhookFailure(response, error, "Square");

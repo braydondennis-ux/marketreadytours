@@ -13,6 +13,7 @@ const norm=v=>v===null||v===undefined?undefined:Array.isArray(v)?v.length?v.map(
 const equal=(a,b)=>JSON.stringify(norm(a))===JSON.stringify(norm(b));
 const out={at:new Date().toISOString(),privateTours:Object.keys(privateTours).length,publicTours:Object.keys(publicTours).length,tourVersions:[],projectionErrors:[],projectionMismatches:[],missingPrivate:[],ratingListings:0,ratingSubmissions:0,aggregateMismatches:[],orphanRatingTours:[],upcoming:[],reminderStates:{},dueReminders:[],missingFutureReminders:[],terminalInQueue:[],invalidListingIds:[],requests:{},possibleDuplicateProperties:[]};
 for(const [id,t] of Object.entries(privateTours)){
+ if(t.cancelled){if(publicTours[id])out.projectionMismatches.push({id,fields:["cancelled tour is public"]});continue;}
  const p=publicTours[id];if(!p||p.version!==t.version)out.tourVersions.push({id,privateVersion:t.version,publicVersion:p?.version});
  try{const expected=publicTourProjection(t);if(!equal(expected,p))out.projectionMismatches.push({id,fields:[...new Set([...Object.keys(expected),...Object.keys(p||{})])].filter(k=>!equal(expected[k],p?.[k]))})}catch(e){out.projectionErrors.push({id,error:e.message})}
  const ids=(t.listings||[]).map(l=>l.id);if(ids.some(x=>!x)||new Set(ids).size!==ids.length)out.invalidListingIds.push(id);
@@ -20,7 +21,7 @@ for(const [id,t] of Object.entries(privateTours)){
  for(const [rid,planned] of planTourReminders({tour:t,now:Date.now()}))if(!reminders[rid])out.missingFutureReminders.push({tourId:id,listingId:planned.listingId,hoursAhead:planned.hoursAhead});
 }
 for(const [tid,t] of Object.entries(privateTours)){
- if(t.archived || t.date<localYmd())continue;
+ if(t.cancelled || t.archived || t.date<localYmd())continue;
  const groups=new Map();
  for(const [i,l] of (t.listings||[]).entries()){
   const key=(String(l.address||'')+' '+String(l.city||'')).toLowerCase().replace(/[^a-z0-9]/g,'');
