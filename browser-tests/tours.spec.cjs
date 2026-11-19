@@ -126,3 +126,22 @@ test('empty tour has a usable organizer shortcut and a clear public state',async
  await expect(page.getByPlaceholder('Start typing an address...')).toBeVisible();
  await page.getByRole('button',{name:'Cancel',exact:true}).click();
 });
+
+
+test('paid sponsor removal is blocked without losing sponsor data', async ({page}) => {
+ const sponsor = {id:'sponsor-protected', paid:true, paymentStatus:'paid', name:'Protected Sponsor'};
+ for (const node of ['mrt_tours_private','mrt_tours_public']) {
+  await fetch('http://127.0.0.1:9000/'+node+'/tour-demo-1/sponsors.json?ns=mrt-local-audit', {
+   method:'PUT', headers:{Authorization:'Bearer owner','Content-Type':'application/json'}, body:JSON.stringify([sponsor])
+  });
+ }
+ await login(page);
+ await page.goto('/app/#/'); await page.goto('/app/#/tour/tour-demo-1');
+ await page.getByRole('button',{name:/Sponsors Add Partners/}).click();
+ await page.getByRole('button',{name:'Remove sponsor Protected Sponsor',exact:true}).click();
+ await expect(page.getByText(/Removal is blocked until their payment is resolved/)).toBeVisible();
+ await page.getByRole('button',{name:'Remove',exact:true}).click();
+ await expect(page.getByText(/A paid sponsor cannot be removed/)).toBeVisible();
+ const response = await fetch('http://127.0.0.1:9000/mrt_tours_private/tour-demo-1/sponsors.json?ns=mrt-local-audit', {headers:{Authorization:'Bearer owner'}});
+ expect((await response.json())[0]).toEqual(sponsor);
+});

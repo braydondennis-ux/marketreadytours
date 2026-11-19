@@ -44,6 +44,7 @@ const {ensureBranded} = require("./lib/email");
 const {sendViaResend, DEFAULT_FROM} = require("./lib/resend");
 const {deliverEmailJob, emailJob} = require("./lib/outbox");
 const {buildEvaluationEmail} = require("./lib/evaluation-email");
+const {sponsorsWithFunds, sponsorRemovalBlocked} = require("./lib/sponsor-safety");
 
 if (!getApps().length) initializeApp();
 
@@ -407,6 +408,9 @@ function normalizeTourForWrite(raw, uid, previous = null) {
   delete next.favorites;
   // Sponsors carry money state, so they are re-derived from the server record, not the client.
   next.sponsors = sanitizeSponsorPayments(raw.sponsors, previous?.sponsors);
+  if (sponsorRemovalBlocked(previous?.sponsors, next.sponsors)) {
+    throw new HttpsError("failed-precondition", "A paid sponsor cannot be removed. Contact the sponsor and resolve their payment first. Mark Unpaid only records a payment correction; it does not issue a refund.");
+  }
   // Validate the materialized view before the private transaction commits so a malformed
   // public asset cannot leave private/public tour records at different versions.
   publicTourProjection(next);
@@ -739,15 +743,21 @@ exports.saveTour = onCall({...callableOptions, secrets: []}, async (request) => 
     const ref = getDatabase().ref(`mrt_tours_private/${tourId}`);
     let next;
     let previousTour = null;
+    let validationError = null;
     const transaction = await ref.transaction((current) => {
+      validationError = null;
       if (current && Number(current.version || 0) !== expectedVersion) return;
       /* The handler can run more than once; the committed run is the last, so this ends up
          holding the revision we actually replaced. That is what tells us which listings were
          removed by this edit, and therefore whose reminders to cancel. */
       previousTour = current || null;
-      next = normalizeTourForWrite(raw, uid, current);
+      // Firebase can invoke this callback outside the surrounding promise stack.
+      // Abort invalid writes, then surface the actionable callable error afterwards.
+      try { next = normalizeTourForWrite(raw, uid, current); }
+      catch (error) { validationError = error; return; }
       return next;
     });
+    if (validationError) throw validationError;
     if (!transaction.committed) {
       throw new HttpsError("aborted", "This tour changed elsewhere. Reload and try again.");
     }
@@ -801,6 +811,9 @@ exports.deleteTour = onCall(callableOptions, async (request) => {
     if (!current) return {ok: true, deleted: false};
     if (Number(current.version || 0) !== expectedVersion) {
       throw new HttpsError("aborted", "This tour changed elsewhere. Reload and try again.");
+    }
+    if (sponsorsWithFunds(current.sponsors).length) {
+      throw new HttpsError("failed-precondition", "This tour has paid sponsors and cannot be deleted. Contact each sponsor and resolve their payment first. Deleting a tour does not issue refunds.");
     }
     /* Cancel the tour's reminders in the same atomic update as the delete. Without this the
        worker keeps its jobs and mails every agent about a tour that no longer exists — the
@@ -1624,9 +1637,15 @@ exports.markSponsorPaid = onCall(callableOptions, async (request) => {
     const sponsors = Array.isArray(tour.sponsors) ? tour.sponsors : [];
     const sponsorIndex = sponsors.findIndex((entry) => String(entry?.id) === sponsorId);
     if (sponsorIndex < 0) throw new HttpsError("not-found", "Sponsor was not found.");
+    const previousSponsor = sponsors[sponsorIndex];
+    const needsReview = !paid && sponsorsWithFunds([previousSponsor]).length > 0;
+    const resolutionNote = typeof request.data?.resolutionNote === "string" ? request.data.resolutionNote.trim() : "";
+    if (needsReview && (resolutionNote.length < 20 || resolutionNote.length > 2000 || request.data?.acknowledgeNoRefund !== true)) {
+      throw new HttpsError("failed-precondition", "Before marking a paid sponsor unpaid, record how their payment was resolved (20–2000 characters) and confirm that this action does not issue a refund.");
+    }
     const now = Date.now();
     const sponsor = {
-      ...sponsors[sponsorIndex],
+      ...previousSponsor,
       paid,
       paymentStatus: paid ? "paid" : "pending",
       paymentMethod: paid ? "manual" : null,
@@ -1645,6 +1664,15 @@ exports.markSponsorPaid = onCall(callableOptions, async (request) => {
       [`mrt_tours_private/${tourId}`]: nextTour,
       [`mrt_tours_public/${tourId}`]: publicTourProjection(nextTour),
     };
+    if (needsReview) {
+      // A separate private audit record survives removal of the sponsor or tour.
+      const reviewId = getDatabase().ref("mrt_sponsor_payment_reviews").push().key;
+      updates[`mrt_sponsor_payment_reviews/${reviewId}`] = {
+        tourId, sponsorId, tourName: tour.name || "", tourDate: tour.date || "",
+        sponsorName: previousSponsor.name || "", previousPayment: previousSponsor,
+        resolutionNote, acknowledgedNoRefund: true, reviewedBy: uid, reviewedAt: now,
+      };
+    }
     if (sponsor.signupId) {
       updates[`mrt_sponsor_signups/${sponsor.signupId}/paymentStatus`] = sponsor.paymentStatus;
       updates[`mrt_sponsor_signups/${sponsor.signupId}/paid`] = paid;

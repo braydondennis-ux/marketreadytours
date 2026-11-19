@@ -189,12 +189,32 @@ assert.equal(
   "manual",
 );
 
+// Paid sponsorships must survive direct callable attempts to delete their tour or remove them.
+await callable("deleteTour", {tourId: "tour-demo-1", expectedVersion: manualPrivateTour.version,
+  requestId: requestId("paid-tour-delete")}, 400);
+await callable("saveTour", {tour: {...manualPrivateTour, sponsors: []},
+  expectedVersion: manualPrivateTour.version, requestId: requestId("paid-sponsor-remove")}, 400);
+await callable("markSponsorPaid", {tourId: "tour-demo-1", sponsorId: sponsorApproval.sponsorId,
+  paid: false, requestId: requestId("unpaid-without-review")}, 400);
+assert.deepEqual((await get(ref(db, "mrt_tours_private/tour-demo-1"))).val(), manualPrivateTour,
+  "blocked sponsor changes must not mutate the saved tour");
+
 await callable("markSponsorPaid", {
   tourId: "tour-demo-1",
   sponsorId: sponsorApproval.sponsorId,
   paid: false,
+  resolutionNote: "Emulator-only incorrect manual payment flag corrected; no real money was collected.",
+  acknowledgeNoRefund: true,
   requestId: requestId("manual-unpaid"),
 });
+const reviewResponse = await fetch("http://127.0.0.1:9000/mrt_sponsor_payment_reviews.json?ns=mrt-local-audit", {headers: {Authorization: "Bearer owner"}});
+assert.equal(reviewResponse.status, 200);
+const paymentReviews = Object.values(await reviewResponse.json());
+assert.equal(paymentReviews.length, 1);
+assert.equal(paymentReviews[0].sponsorId, sponsorApproval.sponsorId);
+assert.equal(paymentReviews[0].previousPayment.paid, true);
+assert.equal(paymentReviews[0].acknowledgedNoRefund, true);
+assert.ok(paymentReviews[0].reviewedBy);
 const afterManualUnpayment =
   (await get(ref(db, "mrt_tours_public/tour-demo-1/sponsors"))).val() || [];
 assert.equal(

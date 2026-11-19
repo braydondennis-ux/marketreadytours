@@ -4047,7 +4047,15 @@ function TourSponsorsModal(_ref10) {
   const updateAndSave = newList => mrtCommitEdit(onSave, newList, () => setSponsorsLocal(newList));
   const togglePaid = async id => {
     const sp = sponsors.find(s => s.id === id);
-    const newPaid = sp ? !sp.paid : true;
+    const newPaid = sp ? !isPaidSponsor(sp) : true;
+    let resolutionNote = "";
+    if (!newPaid) {
+      resolutionNote = window.prompt("This does NOT refund money. First resolve the payment and contact the sponsor. Record the refund reference, agreed transfer, or reason the paid status was incorrect (at least 20 characters):") || "";
+      if (resolutionNote.trim().length < 20 || resolutionNote.trim().length > 2000) {
+        showToast("Payment status unchanged. A resolution note of 20–2000 characters is required.", "info", 6000);
+        return false;
+      }
+    }
     if (MRT_SECURE_BACKEND) {
       if (!MRT_MANUAL_PAYMENTS) {
         showToast("Payment status is updated only after a verified payment webhook.", "info", 5000);
@@ -4058,6 +4066,8 @@ function TourSponsorsModal(_ref10) {
           tourId: tour.id,
           sponsorId: id,
           paid: newPaid,
+          resolutionNote,
+          acknowledgeNoRefund: !newPaid,
           requestId: mrtRequestId("sponsor-payment")
         });
         setSponsorsLocal(prev => prev.map(sponsor => sponsor.id === id ? result.sponsor : sponsor));
@@ -4841,7 +4851,7 @@ function TourSponsorsModal(_ref10) {
   (confirmRemoveSponsor.paid === true || confirmRemoveSponsor.paymentStatus === "paid") &&
     /*#__PURE__*/React.createElement("p", {
       style: {color: "var(--mrt-red)", fontSize: 13.5, marginBottom: 8, fontWeight: 600}
-    }, "This sponsor has PAID. Removing them takes their listing off the public tour page."),
+    }, "This sponsor has paid. Removal is blocked until their payment is resolved. Contact the sponsor first; removing them does not issue a refund."),
   /*#__PURE__*/React.createElement("p", {
     style: {color: B.gray, fontSize: 13, marginBottom: 22}
   }, "This can't be undone."), /*#__PURE__*/React.createElement("div", {
@@ -11625,7 +11635,7 @@ function ToursDashboard(_ref26) {
       fontSize: 14,
       marginBottom: 24
     }
-  }, "This will permanently remove the tour and all its listings."), /*#__PURE__*/React.createElement("div", {
+  }, "This permanently removes the tour and its listings. Tours with paid sponsors cannot be deleted until their payments are resolved. Deleting does not refund or notify sponsors."), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 10
